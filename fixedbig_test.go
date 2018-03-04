@@ -419,31 +419,17 @@ func TestFixedExp(t *testing.T) {
 
 }
 
-func Benchmark_Add_Bit(bench *testing.B) {
+func benchmark_Add_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
 	f2, _ := NewFixedFromBig(b2)
-
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f.Add(f, f2)
 	}
 }
-
-func Benchmark_Add_Bit2(bench *testing.B) {
-	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	f, _ := NewFixedFromBig(b1)
-	f2, _ := NewFixedFromBig(b2)
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		f.Add2(f, f2)
-	}
-}
-
-func Benchmark_Add_Big(bench *testing.B) {
+func benchmark_Add_Big(bench *testing.B) {
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	bench.ResetTimer()
@@ -451,8 +437,13 @@ func Benchmark_Add_Big(bench *testing.B) {
 		b.Add(b, b2)
 	}
 }
+func Benchmark_Add(bench *testing.B){
+	bench.Run("big", benchmark_Add_Big)
+	bench.Run("fixedbit", benchmark_Add_Bit)
+}
 
-func Benchmark_SubOverflow_Bit(bench *testing.B) {
+
+func benchmark_SubOverflow_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
@@ -463,7 +454,7 @@ func Benchmark_SubOverflow_Bit(bench *testing.B) {
 		f.SubOverflow(f, f2)
 	}
 }
-func Benchmark_Sub_Bit(bench *testing.B) {
+func benchmark_Sub_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
@@ -475,16 +466,22 @@ func Benchmark_Sub_Bit(bench *testing.B) {
 	}
 }
 
-func Benchmark_Sub_Big(bench *testing.B) {
+func benchmark_Sub_Big(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		b1.Sub(b1, b2)
 	}
 }
+func Benchmark_Sub(bench *testing.B){
+	bench.Run("big", benchmark_Sub_Big)
+	bench.Run("fixedbit", benchmark_Sub_Bit)
+	bench.Run("fixedbit_of", benchmark_SubOverflow_Bit)
+}
 
-func Benchmark_Mul_Big(bench *testing.B) {
+func benchmark_Mul_Big(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(common.Hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 
@@ -494,11 +491,9 @@ func Benchmark_Mul_Big(bench *testing.B) {
 		b1.Mul(a, b)
 		U256(b1)
 	}
-	//	bench.StopTimer()
-	//	fmt.Printf("B1: %x\n", b1)
 }
 
-func Benchmark_Mul_Bit(bench *testing.B) {
+func benchmark_Mul_Bit(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(common.Hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	fa, _ := NewFixedFromBig(a)
@@ -509,11 +504,13 @@ func Benchmark_Mul_Bit(bench *testing.B) {
 		f := NewFixed()
 		f.Mul(fa, fb)
 	}
-	//	bench.StopTimer()
-	//	fmt.Printf("F1: %v\n", f.Hex())
+}
+func Benchmark_Mul(bench *testing.B) {
+	bench.Run("big", benchmark_Mul_Big)
+	bench.Run("fixedbit", benchmark_Mul_Bit)
 }
 
-func Benchmark_And_Big(bench *testing.B) {
+func benchmark_And_Big(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	bench.ResetTimer()
@@ -521,7 +518,7 @@ func Benchmark_And_Big(bench *testing.B) {
 		b1.And(b1, b2)
 	}
 }
-func Benchmark_And_Bit(bench *testing.B) {
+func benchmark_And_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
@@ -531,8 +528,12 @@ func Benchmark_And_Bit(bench *testing.B) {
 		f.And(f, f2)
 	}
 }
+func Benchmark_And(bench *testing.B) {
+	bench.Run("big", benchmark_And_Big)
+	bench.Run("fixedbit", benchmark_And_Bit)
+}
 
-func Benchmark_Or_Big(bench *testing.B) {
+func benchmark_Or_Big(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	bench.ResetTimer()
@@ -540,7 +541,7 @@ func Benchmark_Or_Big(bench *testing.B) {
 		b1.Or(b1, b2)
 	}
 }
-func Benchmark_Or_Bit(bench *testing.B) {
+func benchmark_Or_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
@@ -550,8 +551,12 @@ func Benchmark_Or_Bit(bench *testing.B) {
 		f.Or(f, f2)
 	}
 }
+func Benchmark_Or(bench *testing.B) {
+	bench.Run("big", benchmark_Or_Big)
+	bench.Run("fixedbit", benchmark_Or_Bit)
+}
 
-func Benchmark_Xor_Big(bench *testing.B) {
+func benchmark_Xor_Big(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	bench.ResetTimer()
@@ -559,7 +564,7 @@ func Benchmark_Xor_Big(bench *testing.B) {
 		b1.Xor(b1, b2)
 	}
 }
-func Benchmark_Xor_Bit(bench *testing.B) {
+func benchmark_Xor_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
@@ -570,7 +575,12 @@ func Benchmark_Xor_Bit(bench *testing.B) {
 	}
 }
 
-func Benchmark_Cmp_Big(bench *testing.B) {
+func Benchmark_Xor(bench *testing.B) {
+	bench.Run("big", benchmark_Xor_Big)
+	bench.Run("fixedbit", benchmark_Xor_Bit)
+}
+
+func benchmark_Cmp_Big(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	bench.ResetTimer()
@@ -578,7 +588,7 @@ func Benchmark_Cmp_Big(bench *testing.B) {
 		b1.Cmp(b2)
 	}
 }
-func Benchmark_Cmp_Bit(bench *testing.B) {
+func benchmark_Cmp_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	f, _ := NewFixedFromBig(b1)
@@ -589,7 +599,13 @@ func Benchmark_Cmp_Bit(bench *testing.B) {
 		f.Cmp(f2)
 	}
 }
-func Benchmark_Lsh_Big(bench *testing.B) {
+func Benchmark_Cmp(bench *testing.B) {
+	bench.Run("big", benchmark_Cmp_Big)
+	bench.Run("fixedbit", benchmark_Cmp_Bit)
+}
+
+
+func benchmark_Lsh_Big(bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
 	n := uint(255)
 	bench.ResetTimer()
@@ -598,19 +614,22 @@ func Benchmark_Lsh_Big(bench *testing.B) {
 		b1.Lsh(original, n)
 	}
 }
-func Benchmark_Lsh_Bit(bench *testing.B) {
+func benchmark_Lsh_Bit(bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
-	//originalf, _ := NewFixedFromBig(original)
-	f2, _ := NewFixedFromBig(original)
 	n := uint(255)
+	f2, _ := NewFixedFromBig(original)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f1 := NewFixed()
 		f1.Lsh(f2, n)
 	}
 }
+func Benchmark_Lsh(bench *testing.B) {
+	bench.Run("big", benchmark_Lsh_Big)
+	bench.Run("fixedbit", benchmark_Lsh_Bit)
+}
 
-func Benchmark_Rsh_Big(bench *testing.B) {
+func benchmark_Rsh_Big(bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
 	n := uint(255)
 	bench.ResetTimer()
@@ -619,7 +638,7 @@ func Benchmark_Rsh_Big(bench *testing.B) {
 		b1.Rsh(original, n)
 	}
 }
-func Benchmark_Rsh_Bit(bench *testing.B) {
+func benchmark_Rsh_Bit(bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
 	f2, _ := NewFixedFromBig(original)
 	n := uint(255)
@@ -629,8 +648,12 @@ func Benchmark_Rsh_Bit(bench *testing.B) {
 		f1.Lsh(f2, n)
 	}
 }
+func Benchmark_Rsh(bench *testing.B) {
+	bench.Run("big", benchmark_Rsh_Big)
+	bench.Run("fixedbit", benchmark_Rsh_Bit)
+}
 
-func Benchmark_Exp_Big(bench *testing.B) {
+func benchmark_Exp_Big(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 
@@ -644,7 +667,7 @@ func Benchmark_Exp_Big(bench *testing.B) {
 		base.Set(orig)
 	}
 }
-func Benchmark_Exp_Bit(bench *testing.B) {
+func benchmark_Exp_Bit(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 
@@ -661,7 +684,7 @@ func Benchmark_Exp_Bit(bench *testing.B) {
 		f_base.Copy(f_orig)
 	}
 }
-func Benchmark_ExpSmall_Big(bench *testing.B) {
+func benchmark_ExpSmall_Big(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 	y := "8abcdef"
 
@@ -675,7 +698,7 @@ func Benchmark_ExpSmall_Big(bench *testing.B) {
 		base.Set(orig)
 	}
 }
-func Benchmark_ExpSmall_Bit(bench *testing.B) {
+func benchmark_ExpSmall_Bit(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 	y := "8abcdef"
 
@@ -692,7 +715,21 @@ func Benchmark_ExpSmall_Bit(bench *testing.B) {
 		f_base.Copy(f_orig)
 	}
 }
-func Benchmark_DivSmall_Big(bench *testing.B) {
+func Benchmark_Exp(bench *testing.B) {
+	bench.Run("large/big", benchmark_Exp_Big)
+	bench.Run("large/fixedbit", benchmark_Exp_Bit)
+	bench.Run("small/big", benchmark_ExpSmall_Big)
+	bench.Run("small/fixedbit", benchmark_ExpSmall_Bit)
+}
+
+func Benchmark_Div(bench *testing.B) {
+	bench.Run("large/big", benchmark_DivLarge_Big)
+	bench.Run("large/fixedbit", benchmark_DivLarge_Bit)
+	bench.Run("small/big", benchmark_DivSmall_Big)
+	bench.Run("small/fixedbit", benchmark_DivSmall_Bit)
+}
+
+func benchmark_DivSmall_Big(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(common.Hex2Bytes("1fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("12bad1e611"))
 
@@ -704,7 +741,7 @@ func Benchmark_DivSmall_Big(bench *testing.B) {
 	}
 }
 
-func Benchmark_DivSmall_Bit(bench *testing.B) {
+func benchmark_DivSmall_Bit(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(common.Hex2Bytes("1fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("12bad1e611"))
 	fa, _ := NewFixedFromBig(a)
@@ -716,7 +753,7 @@ func Benchmark_DivSmall_Bit(bench *testing.B) {
 		f.Div(fa, fb)
 	}
 }
-func Benchmark_DivLarge_Big(bench *testing.B) {
+func benchmark_DivLarge_Big(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(common.Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
 
@@ -728,7 +765,7 @@ func Benchmark_DivLarge_Big(bench *testing.B) {
 	}
 }
 
-func Benchmark_DivLarge_Bit(bench *testing.B) {
+func benchmark_DivLarge_Bit(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(common.Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
 	fa, _ := NewFixedFromBig(a)
