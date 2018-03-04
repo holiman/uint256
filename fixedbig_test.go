@@ -645,7 +645,7 @@ func benchmark_Rsh_Bit(bench *testing.B) {
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f1 := NewFixed()
-		f1.Lsh(f2, n)
+		f1.Rsh(f2, n)
 	}
 }
 func Benchmark_Rsh(bench *testing.B) {

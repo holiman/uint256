@@ -806,7 +806,9 @@ func (z *Fixed256bit) lshOne() {
 
 // Lsh sets z = x << n and returns z.
 func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
-
+	var (
+		a, b uint64
+	)
 	// Big swaps first
 	switch {
 	case n >= 256:
@@ -814,12 +816,15 @@ func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 	case n >= 192:
 		z.lsh192(x)
 		n -= 192
+		goto sh192
 	case n >= 128:
 		z.lsh128(x)
 		n -= 128
+		goto sh128
 	case n >= 64:
 		z.lsh64(x)
 		n -= 64
+		goto sh64
 	default:
 		z.Copy(x)
 	}
@@ -827,18 +832,18 @@ func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 		return z
 	}
 	// remaining shifts
-	var (
-		a, b uint64
-	)
 	a = z.d >> (64 - n)
 	z.d = z.d << n
 
+sh64:
 	b = z.c >> (64 - n)
 	z.c = (z.c << n) | a
 
+sh128:
 	a = z.b >> (64 - n)
 	z.b = (z.b << n) | b
 
+sh192:
 	b = z.a >> (64 - n)
 	z.a = (z.a << n) | a
 	return z
@@ -846,7 +851,9 @@ func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 
 // Rsh sets z = x >> n and returns z.
 func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
-
+	var (
+		a, b uint64
+	)
 	// Big swaps first
 	switch {
 	case n >= 256:
@@ -854,12 +861,15 @@ func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
 	case n >= 192:
 		z.rsh192(x)
 		n -= 192
+		goto sh192
 	case n >= 128:
 		z.rsh128(x)
 		n -= 128
+		goto sh128
 	case n >= 64:
 		z.rsh64(x)
 		n -= 64
+		goto sh64
 	default:
 		z.Copy(x)
 	}
@@ -868,19 +878,18 @@ func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
 	}
 
 	// remaining shifts
-	var (
-		a, b uint64
-	)
-
 	a = z.a << (64 - n)
 	z.a = z.a >> n
 
+sh64:
 	b = z.b << (64 - n)
 	z.b = (z.b >> n) | a
 
+sh128:
 	a = z.c << (64 - n)
 	z.c = (z.c >> n) | b
 
+sh192:
 	b = z.d << (64 - n)
 	z.d = (z.d >> n) | a
 
