@@ -110,7 +110,7 @@ func TestRandomAdd2(t *testing.T) {
 	}
 }
 func TestRandomMul(t *testing.T) {
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 100000; i++ {
 		b, f1, err := randNums()
 		if err != nil {
 			t.Fatal(err)

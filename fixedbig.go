@@ -174,6 +174,42 @@ func (z *Fixed256bit) Add(x, y *Fixed256bit) {
 	z.a = x.a + y.a + carry
 
 }
+func (x *Fixed256bit) addLow128(c, d uint64) {
+
+	var (
+		sum   uint64
+		carry uint64
+	)
+	// LSB
+	sum = x.d + d
+	if sum < x.d {
+		carry = 1
+	}
+	x.d = sum
+
+	// Next 64 bits
+	sum = x.c + c
+
+	if sum < x.c {
+		sum += carry
+		carry = 1
+	} else {
+		sum += carry
+		if sum < x.c {
+			carry = 1
+		} else {
+			// done
+			x.c = sum
+			return
+		}
+	}
+	x.c = sum
+	sum = x.b + carry
+	if sum < x.b {
+		x.a = x.a + 1
+	}
+	x.b = sum
+}
 
 // Sub sets z to the difference x-y
 func (z *Fixed256bit) Sub(x, y *Fixed256bit) {
@@ -293,22 +329,14 @@ func (x *Fixed256bit) mul64(a, b uint64, y *Fixed256bit) *Fixed256bit {
 	high_a := a >> 32
 	high_b := b >> 32
 
-	d2 := low_a * high_b // Needs up 32
-	d3 := high_a * low_b // Needs up 32
-
 	x.a, x.b, x.c, x.d = 0, 0, high_a*high_b, low_a*low_b
 
-	y.a, y.b = 0, 0
-	y.c = d2 >> 32
-	y.d = (d2 & bitmask32) << 32
+	d := low_a * high_b // Needs up 32
+	x.addLow128(d>>32, (d&bitmask32)<<32)
 
-	x.Add(x, y)
+	d = high_a * low_b // Needs up 32
+	x.addLow128(d>>32, (d&bitmask32)<<32)
 
-	y.a, y.b = 0, 0
-	y.c = d3 >> 32
-	y.d = (d3 & bitmask32) << 32
-
-	x.Add(x, y)
 	return x
 }
 

@@ -11,41 +11,41 @@ As of 2018-03-04:
 goos: linux
 goarch: amd64
 pkg: github.com/holiman/fixed256
-Benchmark_Add_Bit-2           	300000000	         4.23 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Add_Bit2-2          	300000000	         5.51 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Add_Big-2           	50000000	        21.8 ns/op	       0 B/op	       0 allocs/op
-Benchmark_SubOverflow_Bit-2   	300000000	         5.57 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Sub_Bit-2           	300000000	         4.41 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Sub_Big-2           	100000000	        21.7 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Add_Bit-2           	300000000	         4.25 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Add_Bit2-2          	300000000	         5.58 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Add_Big-2           	50000000	        23.9 ns/op	       0 B/op	       0 allocs/op
+Benchmark_SubOverflow_Bit-2   	300000000	         5.35 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Sub_Bit-2           	300000000	         4.29 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Sub_Big-2           	100000000	        21.8 ns/op	       0 B/op	       0 allocs/op
 Benchmark_Mul_Big-2           	10000000	       145 ns/op	     128 B/op	       2 allocs/op
-Benchmark_Mul_Bit-2           	20000000	       104 ns/op	       0 B/op	       0 allocs/op
-Benchmark_And_Big-2           	100000000	        13.7 ns/op	       0 B/op	       0 allocs/op
-Benchmark_And_Bit-2           	2000000000	         1.90 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Or_Big-2            	100000000	        17.9 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Or_Bit-2            	2000000000	         1.90 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Xor_Big-2           	100000000	        17.6 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Xor_Bit-2           	2000000000	         1.89 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Cmp_Big-2           	200000000	         7.72 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Cmp_Bit-2           	1000000000	         2.70 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Lsh_Big-2           	20000000	        92.1 ns/op	     128 B/op	       2 allocs/op
-Benchmark_Lsh_Bit-2           	200000000	         7.00 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Rsh_Big-2           	20000000	        78.6 ns/op	      80 B/op	       2 allocs/op
-Benchmark_Rsh_Bit-2           	200000000	         7.05 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Exp_Big-2           	   50000	     25713 ns/op	   18224 B/op	     191 allocs/op
-Benchmark_Exp_Bit-2           	   50000	     30187 ns/op	      32 B/op	       1 allocs/op
-Benchmark_ExpSmall_Big-2      	  200000	      7555 ns/op	    7472 B/op	      79 allocs/op
-Benchmark_ExpSmall_Bit-2      	  500000	      3024 ns/op	      32 B/op	       1 allocs/op
-Benchmark_DivSmall_Big-2      	10000000	       142 ns/op	     128 B/op	       3 allocs/op
-Benchmark_DivSmall_Bit-2      	100000000	        14.8 ns/op	       0 B/op	       0 allocs/op
-Benchmark_DivLarge_Big-2      	 5000000	       316 ns/op	     176 B/op	       3 allocs/op
-Benchmark_DivLarge_Bit-2      	 1000000	      1275 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Mul_Bit-2           	20000000	        84.0 ns/op	       0 B/op	       0 allocs/op
+Benchmark_And_Big-2           	100000000	        13.9 ns/op	       0 B/op	       0 allocs/op
+Benchmark_And_Bit-2           	2000000000	         2.00 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Or_Big-2            	100000000	        18.4 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Or_Bit-2            	1000000000	         2.00 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Xor_Big-2           	100000000	        18.3 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Xor_Bit-2           	2000000000	         1.91 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Cmp_Big-2           	200000000	         7.84 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Cmp_Bit-2           	1000000000	         2.69 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Lsh_Big-2           	20000000	        91.4 ns/op	     128 B/op	       2 allocs/op
+Benchmark_Lsh_Bit-2           	200000000	         7.02 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Rsh_Big-2           	20000000	        79.5 ns/op	      80 B/op	       2 allocs/op
+Benchmark_Rsh_Bit-2           	200000000	         7.18 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Exp_Big-2           	   50000	     26901 ns/op	   18224 B/op	     191 allocs/op
+Benchmark_Exp_Bit-2           	   50000	     26728 ns/op	      32 B/op	       1 allocs/op
+Benchmark_ExpSmall_Big-2      	  200000	      9409 ns/op	    7472 B/op	      79 allocs/op
+Benchmark_ExpSmall_Bit-2      	  500000	      2683 ns/op	      32 B/op	       1 allocs/op
+Benchmark_DivSmall_Big-2      	10000000	       146 ns/op	     128 B/op	       3 allocs/op
+Benchmark_DivSmall_Bit-2      	100000000	        14.9 ns/op	       0 B/op	       0 allocs/op
+Benchmark_DivLarge_Big-2      	 5000000	       323 ns/op	     176 B/op	       3 allocs/op
+Benchmark_DivLarge_Bit-2      	 1000000	      1290 ns/op	       0 B/op	       0 allocs/op
+PASS
 
 ```
 
 The fixed lib wins over big in most cases, with a few exceptions: 
 
 - Division of large numbers. The division algo needs to be replaced with a (pure go) implementation of Knuth's Algorithm D. 
-- Large exponentiation. The underlying `Mul` operation probably needs some additional love and nurturing. 
 
 ## Help out
 
