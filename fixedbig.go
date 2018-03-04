@@ -213,6 +213,54 @@ func (x *Fixed256bit) addLow128(c, d uint64) {
 	x.b = sum
 }
 
+// addMiddle128 adds two uint64 integers to x, as b and c ( d is the least significant)
+func (x *Fixed256bit) addMiddle128(b, c uint64) {
+
+	var (
+		sum   uint64
+		carry uint64
+	)
+	sum = x.c + c
+	if sum < x.c {
+		carry = 1
+	}
+	x.c = sum
+
+	// Next 64 bits
+	sum = x.b + b
+
+	if sum < x.b {
+		sum += carry
+		carry = 1
+	} else {
+		sum += carry
+		if sum < x.b {
+			carry = 1
+		} else {
+			// done
+			x.b = sum
+			return
+		}
+	}
+	x.a = x.a + 1
+}
+
+// addMiddle128 adds two uint64 integers to x, as a and b ( a is the most significant)
+func (x *Fixed256bit) addHigh128(a, b uint64) {
+
+	var (
+		sum uint64
+	)
+	sum = x.b + b
+	if sum < x.b {
+		x.b = sum
+		x.a += a + 1
+		return
+	}
+	x.b = sum
+	x.a += a
+}
+
 // Sub sets z to the difference x-y
 func (z *Fixed256bit) Sub(x, y *Fixed256bit) {
 
@@ -318,10 +366,10 @@ func (z *Fixed256bit) SubOverflow(x, y *Fixed256bit) bool {
 	return underflow
 }
 
-// mul64 multiplies two 64-bit uints and sets the result in x. The parameter y
+// mulIntoLower64 multiplies two 64-bit uints and sets the result in x. The parameter y
 // is used as a buffer, and will be overwritten (does not have to be cleared prior
 // to usage.
-func (x *Fixed256bit) mul64(a, b uint64, y *Fixed256bit) *Fixed256bit {
+func (x *Fixed256bit) mulIntoLower64(a, b uint64, y *Fixed256bit) *Fixed256bit {
 
 	if a == 0 || b == 0 {
 		return x.Clear()
@@ -338,6 +386,49 @@ func (x *Fixed256bit) mul64(a, b uint64, y *Fixed256bit) *Fixed256bit {
 
 	d = high_a * low_b // Needs up 32
 	x.addLow128(d>>32, (d&bitmask32)<<32)
+
+	return x
+}
+
+// mulIntoMiddle64 equals mulIntoLower(..).lsh64()
+func (x *Fixed256bit) mulIntoMiddle64(a, b uint64, y *Fixed256bit) *Fixed256bit {
+
+	if a == 0 || b == 0 {
+		return x.Clear()
+	}
+	low_a := a & bitmask32
+	low_b := b & bitmask32
+	high_a := a >> 32
+	high_b := b >> 32
+
+	x.a, x.b, x.c, x.d = 0, high_a*high_b, low_a*low_b, 0
+
+	d := low_a * high_b // Needs up 32
+	x.addMiddle128(d>>32, (d&bitmask32)<<32)
+
+	d = high_a * low_b // Needs up 32
+	x.addMiddle128(d>>32, (d&bitmask32)<<32)
+
+	return x
+}
+// mulIntoMiddle64 equals mulIntoLower(..).lsh128()
+func (x *Fixed256bit) mulIntoUpper64(a, b uint64, y *Fixed256bit) *Fixed256bit {
+
+	if a == 0 || b == 0 {
+		return x.Clear()
+	}
+	low_a := a & bitmask32
+	low_b := b & bitmask32
+	high_a := a >> 32
+	high_b := b >> 32
+
+	x.a, x.b, x.c, x.d = high_a*high_b, low_a*low_b, 0, 0
+
+	d := low_a * high_b // Needs up 32
+	x.addHigh128(d>>32, (d&bitmask32)<<32)
+
+	d = high_a * low_b // Needs up 32
+	x.addHigh128(d>>32, (d&bitmask32)<<32)
 
 	return x
 }
@@ -375,7 +466,7 @@ func (z *Fixed256bit) Mul(x, y *Fixed256bit) {
 	// b1 * c2 (upshift 192)
 	// a1 * d2 (upshift 192)
 	// d1 * a2 (upshift 192)
-	// c1 * b2 (upshift 192)
+	// c1 * b2 11(upshift 192)
 
 	// Remaining ops:
 	//
@@ -388,24 +479,24 @@ func (z *Fixed256bit) Mul(x, y *Fixed256bit) {
 	//
 	// b1 * d2 (upshift 128)
 
-	alfa.mul64(x.d, y.d, beta)
+	alfa.mulIntoLower64(x.d, y.d, beta)
 	alfa.a = x.d*y.a + x.c*y.b + x.b*y.c + x.a*y.d // Top ones, ignore overflow
 
-	beta.mul64(x.d, y.c, gamma).lsh64(beta)
+	beta.mulIntoMiddle64(x.d, y.c, gamma) //.lsh64(beta)
 
 	alfa.Add(alfa, beta)
 
-	beta.mul64(x.d, y.b, gamma).lsh128(beta)
+	beta.mulIntoUpper64(x.d, y.b, gamma) //.lsh128(beta)
 
 	alfa.Add(alfa, beta)
 
-	beta.mul64(x.c, y.d, gamma).lsh64(beta)
+	beta.mulIntoMiddle64(x.c, y.d, gamma) //.lsh64(beta)
 
 	alfa.Add(alfa, beta)
-	beta.mul64(x.c, y.c, gamma).lsh128(beta)
+	beta.mulIntoUpper64(x.c, y.c, gamma) //.lsh128(beta)
 	alfa.Add(alfa, beta)
 
-	beta.mul64(x.b, y.d, gamma).lsh128(beta)
+	beta.mulIntoUpper64(x.b, y.d, gamma) //.lsh128(beta)
 	z.Add(alfa, beta)
 
 }
