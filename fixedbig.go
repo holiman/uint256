@@ -174,6 +174,8 @@ func (z *Fixed256bit) Add(x, y *Fixed256bit) {
 	z.a = x.a + y.a + carry
 
 }
+
+// addLow128 adds two uint64 integers to x, as c and d ( d is the least significant)
 func (x *Fixed256bit) addLow128(c, d uint64) {
 
 	var (
