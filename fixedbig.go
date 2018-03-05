@@ -806,6 +806,9 @@ func (z *Fixed256bit) lshOne() {
 
 // Lsh sets z = x << n and returns z.
 func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
+	if n == 0 {
+		return z
+	}
 	var (
 		a, b uint64
 	)
@@ -828,9 +831,6 @@ func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 	default:
 		z.Copy(x)
 	}
-	if n == 0 {
-		return z
-	}
 	// remaining shifts
 	a = z.d >> (64 - n)
 	z.d = z.d << n
@@ -851,6 +851,9 @@ sh192:
 
 // Rsh sets z = x >> n and returns z.
 func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
+	if n == 0 {
+		return z
+	}
 	var (
 		a, b uint64
 	)
@@ -872,9 +875,6 @@ func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
 		goto sh64
 	default:
 		z.Copy(x)
-	}
-	if n == 0 {
-		return z
 	}
 
 	// remaining shifts
