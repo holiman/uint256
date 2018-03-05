@@ -819,28 +819,24 @@ func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 		n -= 192
 		goto sh192
 	case n == 192:
-		z.lsh192(x)
-		return z
+		return z.lsh192(x)
 
 	case n > 128:
 		z.lsh128(x)
 		n -= 128
 		goto sh128
 	case n == 128:
-		z.lsh128(x)
-		return z
+		return z.lsh128(x)
 
 	case n > 64:
 		z.lsh64(x)
 		n -= 64
 		goto sh64
 	case n == 64:
-		z.lsh64(x)
-		return z
+		return z.lsh64(x)
 
 	case n == 0:
-		z.Copy(x)
-		return z
+		return z.Copy(x)
 	default:
 		z.Copy(x)
 	}
@@ -876,28 +872,24 @@ func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
 		n -= 192
 		goto sh192
 	case n == 192:
-		z.rsh192(x)
-		return z
+		return z.rsh192(x)
 
 	case n > 128:
 		z.rsh128(x)
 		n -= 128
 		goto sh128
 	case n == 128:
-		z.rsh128(x)
-		return z
+		return z.rsh128(x)
 
 	case n > 64:
 		z.rsh64(x)
 		n -= 64
 		goto sh64
 	case n == 64:
-		z.rsh64(x)
-		return z
+		return z.rsh64(x)
 
 	case n == 0:
-		z.Copy(x)
-		return z
+		return z.Copy(x)
 	default:
 		z.Copy(x)
 	}
