@@ -605,18 +605,31 @@ func Benchmark_Cmp(bench *testing.B) {
 }
 
 
-func benchmark_Lsh_Big(bench *testing.B) {
+func benchmark_Lsh_Big(n uint, bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
-	n := uint(255)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		b1 := big.NewInt(0)
 		b1.Lsh(original, n)
 	}
 }
-func benchmark_Lsh_Bit(bench *testing.B) {
+func benchmark_Lsh_Big_N_EQ_0(bench *testing.B) {
+	benchmark_Lsh_Big(0, bench)
+}
+func benchmark_Lsh_Big_N_GT_192(bench *testing.B) {
+	benchmark_Lsh_Big(193, bench)
+}
+func benchmark_Lsh_Big_N_GT_128(bench *testing.B) {
+	benchmark_Lsh_Big(129, bench)
+}
+func benchmark_Lsh_Big_N_GT_64(bench *testing.B) {
+	benchmark_Lsh_Big(65, bench)
+}
+func benchmark_Lsh_Big_N_GT_0(bench *testing.B) {
+	benchmark_Lsh_Big(1, bench)
+}
+func benchmark_Lsh_Bit(n uint, bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
-	n := uint(255)
 	f2, _ := NewFixedFromBig(original)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
@@ -624,33 +637,94 @@ func benchmark_Lsh_Bit(bench *testing.B) {
 		f1.Lsh(f2, n)
 	}
 }
+func benchmark_Lsh_Bit_N_EQ_0(bench *testing.B) {
+	benchmark_Lsh_Bit(0, bench)
+}
+func benchmark_Lsh_Bit_N_GT_192(bench *testing.B) {
+	benchmark_Lsh_Bit(193, bench)
+}
+func benchmark_Lsh_Bit_N_GT_128(bench *testing.B) {
+	benchmark_Lsh_Bit(129, bench)
+}
+func benchmark_Lsh_Bit_N_GT_64(bench *testing.B) {
+	benchmark_Lsh_Bit(65, bench)
+}
+func benchmark_Lsh_Bit_N_GT_0(bench *testing.B) {
+	benchmark_Lsh_Bit(1, bench)
+}
 func Benchmark_Lsh(bench *testing.B) {
-	bench.Run("big", benchmark_Lsh_Big)
-	bench.Run("fixedbit", benchmark_Lsh_Bit)
+	bench.Run("big/n_eq_0", benchmark_Lsh_Big_N_EQ_0)
+	bench.Run("big/n_gt_192", benchmark_Lsh_Big_N_GT_192)
+	bench.Run("big/n_gt_128", benchmark_Lsh_Big_N_GT_128)
+	bench.Run("big/n_gt_64", benchmark_Lsh_Big_N_GT_64)
+	bench.Run("big/n_gt_0", benchmark_Lsh_Big_N_GT_0)
+
+	bench.Run("fixedbit/n_eq_0", benchmark_Lsh_Bit_N_EQ_0)
+	bench.Run("fixedbit/n_gt_192", benchmark_Lsh_Bit_N_GT_192)
+	bench.Run("fixedbit/n_gt_128", benchmark_Lsh_Bit_N_GT_128)
+	bench.Run("fixedbit/n_gt_64", benchmark_Lsh_Bit_N_GT_64)
+	bench.Run("fixedbit/n_gt_0", benchmark_Lsh_Bit_N_GT_0)
 }
 
-func benchmark_Rsh_Big(bench *testing.B) {
+func benchmark_Rsh_Big(n uint, bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
-	n := uint(255)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		b1 := big.NewInt(0)
 		b1.Rsh(original, n)
 	}
 }
-func benchmark_Rsh_Bit(bench *testing.B) {
+func benchmark_Rsh_Big_N_EQ_0(bench *testing.B) {
+	benchmark_Rsh_Big(0, bench)
+}
+func benchmark_Rsh_Big_N_GT_192(bench *testing.B) {
+	benchmark_Rsh_Big(193, bench)
+}
+func benchmark_Rsh_Big_N_GT_128(bench *testing.B) {
+	benchmark_Rsh_Big(129, bench)
+}
+func benchmark_Rsh_Big_N_GT_64(bench *testing.B) {
+	benchmark_Rsh_Big(65, bench)
+}
+func benchmark_Rsh_Big_N_GT_0(bench *testing.B) {
+	benchmark_Rsh_Big(1, bench)
+}
+func benchmark_Rsh_Bit(n uint, bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
 	f2, _ := NewFixedFromBig(original)
-	n := uint(255)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f1 := NewFixed()
 		f1.Rsh(f2, n)
 	}
 }
+func benchmark_Rsh_Bit_N_EQ_0(bench *testing.B) {
+	benchmark_Rsh_Bit(0, bench)
+}
+func benchmark_Rsh_Bit_N_GT_192(bench *testing.B) {
+	benchmark_Rsh_Bit(193, bench)
+}
+func benchmark_Rsh_Bit_N_GT_128(bench *testing.B) {
+	benchmark_Rsh_Bit(129, bench)
+}
+func benchmark_Rsh_Bit_N_GT_64(bench *testing.B) {
+	benchmark_Rsh_Bit(65, bench)
+}
+func benchmark_Rsh_Bit_N_GT_0(bench *testing.B) {
+	benchmark_Rsh_Bit(1, bench)
+}
 func Benchmark_Rsh(bench *testing.B) {
-	bench.Run("big", benchmark_Rsh_Big)
-	bench.Run("fixedbit", benchmark_Rsh_Bit)
+	bench.Run("big/n_eq_0", benchmark_Rsh_Big_N_EQ_0)
+	bench.Run("big/n_gt_192", benchmark_Rsh_Big_N_GT_192)
+	bench.Run("big/n_gt_128", benchmark_Rsh_Big_N_GT_128)
+	bench.Run("big/n_gt_64", benchmark_Rsh_Big_N_GT_64)
+	bench.Run("big/n_gt_0", benchmark_Rsh_Big_N_GT_0)
+
+	bench.Run("fixedbit/n_eq_0", benchmark_Rsh_Bit_N_EQ_0)
+	bench.Run("fixedbit/n_gt_192", benchmark_Rsh_Bit_N_GT_192)
+	bench.Run("fixedbit/n_gt_128", benchmark_Rsh_Bit_N_GT_128)
+	bench.Run("fixedbit/n_gt_64", benchmark_Rsh_Bit_N_GT_64)
+	bench.Run("fixedbit/n_gt_0", benchmark_Rsh_Bit_N_GT_0)
 }
 
 func benchmark_Exp_Big(bench *testing.B) {
