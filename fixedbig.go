@@ -369,7 +369,7 @@ func (z *Fixed256bit) SubOverflow(x, y *Fixed256bit) bool {
 // mulIntoLower64 multiplies two 64-bit uints and sets the result in x. The parameter y
 // is used as a buffer, and will be overwritten (does not have to be cleared prior
 // to usage.
-func (x *Fixed256bit) mulIntoLower64(a, b uint64, y *Fixed256bit) *Fixed256bit {
+func (x *Fixed256bit) mulIntoLower64(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
 		return x.Clear()
@@ -391,7 +391,7 @@ func (x *Fixed256bit) mulIntoLower64(a, b uint64, y *Fixed256bit) *Fixed256bit {
 }
 
 // mulIntoMiddle64 equals mulIntoLower(..).lsh64()
-func (x *Fixed256bit) mulIntoMiddle64(a, b uint64, y *Fixed256bit) *Fixed256bit {
+func (x *Fixed256bit) mulIntoMiddle64(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
 		return x.Clear()
@@ -411,8 +411,9 @@ func (x *Fixed256bit) mulIntoMiddle64(a, b uint64, y *Fixed256bit) *Fixed256bit 
 
 	return x
 }
+
 // mulIntoMiddle64 equals mulIntoLower(..).lsh128()
-func (x *Fixed256bit) mulIntoUpper64(a, b uint64, y *Fixed256bit) *Fixed256bit {
+func (x *Fixed256bit) mulIntoUpper64(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
 		return x.Clear()
@@ -437,9 +438,8 @@ func (x *Fixed256bit) mulIntoUpper64(a, b uint64, y *Fixed256bit) *Fixed256bit {
 func (z *Fixed256bit) Mul(x, y *Fixed256bit) {
 
 	var (
-		alfa  = &Fixed256bit{} // Aggregate results
-		beta  = &Fixed256bit{} // Calculate intermediate
-		gamma = &Fixed256bit{} // Throwaway buffer
+		alfa = &Fixed256bit{} // Aggregate results
+		beta = &Fixed256bit{} // Calculate intermediate
 	)
 	// The numbers are internally represented as [ a, b, c, d ]
 	// We do the following operations
@@ -479,24 +479,24 @@ func (z *Fixed256bit) Mul(x, y *Fixed256bit) {
 	//
 	// b1 * d2 (upshift 128)
 
-	alfa.mulIntoLower64(x.d, y.d, beta)
+	alfa.mulIntoLower64(x.d, y.d)
 	alfa.a = x.d*y.a + x.c*y.b + x.b*y.c + x.a*y.d // Top ones, ignore overflow
 
-	beta.mulIntoMiddle64(x.d, y.c, gamma) //.lsh64(beta)
+	beta.mulIntoMiddle64(x.d, y.c) //.lsh64(beta)
 
 	alfa.Add(alfa, beta)
 
-	beta.mulIntoUpper64(x.d, y.b, gamma) //.lsh128(beta)
+	beta.mulIntoUpper64(x.d, y.b) //.lsh128(beta)
 
 	alfa.Add(alfa, beta)
 
-	beta.mulIntoMiddle64(x.c, y.d, gamma) //.lsh64(beta)
+	beta.mulIntoMiddle64(x.c, y.d) //.lsh64(beta)
 
 	alfa.Add(alfa, beta)
-	beta.mulIntoUpper64(x.c, y.c, gamma) //.lsh128(beta)
+	beta.mulIntoUpper64(x.c, y.c) //.lsh128(beta)
 	alfa.Add(alfa, beta)
 
-	beta.mulIntoUpper64(x.b, y.d, gamma) //.lsh128(beta)
+	beta.mulIntoUpper64(x.b, y.d) //.lsh128(beta)
 	z.Add(alfa, beta)
 
 }
@@ -807,7 +807,7 @@ func (z *Fixed256bit) lshOne() {
 // Lsh sets z = x << n and returns z.
 func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 	// n % 64 == 0
-	if n & 0x3f == 0 {
+	if n&0x3f == 0 {
 		switch n {
 		case 0:
 			return z.Copy(x)
@@ -865,7 +865,7 @@ sh192:
 // Rsh sets z = x >> n and returns z.
 func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
 	// n % 64 == 0
-	if n & 0x3f == 0 {
+	if n&0x3f == 0 {
 		switch n {
 		case 0:
 			return z.Copy(x)
