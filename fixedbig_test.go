@@ -128,6 +128,21 @@ func TestRandomMul(t *testing.T) {
 		}
 	}
 }
+func TestRandomSquare(t *testing.T) {
+	for i := 0; i < 100000; i++ {
+		b, f1, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		f1a := f1.Clone()
+		f1.Squared()
+		b.Mul(b, b)
+		if eq := checkEq(b, f1); !eq {
+			bf, _ := NewFixedFromBig(b)
+			t.Fatalf("Expected equality:\nf1= %v\n[ ^2 ]==\nf = %v\nbf= %v\nb = %x\n", f1a.Hex(), f1.Hex(), bf.Hex(), b)
+		}
+	}
+}
 func TestRandomDiv(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -505,9 +520,35 @@ func benchmark_Mul_Bit(bench *testing.B) {
 		f.Mul(fa, fb)
 	}
 }
+
+func benchmark_Squared_Bit(bench *testing.B) {
+	a := big.NewInt(0).SetBytes(common.Hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+	fa, _ := NewFixedFromBig(a)
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		f := NewFixed().Copy(fa)
+		f.Squared()
+	}
+}
+func benchmark_Squared_Big(bench *testing.B) {
+	a := big.NewInt(0).SetBytes(common.Hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		b1 := big.NewInt(0)
+		b1.Mul(a, a)
+		U256(b1)
+	}
+}
+
 func Benchmark_Mul(bench *testing.B) {
 	bench.Run("big", benchmark_Mul_Big)
 	bench.Run("fixedbit", benchmark_Mul_Bit)
+}
+func Benchmark_Square(bench *testing.B) {
+	bench.Run("big", benchmark_Squared_Big)
+	bench.Run("fixedbit", benchmark_Squared_Bit)
 }
 
 func benchmark_And_Big(bench *testing.B) {

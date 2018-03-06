@@ -366,20 +366,20 @@ func (z *Fixed256bit) SubOverflow(x, y *Fixed256bit) bool {
 	return underflow
 }
 
-// mulIntoLower64 multiplies two 64-bit uints and sets the result in x. The parameter y
-// is used as a buffer, and will be overwritten (does not have to be cleared prior
-// to usage.
-func (x *Fixed256bit) mulIntoLower64(a, b uint64) *Fixed256bit {
+// mulIntoLower128 multiplies two 64-bit uints and sets the result as the lower two uint64s (c,d) in x.
+// This method does not touch the upper two (a,b)
+func (x *Fixed256bit) mulIntoLower128(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
-		return x.Clear()
+		x.c, x.d = 0,0
+		return x
 	}
 	low_a := a & bitmask32
 	low_b := b & bitmask32
 	high_a := a >> 32
 	high_b := b >> 32
 
-	x.a, x.b, x.c, x.d = 0, 0, high_a*high_b, low_a*low_b
+	x.c, x.d = high_a*high_b, low_a*low_b
 
 	d := low_a * high_b // Needs up 32
 	x.addLow128(d>>32, (d&bitmask32)<<32)
@@ -390,18 +390,20 @@ func (x *Fixed256bit) mulIntoLower64(a, b uint64) *Fixed256bit {
 	return x
 }
 
-// mulIntoMiddle64 equals mulIntoLower(..).lsh64()
-func (x *Fixed256bit) mulIntoMiddle64(a, b uint64) *Fixed256bit {
+// mulIntoMiddle128 multiplies two 64-bit uints and sets the result as the middle two uint64s (b,c) in x.
+// This method does not touch the other two (a,d)
+func (x *Fixed256bit) mulIntoMiddle128(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
-		return x.Clear()
+		x.b, x.c = 0,0
+		return x
 	}
 	low_a := a & bitmask32
 	low_b := b & bitmask32
 	high_a := a >> 32
 	high_b := b >> 32
 
-	x.a, x.b, x.c, x.d = 0, high_a*high_b, low_a*low_b, 0
+	x.b, x.c = high_a*high_b, low_a*low_b
 
 	d := low_a * high_b // Needs up 32
 	x.addMiddle128(d>>32, (d&bitmask32)<<32)
@@ -412,18 +414,20 @@ func (x *Fixed256bit) mulIntoMiddle64(a, b uint64) *Fixed256bit {
 	return x
 }
 
-// mulIntoMiddle64 equals mulIntoLower(..).lsh128()
-func (x *Fixed256bit) mulIntoUpper64(a, b uint64) *Fixed256bit {
+// mulIntoUpper128 multiplies two 64-bit uints and sets the result as the upper two uint64s (a,b) in x.
+// This method does not touch the other two (c,d)
+func (x *Fixed256bit) mulIntoUpper128(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
-		return x.Clear()
+		x.a, x.b = 0,0
+		return x
 	}
 	low_a := a & bitmask32
 	low_b := b & bitmask32
 	high_a := a >> 32
 	high_b := b >> 32
 
-	x.a, x.b, x.c, x.d = high_a*high_b, low_a*low_b, 0, 0
+	x.a, x.b = high_a*high_b, low_a*low_b
 
 	d := low_a * high_b // Needs up 32
 	x.addHigh128(d>>32, (d&bitmask32)<<32)
@@ -479,27 +483,47 @@ func (z *Fixed256bit) Mul(x, y *Fixed256bit) {
 	//
 	// b1 * d2 (upshift 128)
 
-	alfa.mulIntoLower64(x.d, y.d)
-	alfa.a = x.d*y.a + x.c*y.b + x.b*y.c + x.a*y.d // Top ones, ignore overflow
+	alfa.mulIntoLower128(x.d, y.d)
+	alfa.mulIntoUpper128(x.d, y.b)
+	alfa.a += x.d*y.a + x.c*y.b + x.b*y.c + x.a*y.d // Top ones, ignore overflow
 
-	beta.mulIntoMiddle64(x.d, y.c) //.lsh64(beta)
-
-	alfa.Add(alfa, beta)
-
-	beta.mulIntoUpper64(x.d, y.b) //.lsh128(beta)
+	beta.mulIntoMiddle128(x.d, y.c)
 
 	alfa.Add(alfa, beta)
 
-	beta.mulIntoMiddle64(x.c, y.d) //.lsh64(beta)
-
+	beta.Clear().mulIntoMiddle128(x.c, y.d)
 	alfa.Add(alfa, beta)
-	beta.mulIntoUpper64(x.c, y.c) //.lsh128(beta)
+	beta.Clear().mulIntoUpper128(x.c, y.c)
 	alfa.Add(alfa, beta)
-
-	beta.mulIntoUpper64(x.b, y.d) //.lsh128(beta)
+	beta.Clear().mulIntoUpper128(x.b, y.d)
 	z.Add(alfa, beta)
 
 }
+func (x *Fixed256bit) Squared() {
+
+	var (
+		alfa = &Fixed256bit{} // Aggregate results
+		beta = &Fixed256bit{} // Calculate intermediate
+	)
+	// This algo is based on Mul, but since it's squaring, we know that
+	// e.g. x.b*y.c + x.c*y.c == 2 * x.b * x.c, and can save some calculations
+	// 2 * d * b
+	alfa.mulIntoUpper128(x.d, x.b).lshOne()
+	alfa.mulIntoLower128(x.d, x.d)
+
+	// 2 * a * d + 2 * b * c
+	alfa.a += (x.d*x.a + x.c*x.b) << 1
+
+	// 2 * d * c
+	beta.mulIntoMiddle128(x.d, x.c).lshOne()
+	alfa.Add(alfa, beta)
+
+	// c * c
+	beta.Clear().mulIntoUpper128(x.c, x.c)
+	x.Add(alfa, beta)
+}
+
+
 func (z *Fixed256bit) setBit(n uint) {
 	// n == 0 -> LSB
 	// n == 256 -> MSB
@@ -1009,7 +1033,8 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-		base.Mul(base, base)
+		base.Squared()
+		//base.Mul(base, base)
 		word >>= 1
 	}
 
@@ -1018,7 +1043,8 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-		base.Mul(base, base)
+				base.Squared()
+		//base.Mul(base, base)
 		word >>= 1
 	}
 
@@ -1027,7 +1053,8 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-		base.Mul(base, base)
+				base.Squared()
+		//base.Mul(base, base)
 		word >>= 1
 	}
 
@@ -1036,7 +1063,8 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-		base.Mul(base, base)
+				base.Squared()
+		//base.Mul(base, base)
 		word >>= 1
 	}
 	return z
