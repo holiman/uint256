@@ -75,174 +75,63 @@ func (z *Fixed256bit) Clone() *Fixed256bit {
 
 const bitmask32 = 0x00000000ffffffff
 
-func add64(a uint64, b uint64, carry uint64) (uint64, uint64) {
-
-	var (
-		q, sum uint64
-	)
-	sum = carry + (a & bitmask32) + (b & bitmask32)
-	q = sum & bitmask32
-	carry = sum >> 32
-	sum = carry + (a >> 32) + (b >> 32)
-	q |= (sum & bitmask32) << 32
-	carry = sum >> 32
-	return q, carry
+func u64Add(a, b uint64, c bool) (uint64, bool) {
+	if c {
+		e := a + b + 1
+		return e, (e <= a) // || (e <= b)
+	}
+	e := a + b
+	return e, (e < a) //|| (e < b)
 }
-
-// Add2 sets z to the sum x+y
-func (z *Fixed256bit) Add2(x, y *Fixed256bit) {
-
-	var (
-		carry, sum uint64
-		q          uint64
-	)
-	// Least significant
-	sum = (y.d & bitmask32) + (x.d & bitmask32)
-	carry = sum >> 32
-	sum = carry + (y.d >> 32) + (x.d >> 32)
-	carry = sum >> 32
-	z.d = x.d + y.d
-
-	//	z.c, carry = add64(y.c, x.c, carry)
-	// Written out as:
-
-	sum = carry + (y.c & bitmask32) + (x.c & bitmask32)
-	q = sum & bitmask32
-	carry = sum >> 32
-	sum = carry + (y.c >> 32) + (x.c >> 32)
-	q |= (sum & bitmask32) << 32
-	carry = sum >> 32
-	z.c = q
-
-	//	z.b, carry = add64(y.b, x.b, carry)
-	sum = carry + (y.b & bitmask32) + (x.b & bitmask32)
-	q = sum & bitmask32
-	carry = sum >> 32
-	sum = carry + (y.b >> 32) + (x.b >> 32)
-	q |= (sum & bitmask32) << 32
-	carry = sum >> 32
-	z.b = q
-
-	z.a = x.a + y.a + carry
+func u64Sub(a, b uint64, c bool) (uint64, bool) {
+	if c {
+		return a - b - 1, b >= a
+	}
+	return a - b, b > a
 }
 
 // Add sets z to the sum x+y
 func (z *Fixed256bit) Add(x, y *Fixed256bit) {
 
 	var (
-		sum   uint64
-		carry uint64
+		carry bool
 	)
 	// LSB
-	sum = x.d + y.d
-	if sum < x.d {
-		carry = 1
-	}
-	z.d = sum
-
-	// Next 64 bits
-	sum = x.c + y.c
-	if sum < x.c {
-		sum += carry
-		carry = 1
-	} else {
-		sum += carry
-		if sum < x.c {
-			carry = 1
-		} else {
-			carry = 0
-		}
-	}
-	z.c = sum
-	// Second to last group
-	sum = x.b + y.b
-
-	if sum < x.b {
-		sum += carry
-		carry = 1
-	} else {
-		sum += carry
-		if sum < x.b {
-			carry = 1
-		} else {
-			carry = 0
-		}
-	}
-	z.b = sum
-
+	z.d, carry = u64Add(x.d, y.d, carry)
+	z.c, carry = u64Add(x.c, y.c, carry)
+	z.b, carry = u64Add(x.b, y.b, carry)
 	// Last group
-	z.a = x.a + y.a + carry
-
+	z.a = x.a + y.a
+	if carry {
+		z.a++
+	}
 }
 
 // addLow128 adds two uint64 integers to x, as c and d ( d is the least significant)
 func (x *Fixed256bit) addLow128(c, d uint64) {
-
 	var (
-		sum   uint64
-		carry uint64
+		carry bool
 	)
-	// LSB
-	sum = x.d + d
-	if sum < x.d {
-		carry = 1
-	}
-	x.d = sum
-
-	// Next 64 bits
-	sum = x.c + c
-
-	if sum < x.c {
-		sum += carry
-		carry = 1
-	} else {
-		sum += carry
-		if sum < x.c {
-			carry = 1
-		} else {
-			// done
-			x.c = sum
-			return
+	x.d, carry = u64Add(x.d, d, carry)
+	x.c, carry = u64Add(x.c, c, carry)
+	if carry {
+		x.b++
+		if x.b == 0 {
+			x.a++
 		}
 	}
-	x.c = sum
-	sum = x.b + carry
-	if sum < x.b {
-		x.a = x.a + 1
-	}
-	x.b = sum
 }
 
 // addMiddle128 adds two uint64 integers to x, as b and c ( d is the least significant)
 func (x *Fixed256bit) addMiddle128(b, c uint64) {
-
 	var (
-		sum   uint64
-		carry uint64
+		carry bool
 	)
-	sum = x.c + c
-	if sum < x.c {
-		carry = 1
+	x.c, carry = u64Add(x.c, c, carry)
+	x.b, carry = u64Add(x.b, b, carry)
+	if carry {
+		x.a++
 	}
-	x.c = sum
-
-	// Next 64 bits
-	sum = x.b + b
-
-	if sum < x.b {
-		sum += carry
-		carry = 1
-	} else {
-		sum += carry
-		if sum < x.b {
-			carry = 1
-		} else {
-			// done
-			x.b = sum
-			return
-		}
-	}
-	x.a = x.a + 1
 }
 
 // addMiddle128 adds two uint64 integers to x, as a and b ( a is the most significant)
@@ -371,7 +260,7 @@ func (z *Fixed256bit) SubOverflow(x, y *Fixed256bit) bool {
 func (x *Fixed256bit) mulIntoLower128(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
-		x.c, x.d = 0,0
+		x.c, x.d = 0, 0
 		return x
 	}
 	low_a := a & bitmask32
@@ -395,7 +284,7 @@ func (x *Fixed256bit) mulIntoLower128(a, b uint64) *Fixed256bit {
 func (x *Fixed256bit) mulIntoMiddle128(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
-		x.b, x.c = 0,0
+		x.b, x.c = 0, 0
 		return x
 	}
 	low_a := a & bitmask32
@@ -419,7 +308,7 @@ func (x *Fixed256bit) mulIntoMiddle128(a, b uint64) *Fixed256bit {
 func (x *Fixed256bit) mulIntoUpper128(a, b uint64) *Fixed256bit {
 
 	if a == 0 || b == 0 {
-		x.a, x.b = 0,0
+		x.a, x.b = 0, 0
 		return x
 	}
 	low_a := a & bitmask32
@@ -494,9 +383,11 @@ func (z *Fixed256bit) Mul(x, y *Fixed256bit) {
 	beta.Clear().mulIntoMiddle128(x.c, y.d)
 	alfa.Add(alfa, beta)
 	beta.Clear().mulIntoUpper128(x.c, y.c)
-	alfa.Add(alfa, beta)
+
+	alfa.addHigh128(beta.a, beta.b)
 	beta.Clear().mulIntoUpper128(x.b, y.d)
-	z.Add(alfa, beta)
+	alfa.addHigh128(beta.a, beta.b)
+	z.Copy(alfa)
 
 }
 func (x *Fixed256bit) Squared() {
@@ -520,9 +411,9 @@ func (x *Fixed256bit) Squared() {
 
 	// c * c
 	beta.Clear().mulIntoUpper128(x.c, x.c)
-	x.Add(alfa, beta)
+	alfa.addHigh128(beta.a, beta.b)
+	x.Copy(alfa)
 }
-
 
 func (z *Fixed256bit) setBit(n uint) {
 	// n == 0 -> LSB
@@ -1043,7 +934,7 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-				base.Squared()
+		base.Squared()
 		//base.Mul(base, base)
 		word >>= 1
 	}
@@ -1053,7 +944,7 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-				base.Squared()
+		base.Squared()
 		//base.Mul(base, base)
 		word >>= 1
 	}
@@ -1063,7 +954,7 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		if word&1 == 1 {
 			z.Mul(z, base)
 		}
-				base.Squared()
+		base.Squared()
 		//base.Mul(base, base)
 		word >>= 1
 	}
