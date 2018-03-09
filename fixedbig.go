@@ -419,10 +419,12 @@ func (z *Fixed256bit) setBit(n uint) {
 	// n == 0 -> LSB
 	// n == 256 -> MSB
 	var w *uint64
-	if n < 64 {
-		w = &z.d
-	} else if n < 128 {
-		w = &z.c
+	if n < 128 {
+		if n < 64 {
+			w = &z.d
+		} else {
+			w = &z.c
+		}
 	} else if n < 192 {
 		w = &z.b
 	} else if n < 256 {
@@ -441,10 +443,12 @@ func (z *Fixed256bit) isBitSet(n uint) bool {
 	// n == 0 -> LSB
 	// n == 256 -> MSB
 	var w uint64
-	if n < 64 {
-		w = z.d
-	} else if n < 128 {
-		w = z.c
+	if n < 128 {
+		if n < 64 {
+			w = z.d
+		} else {
+			w = z.c
+		}
 	} else if n < 192 {
 		w = z.b
 	} else if n < 256 {
@@ -585,10 +589,7 @@ func (f *Fixed256bit) Gt(g *Fixed256bit) bool {
 	if f.c < g.c {
 		return false
 	}
-	if f.d > g.d {
-		return true
-	}
-	return false
+	return f.d > g.d
 }
 
 // SetIfGt sets f to 1 if f > g
@@ -620,10 +621,7 @@ func (f *Fixed256bit) Lt(g *Fixed256bit) bool {
 	if f.c > g.c {
 		return false
 	}
-	if f.d < g.d {
-		return true
-	}
-	return false
+	return f.d < g.d
 }
 
 // SetIfLt sets f to 1 if f < g
@@ -715,7 +713,6 @@ func (z *Fixed256bit) lshOne() {
 	a = z.b >> 63
 	z.b = (z.b << 1) | b
 
-	b = z.a >> 63
 	z.a = (z.a << 1) | a
 }
 
@@ -741,9 +738,10 @@ func (z *Fixed256bit) Lsh(x *Fixed256bit, n uint) *Fixed256bit {
 	)
 	// Big swaps first
 	switch {
-	case n > 256:
-		return z.Clear()
 	case n > 192:
+		if n > 256 {
+			return z.Clear()
+		}
 		z.lsh192(x)
 		n -= 192
 		goto sh192
@@ -799,9 +797,10 @@ func (z *Fixed256bit) Rsh(x *Fixed256bit, n uint) *Fixed256bit {
 	)
 	// Big swaps first
 	switch {
-	case n > 256:
-		return z.Clear()
 	case n > 192:
+		if n > 256 {
+			return z.Clear()
+		}
 		z.rsh192(x)
 		n -= 192
 		goto sh192
