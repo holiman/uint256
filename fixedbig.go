@@ -25,7 +25,20 @@ import (
 )
 
 var (
-	tt256 = BigPow(2, 256)
+	bigtt256 = BigPow(2, 256)
+	MinusOne = &Fixed256bit{
+		a: 0x7fffffffffffffff,
+		b: 0xffffffffffffffff,
+		c: 0xffffffffffffffff,
+		d: 0xffffffffffffffff,
+	}
+	tt255 = &Fixed256bit{
+		a: 0x8000000000000000,
+		b: 0x0000000000000000,
+		c: 0x0000000000000000,
+		d: 0x0000000000000000,
+	}
+	zero = &Fixed256bit{}
 )
 
 // BigPow returns a ** b as a big integer.
@@ -41,11 +54,12 @@ type Fixed256bit struct {
 	d uint64 // Least significant
 }
 
-// newFixedFromBig is a convenience-constructor from big.Int. Not optimized for speed, mainly for easy testing
+// newFixedFromBig is a convenience-constructor from big.Int.
+// returns a new Fixed256bit and whether overflow occurred
 func NewFixedFromBig(int *big.Int) (*Fixed256bit, bool) {
 	// Let's not ruin the argument
 	z := &Fixed256bit{}
-	overflow := z.Set(int)
+	overflow := z.SetFromBig(int)
 	return z, overflow
 }
 
@@ -53,14 +67,29 @@ func NewFixed() *Fixed256bit {
 	return &Fixed256bit{}
 }
 
-// Set is a convenience-setter from big.Int. Not optimized for speed, mainly for easy testing
-func (z *Fixed256bit) Set(int *big.Int) bool {
+// Uint64 returns the lower 64-bits of z
+func (z *Fixed256bit) Uint64() uint64 {
+	return z.d
+}
+
+// Uint64 returns the lower 64-bits of z and bool whether overflow occurred
+func (z *Fixed256bit) Uint64WithOverflow() (uint64, bool) {
+	return z.d, (z.a != 0 || z.b != 0 || z.c != 0)
+}
+
+// Uint64 returns the lower 64-bits of z as int64
+func (z *Fixed256bit) Int64() int64 {
+	return int64(z.d)
+}
+
+// SetFromBig is a convenience-setter from big.Int. Not optimized for speed, mainly for easy testing
+func (z *Fixed256bit) SetFromBig(int *big.Int) bool {
 	// Let's not ruin the argument
 	x := new(big.Int).Set(int)
 
 	for x.Cmp(new(big.Int)) < 0 {
 		// Below 0
-		x.Add(tt256, x)
+		x.Add(bigtt256, x)
 	}
 	z.d = x.Uint64()
 	z.c = x.Rsh(x, 64).Uint64()
@@ -69,6 +98,25 @@ func (z *Fixed256bit) Set(int *big.Int) bool {
 	x.Rsh(x, 64).Uint64()
 	return len(x.Bits()) != 0
 }
+
+// Set sets z to a (via copying)
+func (z *Fixed256bit) Set(a *Fixed256bit) *Fixed256bit {
+	z.a, z.b, z.c, z.d = a.a, a.b, a.c, a.d
+	return z
+}
+
+// SetBytes interprets buf as the bytes of a big-endian unsigned
+// integer, sets z to that value, and returns z.
+func (z *Fixed256bit) SetBytes(buf []byte) {
+	panic("implement me")
+}
+
+// GetBytes returns a the 32 bytes of z (little-endian)
+func (z *Fixed256bit) GetBytes() []byte {
+	panic("implement me")
+}
+
+// Clone create a new Fixed256bit identical to z
 func (z *Fixed256bit) Clone() *Fixed256bit {
 	return &Fixed256bit{z.a, z.b, z.c, z.d}
 }
@@ -105,6 +153,11 @@ func (z *Fixed256bit) Add(x, y *Fixed256bit) {
 	if carry {
 		z.a++
 	}
+}
+
+// AddOverflow sets z to the sum x+y, and returns whether overflow occurred
+func (z *Fixed256bit) AddOverflow(x, y *Fixed256bit) bool {
+	panic("implement me")
 }
 
 // addLow128 adds two uint64 integers to x, as c and d ( d is the least significant)
@@ -148,6 +201,18 @@ func (x *Fixed256bit) addHigh128(a, b uint64) {
 	}
 	x.b = sum
 	x.a += a
+}
+
+// PaddedBytes encodes a Fixed256bit as a 0-padded byte slice. The length
+// of the slice is at least n bytes.
+// Example, z =1, n = 20 => [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
+func (z *Fixed256bit) PaddedBytes(n int) []byte {
+	panic("implement me")
+}
+
+// Sub64 set z to the difference x - y, where y is a 64 bit uint
+func (z *Fixed256bit) Sub64(x *Fixed256bit, y uint64) {
+	panic("implement me")
 }
 
 // Sub sets z to the difference x-y
@@ -465,7 +530,6 @@ func (z *Fixed256bit) isBitSet(n uint) bool {
 
 // Div sets z to the quotient n/d for returns z.
 // If d == 0, z is set to 0
-// Div implements Euclidean division (unlike Go); see DivMod for more details.
 func (z *Fixed256bit) Div(n, d *Fixed256bit) *Fixed256bit {
 	if d.IsZero() || d.Gt(n) {
 		return z.Clear()
@@ -490,7 +554,7 @@ func (z *Fixed256bit) Div(n, d *Fixed256bit) *Fixed256bit {
 	for i := n.Bitlen() - 1; i >= 0; i-- {
 		// Left-shift r by 1 bit
 		r.lshOne()
-		// Set the least-significant bit of r equal to bit i of the numerator
+		// SetFromBig the least-significant bit of r equal to bit i of the numerator
 		if ni := n.isBitSet(uint(i)); ni {
 			r.d |= 1
 		}
@@ -503,6 +567,85 @@ func (z *Fixed256bit) Div(n, d *Fixed256bit) *Fixed256bit {
 	return z
 }
 
+// Abs interprets x as a a signed number, and sets z to the Abs value
+//   S256(0)        = 0
+//   S256(1)        = 1
+//   S256(2**255)   = -2**255
+//   S256(2**256-1) = -1
+
+func (z *Fixed256bit) Abs() *Fixed256bit {
+	if z.Lt(tt255) {
+		return z
+	}
+	z.Sub(zero, z)
+	return z
+}
+func (z *Fixed256bit) Neg() *Fixed256bit {
+	z.Sub(zero, z)
+	return z
+}
+
+// Sdiv interprets n and d as signed integers, does a
+// signed division on the two operands and sets z to the result
+// If d == 0, z is set to 0
+func (z *Fixed256bit) Sdiv(n, d *Fixed256bit) *Fixed256bit {
+	if d.IsZero() || n.IsZero() {
+		return z.Clear()
+	}
+	if n.Eq(d) {
+		return z.SetOne()
+	}
+	// Shortcut some cases
+	if n.IsUint64() && d.IsUint64() {
+		return z.SetUint64(n.d / d.d)
+	}
+	if n.Sign() > 0 {
+		if d.Sign() > 0 {
+			z.Div(n, d)
+			return z
+		} else {
+			z.Div(n, d.Neg())
+			return z.Neg()
+		}
+	}
+	if d.Sign() < 0 {
+		z.Div(n.Neg(), d.Neg())
+		return z
+	}
+	z.Div(n.Neg(), d)
+	return z.Neg()
+}
+
+// Mod sets z to the modulus x%y for y != 0 and returns z.
+// If y == 0, z is set to 0 (OBS: differs from the big.Int)
+func (z *Fixed256bit) Mod(x, y *Fixed256bit) *Fixed256bit {
+	panic("TODO implement me")
+}
+
+// Smod interprets x and y as signed integers sets z to
+// (sign x) * { abs(x) modulus abs(y) }
+// If y == 0, z is set to 0 (OBS: differs from the big.Int)
+func (z *Fixed256bit) Smod(x, y *Fixed256bit) *Fixed256bit {
+	panic("TODO implement me")
+}
+
+// Sign returns:
+//
+//	-1 if z <  0
+//	 0 if z == 0
+//	+1 if z >  0
+// Where z is interpreted as a signed number
+func (z *Fixed256bit) Sign() int {
+	if z.IsZero() {
+		return 0
+	}
+	if z.Lt(MinusOne) {
+		return 1
+	}
+	return -1
+}
+
+// Bitlen returns the number of bits required to represent x
 func (x *Fixed256bit) Bitlen() int {
 	switch {
 	case x.a != 0:
@@ -514,17 +657,6 @@ func (x *Fixed256bit) Bitlen() int {
 	default:
 		return bits.Len64(x.d)
 	}
-}
-
-// Mod sets z to the modulus x%y for y != 0 and returns z.
-// If y == 0, z is set to 0 (OBS: differs from the big.Int)
-// Mod implements Euclidean modulus (unlike Go); see DivMod for more details.
-func (z *Fixed256bit) Mod(x, y *Fixed256bit) *Fixed256bit {
-	if y.IsZero() {
-		return z.Clear()
-	}
-	panic("TODO! Implement me")
-	return z
 }
 
 func (z *Fixed256bit) lsh64(x *Fixed256bit) *Fixed256bit {
@@ -592,6 +724,18 @@ func (f *Fixed256bit) Gt(g *Fixed256bit) bool {
 	return f.d > g.d
 }
 
+// Slt interprets x and y as signed integers, and returns
+// true if x < y
+func (x *Fixed256bit) Slt(y *Fixed256bit) bool {
+	panic("TODO")
+}
+
+// Sgt interprets x and y as signed integers, and returns
+// true if x ., y
+func (x *Fixed256bit) Sgt(y *Fixed256bit) bool {
+	panic("TODO")
+}
+
 // SetIfGt sets f to 1 if f > g
 func (f *Fixed256bit) SetIfGt(g *Fixed256bit) {
 	if f.Gt(g) {
@@ -632,6 +776,8 @@ func (f *Fixed256bit) SetIfLt(g *Fixed256bit) {
 		f.Clear()
 	}
 }
+
+// SetUint64 sets f to the value a
 func (f *Fixed256bit) SetUint64(a uint64) *Fixed256bit {
 	f.a, f.b, f.c, f.d = 0, 0, 0, a
 	return f
@@ -642,7 +788,9 @@ func (f *Fixed256bit) Eq(g *Fixed256bit) bool {
 	return (f.a == g.a) && (f.b == g.b) && (f.c == g.c) && (f.d == g.d)
 }
 
-// Eq returns true if f == g
+// SetIfEq sets f to
+// 1 if f == g
+// 0 if f != g
 func (f *Fixed256bit) SetIfEq(g *Fixed256bit) {
 	if (f.a == g.a) && (f.b == g.b) && (f.c == g.c) && (f.d == g.d) {
 		f.SetOne()
@@ -667,9 +815,14 @@ func (x *Fixed256bit) Cmp(y *Fixed256bit) (r int) {
 	return 0
 }
 
-// ltsmall can be used to check if x is smaller than n
-func (x *Fixed256bit) ltSmall(n uint64) bool {
+// LtUint64 returns true if x is smaller than n
+func (x *Fixed256bit) LtUint64(n uint64) bool {
 	return x.a == 0 && x.b == 0 && x.c == 0 && x.d < n
+}
+
+// LtUint64 returns true if x is larger than n
+func (x *Fixed256bit) GtUint64(n uint64) bool {
+	return x.a != 0 || x.b != 0 || x.c != 0 || x.d > n
 }
 
 // IsUint64 reports whether x can be represented as a uint64.
@@ -833,6 +986,15 @@ sh192:
 
 	return z
 }
+
+// Srsh (Signed/Arithmetic right shift)
+// considers z to be a signed integer, during right-shift
+// and sets z = x >> n and returns z.
+func (z *Fixed256bit) Srsh(x *Fixed256bit, n uint) *Fixed256bit {
+	panic("implement me")
+}
+
+// Copy copies the value x into z, and returns z
 func (z *Fixed256bit) Copy(x *Fixed256bit) *Fixed256bit {
 	z.a, z.b, z.c, z.d = x.a, x.b, x.c, x.d
 	return z
@@ -866,10 +1028,12 @@ func (z *Fixed256bit) Xor(x, y *Fixed256bit) *Fixed256bit {
 }
 
 // Byte sets f to the value of the byte at position n,
+// with 'f' considered as a big-endian 32-byte integer
+// if 'n' > 32, f is set to 0
 // Example: f = '5', n=31 => 5
 func (f *Fixed256bit) Byte(n *Fixed256bit) *Fixed256bit {
 	var number uint64
-	if n.ltSmall(32) {
+	if n.LtUint64(32) {
 		if n.d > 24 {
 			// f.d holds bytes [24 .. 31]
 			number = f.d
@@ -891,15 +1055,19 @@ func (f *Fixed256bit) Byte(n *Fixed256bit) *Fixed256bit {
 	return f
 }
 
+// Hex returns a hex representation of f
 func (f *Fixed256bit) Hex() string {
 	return fmt.Sprintf("%016x.%016x.%016x.%016x", f.a, f.b, f.c, f.d)
 }
 
-// Exp implements exponentiation by squaring.
-// Exp returns a newly-allocated big integer and does not change
+// Exp implements exponentiation by squaring, and sets
+// z to base^exp
+func (z *Fixed256bit) Exp(base, exponent *Fixed256bit) *Fixed256bit {
+	return z.Set(ExpF(base, exponent))
+}
+
+// ExpF returns a newly-allocated big integer and does not change
 // base or exponent.
-//
-// Courtesy @karalabe and @chfast, with improvements by @holiman
 func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 	z := &Fixed256bit{a: 0, b: 0, c: 0, d: 1}
 	// b^0 == 1
@@ -958,4 +1126,12 @@ func ExpF(base, exponent *Fixed256bit) *Fixed256bit {
 		word >>= 1
 	}
 	return z
+}
+
+//Extend length of two’s complement signed integer
+// sets z to
+//  - num if back  > 31
+//  - num interpreted as a signed number with sign-bit at (back*8+7), extended to the full 256 bits
+func (z *Fixed256bit) SignExtend(back, num *Fixed256bit) {
+	panic("implement me")
 }

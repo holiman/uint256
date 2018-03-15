@@ -29,6 +29,19 @@ func randNums() (*big.Int, *Fixed256bit, error) {
 	err := checkOverflow(b, f, overflow)
 	return b, f, err
 }
+func randHighNums() (*big.Int, *Fixed256bit, error) {
+	//How many bits? 0-256
+	nbits := int64(256)
+	//Max random value, a 130-bits integer, i.e 2^130
+	max := new(big.Int)
+	max.Exp(big.NewInt(2), big.NewInt(nbits), nil)
+	//Generate cryptographically strong pseudo-random between 0 - max
+	b, _ := rand.Int(rand.Reader, max)
+	f, overflow := NewFixedFromBig(b)
+	fmt.Printf("f %v\n",f.Hex())
+	err := checkOverflow(b, f, overflow)
+	return b, f, err
+}
 func checkEq(b *big.Int, f *Fixed256bit) bool {
 	f2, _ := NewFixedFromBig(b)
 	return f.Eq(f2)
@@ -126,11 +139,11 @@ func TestRandomSquare(t *testing.T) {
 }
 func TestRandomDiv(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		b, f1, err := randNums()
+		b, f1, err := randHighNums()
 		if err != nil {
 			t.Fatal(err)
 		}
-		b2, f2, err := randNums()
+		b2, f2, err := randHighNums()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -145,6 +158,72 @@ func TestRandomDiv(t *testing.T) {
 		if eq := checkEq(b, f1); !eq {
 			bf, _ := NewFixedFromBig(b)
 			t.Fatalf("Expected equality:\nf1= %v\nf2= %v\n[ / ]==\nf = %v\nbf= %v\nb = %x\n", f1a.Hex(), f2a.Hex(), f1.Hex(), bf.Hex(), b)
+		}
+	}
+}
+
+var bigtt255 = BigPow(2, 255)
+func S256(x *big.Int) *big.Int {
+	if x.Cmp(bigtt255) < 0 {
+		return x
+	} else {
+		return new(big.Int).Sub(x, bigtt256)
+	}
+}
+
+func TestRandomAbs(t *testing.T) {
+	fmt.Printf("tt255 %x\n", bigtt255)
+	fmt.Printf("tt256 %x\n", bigtt256)
+	for i := 0; i < 10000; i++ {
+		b, f1, err := randHighNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		U256(b)
+		b2 := S256(big.NewInt(0).Set(b))
+		b2.Abs(b2)
+		f1a := f1.Clone().Abs()
+
+		if eq := checkEq(b2, f1a); !eq {
+			bf, _ := NewFixedFromBig(b2)
+			t.Fatalf("Expected equality:\nf1= %v\n[ abs ]==\nf = %v\nbf= %v\nb = %x\n", f1.Hex(), f1a.Hex(), bf.Hex(), b2)
+		}
+	}
+}
+
+func TestRandomSDiv(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		b, f1, err := randHighNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b2, f2, err := randHighNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		U256(b)
+		U256(b2)
+
+		f1a, f2a := f1.Clone(), f2.Clone()
+
+
+		f1aAbs, f2aAbs := f1.Clone().Abs(), f2.Clone().Abs()
+
+		f1.Sdiv(f1, f2)
+		if b2.BitLen() == 0 {
+			// zero
+			b = big.NewInt(0)
+		} else {
+			bb1 := S256(big.NewInt(0).Set(b))
+			bb2 := S256(big.NewInt(0).Set(b2))
+
+
+			b = Sdiv(bb1, bb2)
+		}
+		if eq := checkEq(b, f1); !eq {
+			bf, _ := NewFixedFromBig(b)
+			t.Fatalf("Expected equality:\nf1  = %v\nf2  = %v\n\n\nabs1= %v\nabs2= %v\n[sdiv]==\nf   = %v\nbf  = %v\nb   = %x\n",
+				f1a.Hex(), f2a.Hex(), f1aAbs.Hex(), f2aAbs.Hex(),f1.Hex(), bf.Hex(), b)
 		}
 	}
 }
@@ -192,7 +271,7 @@ const (
 )
 
 var (
-	tt256m1 = new(big.Int).Sub(tt256, big.NewInt(1))
+	tt256m1 = new(big.Int).Sub(bigtt256, big.NewInt(1))
 )
 
 // U256 encodes as a 256 bit two's complement number. This operation is destructive.
@@ -220,6 +299,22 @@ func Exp(base, exponent *big.Int) *big.Int {
 	return result
 }
 
+func Sdiv(x, y *big.Int) *big.Int {
+	if y.Sign() == 0 {
+		return new(big.Int)
+
+	}
+	n := new(big.Int)
+	if x.Sign() == y.Sign(){
+//	if n.Mul(x, y).Sign() < 0 {
+		n.SetInt64(-1)
+	} else {
+		n.SetInt64(1)
+	}
+	res := x.Div(x.Abs(x), y.Abs(y))
+	res.Mul(res, n)
+	return res
+}
 func TestRandomExp(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b_base, base, err := randNums()
@@ -433,11 +528,10 @@ func benchmark_Add_Big(bench *testing.B) {
 		b.Add(b, b2)
 	}
 }
-func Benchmark_Add(bench *testing.B){
+func Benchmark_Add(bench *testing.B) {
 	bench.Run("big", benchmark_Add_Big)
 	bench.Run("fixedbit", benchmark_Add_Bit)
 }
-
 
 func benchmark_SubOverflow_Bit(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(common.Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
@@ -471,7 +565,7 @@ func benchmark_Sub_Big(bench *testing.B) {
 		b1.Sub(b1, b2)
 	}
 }
-func Benchmark_Sub(bench *testing.B){
+func Benchmark_Sub(bench *testing.B) {
 	bench.Run("big", benchmark_Sub_Big)
 	bench.Run("fixedbit", benchmark_Sub_Bit)
 	bench.Run("fixedbit_of", benchmark_SubOverflow_Bit)
@@ -625,7 +719,6 @@ func Benchmark_Cmp(bench *testing.B) {
 	bench.Run("big", benchmark_Cmp_Big)
 	bench.Run("fixedbit", benchmark_Cmp_Bit)
 }
-
 
 func benchmark_Lsh_Big(n uint, bench *testing.B) {
 	original := big.NewInt(0).SetBytes(common.Hex2Bytes("FBCDEF090807060504030201ffffffffFBCDEF090807060504030201ffffffff"))
@@ -817,6 +910,10 @@ func Benchmark_Exp(bench *testing.B) {
 	bench.Run("small/big", benchmark_ExpSmall_Big)
 	bench.Run("small/fixedbit", benchmark_ExpSmall_Bit)
 }
+func Benchmark_SDiv(bench *testing.B) {
+	bench.Run("large/big", benchmark_SdivLarge_Big)
+	bench.Run("large/fixedbit", benchmark_SdivLarge_Bit)
+}
 
 func Benchmark_Div(bench *testing.B) {
 	bench.Run("large/big", benchmark_DivLarge_Big)
@@ -871,5 +968,29 @@ func benchmark_DivLarge_Bit(bench *testing.B) {
 	for i := 0; i < bench.N; i++ {
 		f := NewFixed()
 		f.Div(fa, fb)
+	}
+}
+func benchmark_SdivLarge_Big(bench *testing.B) {
+	a := big.NewInt(0).SetBytes(common.Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
+	b := big.NewInt(0).SetBytes(common.Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		a = S256(a)
+		b = S256(b)
+		Sdiv(a,b)
+	}
+}
+
+func benchmark_SdivLarge_Bit(bench *testing.B) {
+	a := big.NewInt(0).SetBytes(common.Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
+	b := big.NewInt(0).SetBytes(common.Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
+	fa, _ := NewFixedFromBig(a)
+	fb, _ := NewFixedFromBig(b)
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		f := NewFixed()
+		f.Sdiv(fa, fb)
 	}
 }
