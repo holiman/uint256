@@ -237,9 +237,16 @@ func (z *Int) SubOverflow(x, y *Int) bool {
 	var (
 		underflow bool
 	)
-	for i, _ := range z {
-		z[i], underflow = u64Sub(x[i], y[i], underflow)
+	if z[0], underflow = u64Sub(z[0], y, underflow); !underflow {
+		return false
 	}
+	if z[1], underflow = u64Sub(z[1], 0, underflow); !underflow {
+		return false
+	}
+	if z[2], underflow = u64Sub(z[2], 0, underflow); !underflow {
+		return false
+	}
+	z[3], underflow = u64Sub(z[3], 0, underflow)
 	return underflow
 }
 
@@ -897,25 +904,28 @@ func (z *Int) Copy(x *Int) *Int {
 
 // Or sets z = x | y and returns z.
 func (z *Int) Or(x, y *Int) *Int {
-	for i, _ := range z {
-		z[i] = x[i] | y[i]
-	}
+	z[0] = x[0] | y[0]
+	z[1] = x[1] | y[1]
+	z[2] = x[2] | y[2]
+	z[3] = x[3] | y[3]
 	return z
 }
 
 // And sets z = x & y and returns z.
 func (z *Int) And(x, y *Int) *Int {
-	for i, _ := range z {
-		z[i] = x[i] & y[i]
-	}
+	z[0] = x[0] & y[0]
+	z[1] = x[1] & y[1]
+	z[2] = x[2] & y[2]
+	z[3] = x[3] & y[3]
 	return z
 }
 
 // Xor sets z = x ^ y and returns z.
 func (z *Int) Xor(x, y *Int) *Int {
-	for i, _ := range z {
-		z[i] = x[i] ^ y[i]
-	}
+	z[0] = x[0] ^ y[0]
+	z[1] = x[1] ^ y[1]
+	z[2] = x[2] ^ y[2]
+	z[3] = x[3] ^ y[3]
 	return z
 }
 
