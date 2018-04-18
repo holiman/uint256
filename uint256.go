@@ -115,7 +115,7 @@ func (z *Int) Uint64() uint64 {
 
 // Uint64 returns the lower 64-bits of z and bool whether overflow occurred
 func (z *Int) Uint64WithOverflow() (uint64, bool) {
-	return z[0], (z[1] != 0 || z[2] != 0 || z[3] != 0)
+	return z[0], z[1] != 0 || z[2] != 0 || z[3] != 0
 }
 
 // Uint64 returns the lower 63-bits of z as int64
@@ -134,10 +134,10 @@ const bitmask32 = 0x00000000ffffffff
 func u64Add(a, b uint64, c bool) (uint64, bool) {
 	if c {
 		e := a + b + 1
-		return e, (e <= a)
+		return e, e <= a
 	}
 	e := a + b
-	return e, (e < a)
+	return e, e < a
 }
 
 // u64Add adds return a-b-carry and whether underflow occurred
@@ -237,16 +237,10 @@ func (z *Int) SubOverflow(x, y *Int) bool {
 	var (
 		underflow bool
 	)
-	if z[0], underflow = u64Sub(z[0], y, underflow); !underflow {
-		return false
-	}
-	if z[1], underflow = u64Sub(z[1], 0, underflow); !underflow {
-		return false
-	}
-	if z[2], underflow = u64Sub(z[2], 0, underflow); !underflow {
-		return false
-	}
-	z[3], underflow = u64Sub(z[3], 0, underflow)
+	z[0], underflow = u64Sub(x[0], y[0], underflow)
+	z[1], underflow = u64Sub(x[1], y[1], underflow)
+	z[2], underflow = u64Sub(x[2], y[2], underflow)
+	z[3], underflow = u64Sub(z[3], y[3], underflow)
 	return underflow
 }
 
@@ -393,29 +387,29 @@ func (z *Int) Mul(x, y *Int) {
 	z.Copy(alfa)
 
 }
-func (x *Int) Squared() {
+func (z *Int) Squared() {
 
 	var (
 		alfa = &Int{} // Aggregate results
 		beta = &Int{} // Calculate intermediate
 	)
 	// This algo is based on Mul, but since it's squaring, we know that
-	// e.g. x.b*y.c + x.c*y.c == 2 * x.b * x.c, and can save some calculations
+	// e.g. z.b*y.c + z.c*y.c == 2 * z.b * z.c, and can save some calculations
 	// 2 * d * b
-	alfa.mulIntoUpper128(x[0], x[2]).lshOne()
-	alfa.mulIntoLower128(x[0], x[0])
+	alfa.mulIntoUpper128(z[0], z[2]).lshOne()
+	alfa.mulIntoLower128(z[0], z[0])
 
 	// 2 * a * d + 2 * b * c
-	alfa[3] += (x[0]*x[3] + x[1]*x[2]) << 1
+	alfa[3] += (z[0]*z[3] + z[1]*z[2]) << 1
 
 	// 2 * d * c
-	beta.mulIntoMiddle128(x[0], x[1]).lshOne()
+	beta.mulIntoMiddle128(z[0], z[1]).lshOne()
 	alfa.Add(alfa, beta)
 
 	// c * c
-	beta.Clear().mulIntoUpper128(x[1], x[1])
+	beta.Clear().mulIntoUpper128(z[1], z[1])
 	alfa.addHigh128(beta[3], beta[2])
-	x.Copy(alfa)
+	z.Copy(alfa)
 }
 
 func (z *Int) setBit(n uint) *Int {
@@ -560,16 +554,16 @@ func (z *Int) Sign() int {
 }
 
 // Bitlen returns the number of bits required to represent x
-func (x *Int) Bitlen() int {
+func (z *Int) Bitlen() int {
 	switch {
-	case x[3] != 0:
-		return 192 + bits.Len64(x[3])
-	case x[2] != 0:
-		return 128 + bits.Len64(x[2])
-	case x[1] != 0:
-		return 64 + bits.Len64(x[1])
+	case z[3] != 0:
+		return 192 + bits.Len64(z[3])
+	case z[2] != 0:
+		return 128 + bits.Len64(z[2])
+	case z[1] != 0:
+		return 64 + bits.Len64(z[1])
 	default:
-		return bits.Len64(x[0])
+		return bits.Len64(z[0])
 	}
 }
 
@@ -627,94 +621,94 @@ func (z *Int) Gt(x *Int) bool {
 	return z[0] > z[0]
 }
 
-// Slt interprets x and y as signed integers, and returns
-// true if x < y
-func (x *Int) Slt(y *Int) bool {
-	if x.Sign() > 0 {
-		if y.Sign() > 0 {
+// Slt interprets z and x as signed integers, and returns
+// true if z < x
+func (z *Int) Slt(x *Int) bool {
+	if z.Sign() > 0 {
+		if x.Sign() > 0 {
 			// pos < pos ?
-			return x.Lt(y)
+			return z.Lt(x)
 		} else {
 			// pos < neg ?
 			return false
 		}
 	}
-	if y.Sign() > 0 {
+	if x.Sign() > 0 {
 		// neg < pos ?
 		return true
 	}
 	// neg < neg
-	// -x < -y
-	// x > y
-	return x.Gt(y)
+	// -z < -x
+	// z > x
+	return z.Gt(x)
 }
 
-// Sgt interprets x and y as signed integers, and returns
-// true if x > y
-func (x *Int) Sgt(y *Int) bool {
-	if x.Sign() > 0 {
-		if y.Sign() > 0 {
+// Sgt interprets z and x as signed integers, and returns
+// true if z > x
+func (z *Int) Sgt(x *Int) bool {
+	if z.Sign() > 0 {
+		if x.Sign() > 0 {
 			// pos > pos ?
-			return x.Gt(y)
+			return z.Gt(x)
 		} else {
 			// pos > neg ?
 			return true
 		}
 	}
-	if y.Sign() > 0 {
+	if x.Sign() > 0 {
 		// neg > pos ?
 		return false
 	}
 	// neg > neg
-	// -x > -y
-	// x < y
-	return x.Lt(y)
+	// -z > -x
+	// z < x
+	return z.Lt(x)
 }
 
-// SetIfGt sets f to 1 if f > g
-func (f *Int) SetIfGt(g *Int) {
-	if f.Gt(g) {
-		f.SetOne()
+// SetIfGt sets z to 1 if z > x
+func (z *Int) SetIfGt(x *Int) {
+	if z.Gt(x) {
+		z.SetOne()
 	} else {
-		f.Clear()
+		z.Clear()
 	}
 }
 
-// Lt returns true if l < g
-func (f *Int) Lt(g *Int) bool {
-	if f[3] < g[3] {
+// Lt returns true if z < x
+func (z *Int) Lt(x *Int) bool {
+	if z[3] < x[3] {
 		return true
 	}
-	if f[3] > g[3] {
+	if z[3] > x[3] {
 		return false
 	}
-	if f[2] < g[2] {
+	if z[2] < x[2] {
 		return true
 	}
-	if f[2] > g[2] {
+	if z[2] > x[2] {
 		return false
 	}
-	if f[1] < g[1] {
+	if z[1] < x[1] {
 		return true
 	}
-	if f[1] > g[1] {
+	if z[1] > x[1] {
 		return false
 	}
-	return f[0] < g[0]
+	return z[0] < x[0]
 }
 
-// SetIfLt sets f to 1 if f < g
-func (f *Int) SetIfLt(g *Int) {
-	if f.Lt(g) {
-		f.SetOne()
+// SetIfLt sets z to 1 if z < x
+func (z *Int) SetIfLt(x *Int) {
+	if z.Lt(x) {
+		z.SetOne()
 	} else {
-		f.Clear()
+		z.Clear()
 	}
 }
 
-// SetUint64 sets f to the value a
-func (z *Int) SetUint64(n uint64) *Int {
-	z[3], z[2], z[1], z[0] = 0, 0, 0, n
+// SetUint64 sets z to the value x
+func (z *Int) SetUint64(x uint64) *Int {
+	z[3], z[2], z[1], z[0] = 0, 0, 0, x
 	return z
 }
 
@@ -734,17 +728,17 @@ func (z *Int) SetIfEq(x *Int) {
 	}
 }
 
-// Cmp compares x and y and returns:
+// Cmp compares z and x and returns:
 //
-//   -1 if x <  y
-//    0 if x == y
-//   +1 if x >  y
+//   -1 if z <  x
+//    0 if z == x
+//   +1 if z >  x
 //
-func (x *Int) Cmp(y *Int) (r int) {
-	if x.Gt(y) {
+func (z *Int) Cmp(x *Int) (r int) {
+	if z.Gt(x) {
 		return 1
 	}
-	if x.Lt(y) {
+	if z.Lt(x) {
 		return -1
 	}
 	return 0
@@ -978,9 +972,9 @@ func (z *Int) Byte(n *Int) *Int {
 	return z.Clear()
 }
 
-// Hex returns a hex representation of f
-func (f *Int) Hex() string {
-	return fmt.Sprintf("%016x.%016x.%016x.%016x", f[3], f[2], f[1], f[0])
+// Hex returns a hex representation of z
+func (z *Int) Hex() string {
+	return fmt.Sprintf("%016x.%016x.%016x.%016x", z[3], z[2], z[1], z[0])
 }
 
 // Exp implements exponentiation by squaring, and sets
