@@ -80,8 +80,8 @@ func (z *Int) SetBytes(buf []byte) *Int {
 	k := 0
 	s := uint64(0)
 	i := len(buf)
+	z[0], z[1], z[2], z[3] = 0, 0, 0, 0
 	for ; i > 0; i-- {
-		//fmt.Printf("buf[i-1] %x \n",buf[i-1])
 		d |= uint64(buf[i-1]) << s
 		if s += 8; s == 64 {
 			z[k] = d
@@ -99,11 +99,11 @@ func (z *Int) SetBytes(buf []byte) *Int {
 	return z
 }
 
-// GetBytes returns a the 32 bytes of z (little-endian)
+// Bytes returns a the 32 bytes of z (little-endian)
 func (z *Int) Bytes() [32]byte {
 	var b [32]byte
 	for i := 0; i < 32; i++ {
-		b[32-i] = byte(z[i/8] >> uint64(8*(i%8)))
+		b[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
 	}
 	return b
 }
@@ -432,7 +432,7 @@ func (z *Int) isBitSet(n uint) bool {
 
 // Div sets z to the quotient n/d for returns z.
 // If d == 0, z is set to 0
-func (z *Int) Div(n, d *Int) *Int {
+func (z *Int) SlowDiv(n, d *Int) *Int {
 	if d.IsZero() || d.Gt(n) {
 		return z.Clear()
 	}
@@ -466,6 +466,96 @@ func (z *Int) Div(n, d *Int) *Int {
 		}
 	}
 	z.Copy(q)
+	return z
+}
+
+// Div sets z to the quotient n/d for returns z.
+// If d == 0, z is set to 0
+func (z *Int) Div(n, d *Int) *Int {
+	if d.IsZero() || d.Gt(n) {
+		return z.Clear()
+	}
+	if n.Eq(d) {
+		return z.SetOne()
+	}
+	// Shortcut some cases
+	if n.IsUint64() {
+		return z.SetUint64(n.Uint64() / d.Uint64())
+	}
+	// At this point, we know
+	// n/d ; n > d > 0
+	// For now, fall back to wrapping bigint,
+	// which has asm implementations. This results in about
+	// doubling the runtime, and is ripe for optimizatio
+	x := new(big.Int)
+	y := new(big.Int)
+	nb := n.Bytes()
+	db := d.Bytes()
+	x.SetBytes(nb[:])
+	y.SetBytes(db[:])
+	x.Div(x, y)
+	z.SetFromBig(x)
+	return z
+
+}
+
+// Mod sets z to the modulus x%y for y != 0 and returns z.
+// If y == 0, z is set to 0 (OBS: differs from the big.Int)
+func (z *Int) Mod(x, y *Int) *Int {
+	if x.IsZero() || y.IsZero() {
+		return z.Clear()
+	}
+	switch x.Cmp(y) {
+	case -1:
+		// x < y
+		copy(z[:], x[:])
+		return x
+	case 0:
+		// x == y
+		return z.Clear() // They are equal
+	}
+
+	// At this point:
+	// x != 0
+	// y != 0
+	// x > y
+
+	// Shortcut trivial case
+	if x.IsUint64() {
+		return z.SetUint64(x.Uint64() % y.Uint64())
+	}
+	// Wrap bigint
+	bx := new(big.Int)
+	by := new(big.Int)
+	nx := x.Bytes()
+	ny := y.Bytes()
+	bx.SetBytes(nx[:])
+	by.SetBytes(ny[:])
+	bx.Mod(bx, by)
+	z.SetFromBig(bx)
+	return z
+}
+
+// Smod interprets x and y as signed integers sets z to
+// (sign x) * { abs(x) modulus abs(y) }
+// If y == 0, z is set to 0 (OBS: differs from the big.Int)
+// OBS! Modifies x and y
+func (z *Int) Smod(x, y *Int) *Int {
+	ys := y.Sign()
+	xs := x.Sign()
+
+	// abs x
+	if xs == -1 {
+		x.Neg()
+	}
+	// abs y
+	if ys == -1 {
+		y.Neg()
+	}
+	z.Mod(x, y)
+	if xs == -1 {
+		z.Neg()
+	}
 	return z
 }
 
@@ -522,19 +612,6 @@ func (z *Int) Sdiv(n, d *Int) *Int {
 	// neg / pos
 	z.Div(n.Neg(), d)
 	return z.Neg()
-}
-
-// Mod sets z to the modulus x%y for y != 0 and returns z.
-// If y == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) Mod(x, y *Int) *Int {
-	panic("TODO implement me")
-}
-
-// Smod interprets x and y as signed integers sets z to
-// (sign x) * { abs(x) modulus abs(y) }
-// If y == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) Smod(x, y *Int) *Int {
-	panic("TODO implement me")
 }
 
 // Sign returns:
@@ -618,7 +695,7 @@ func (z *Int) Gt(x *Int) bool {
 	if z[1] < x[1] {
 		return false
 	}
-	return z[0] > z[0]
+	return z[0] > x[0]
 }
 
 // Slt interprets z and x as signed integers, and returns

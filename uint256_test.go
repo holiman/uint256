@@ -38,7 +38,7 @@ func randHighNums() (*big.Int, *Int, error) {
 	//Generate cryptographically strong pseudo-random between 0 - max
 	b, _ := rand.Int(rand.Reader, max)
 	f, overflow := FromBig(b)
-	fmt.Printf("f %v\n", f.Hex())
+	//fmt.Printf("f %v\n", f.Hex())
 	err := checkOverflow(b, f, overflow)
 	return b, f, err
 }
@@ -164,6 +164,31 @@ func TestRandomDiv(t *testing.T) {
 			} else {
 				b1.Div(b2, b3)
 			}
+		},
+	)
+}
+
+func TestRandomMod(t *testing.T) {
+	testRandomOp(t,
+		func(f1, f2, f3 *Int) {
+			f1.Mod(f2, f3)
+		},
+		func(b1, b2, b3 *big.Int) {
+			if b3.Sign() == 0 {
+				b1.SetUint64(0)
+			} else {
+				b1.Mod(b2, b3)
+			}
+		},
+	)
+}
+func TestRandomSMod(t *testing.T) {
+	testRandomOp(t,
+		func(f1, f2, f3 *Int) {
+			f1.Smod(f2, f3)
+		},
+		func(b1, b2, b3 *big.Int) {
+			b1.Set(Smod(b2,b3))
 		},
 	)
 }
@@ -319,6 +344,21 @@ func Sdiv(x, y *big.Int) *big.Int {
 	res := x.Div(x.Abs(x), y.Abs(y))
 	res.Mul(res, n)
 	return res
+}
+func Smod(x, y *big.Int) *big.Int {
+	res := new(big.Int)
+	if y.Sign() == 0 {
+		return res
+	}
+
+	if x.Sign() < 0 {
+		res.Mod(x.Abs(x), y.Abs(y))
+		res.Neg(res)
+	} else {
+		res.Mod(x.Abs(x), y.Abs(y))
+	}
+	return U256(res)
+
 }
 func TestRandomExp(t *testing.T) {
 	for i := 0; i < 10000; i++ {
@@ -923,6 +963,7 @@ func Benchmark_SDiv(bench *testing.B) {
 func Benchmark_Div(bench *testing.B) {
 	bench.Run("large/big", benchmark_DivLarge_Big)
 	bench.Run("large/fixedbit", benchmark_DivLarge_Bit)
+
 	bench.Run("small/big", benchmark_DivSmall_Big)
 	bench.Run("small/fixedbit", benchmark_DivSmall_Bit)
 }
@@ -976,19 +1017,20 @@ func benchmark_DivLarge_Bit(bench *testing.B) {
 	}
 }
 func benchmark_SdivLarge_Big(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(common.Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
+	a := big.NewInt(0).SetBytes(common.Hex2Bytes("800fffffffffffffffffffffffffd1e870eec79504c60144cc7f5fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
 
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		a = S256(a)
 		b = S256(b)
-		Sdiv(a, b)
+
+		U256(Sdiv(a, b))
 	}
 }
 
 func benchmark_SdivLarge_Bit(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(common.Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
+	a := big.NewInt(0).SetBytes(common.Hex2Bytes("800fffffffffffffffffffffffffd1e870eec79504c60144cc7f5fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(common.Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
 	fa, _ := FromBig(a)
 	fb, _ := FromBig(b)
@@ -999,3 +1041,4 @@ func benchmark_SdivLarge_Bit(bench *testing.B) {
 		f.Sdiv(fa, fb)
 	}
 }
+
