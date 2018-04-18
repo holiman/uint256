@@ -3,9 +3,10 @@ package uint256
 import (
 	"crypto/rand"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func checkOverflow(b *big.Int, f *Int, overflow bool) error {
@@ -158,9 +159,9 @@ func TestRandomDiv(t *testing.T) {
 			f1.Div(f2, f3)
 		},
 		func(b1, b2, b3 *big.Int) {
-			if b3.Sign() == 0{
+			if b3.Sign() == 0 {
 				b1.SetUint64(0)
-			}else{
+			} else {
 				b1.Div(b2, b3)
 			}
 		},

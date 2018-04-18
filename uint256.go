@@ -166,7 +166,7 @@ func (z *Int) Add(x, y *Int) {
 // AddOverflow sets z to the sum x+y, and returns whether overflow occurred
 func (z *Int) AddOverflow(x, y *Int) bool {
 	var carry bool
-	for i, _ := range z {
+	for i := range z {
 		z[i], carry = u64Add(x[i], y[i], carry)
 	}
 	return carry
@@ -474,25 +474,7 @@ func (z *Int) Div(n, d *Int) *Int {
 	z.Copy(q)
 	return z
 }
-// Div sets z to the quotient n/d for returns z.
-// If d == 0, z is set to 0
-func (z *Int) KDiv(n, d *Int) *Int {
-	if d.IsZero() || d.Gt(n) {
-		return z.Clear()
-	}
-	if n.Eq(d) {
-		return z.SetOne()
-	}
-	// Shortcut some cases
-	if n.IsUint64() {
-		return z.SetUint64(n.Uint64() / d.Uint64())
-	}
-	// At this point, we know
-	// n/d ; n > d > 0
 
-
-
-}
 // Abs interprets x as a a signed number, and sets z to the Abs value
 //   S256(0)        = 0
 //   S256(1)        = 1
@@ -648,16 +630,16 @@ func (z *Int) Gt(x *Int) bool {
 // Slt interprets x and y as signed integers, and returns
 // true if x < y
 func (x *Int) Slt(y *Int) bool {
-	if x.Sign() > 0{
-		if y.Sign() > 0{
+	if x.Sign() > 0 {
+		if y.Sign() > 0 {
 			// pos < pos ?
 			return x.Lt(y)
-		}else{
+		} else {
 			// pos < neg ?
 			return false
 		}
 	}
-	if y.Sign() > 0{
+	if y.Sign() > 0 {
 		// neg < pos ?
 		return true
 	}
@@ -670,16 +652,16 @@ func (x *Int) Slt(y *Int) bool {
 // Sgt interprets x and y as signed integers, and returns
 // true if x > y
 func (x *Int) Sgt(y *Int) bool {
-	if x.Sign() > 0{
-		if y.Sign() > 0{
+	if x.Sign() > 0 {
+		if y.Sign() > 0 {
 			// pos > pos ?
 			return x.Gt(y)
-		}else{
+		} else {
 			// pos > neg ?
 			return true
 		}
 	}
-	if y.Sign() > 0{
+	if y.Sign() > 0 {
 		// neg > pos ?
 		return false
 	}
