@@ -474,7 +474,25 @@ func (z *Int) Div(n, d *Int) *Int {
 	z.Copy(q)
 	return z
 }
+// Div sets z to the quotient n/d for returns z.
+// If d == 0, z is set to 0
+func (z *Int) KDiv(n, d *Int) *Int {
+	if d.IsZero() || d.Gt(n) {
+		return z.Clear()
+	}
+	if n.Eq(d) {
+		return z.SetOne()
+	}
+	// Shortcut some cases
+	if n.IsUint64() {
+		return z.SetUint64(n.Uint64() / d.Uint64())
+	}
+	// At this point, we know
+	// n/d ; n > d > 0
 
+
+
+}
 // Abs interprets x as a a signed number, and sets z to the Abs value
 //   S256(0)        = 0
 //   S256(1)        = 1
@@ -496,6 +514,7 @@ func (z *Int) Neg() *Int {
 // Sdiv interprets n and d as signed integers, does a
 // signed division on the two operands and sets z to the result
 // If d == 0, z is set to 0
+// OBS! This method (potentially) modifies both n and d
 func (z *Int) Sdiv(n, d *Int) *Int {
 	if d.IsZero() || n.IsZero() {
 		return z.Clear()
@@ -629,14 +648,45 @@ func (z *Int) Gt(x *Int) bool {
 // Slt interprets x and y as signed integers, and returns
 // true if x < y
 func (x *Int) Slt(y *Int) bool {
-	x.Sign()
-	panic("TODO")
+	if x.Sign() > 0{
+		if y.Sign() > 0{
+			// pos < pos ?
+			return x.Lt(y)
+		}else{
+			// pos < neg ?
+			return false
+		}
+	}
+	if y.Sign() > 0{
+		// neg < pos ?
+		return true
+	}
+	// neg < neg
+	// -x < -y
+	// x > y
+	return x.Gt(y)
 }
 
 // Sgt interprets x and y as signed integers, and returns
 // true if x > y
 func (x *Int) Sgt(y *Int) bool {
-	panic("TODO")
+	if x.Sign() > 0{
+		if y.Sign() > 0{
+			// pos > pos ?
+			return x.Gt(y)
+		}else{
+			// pos > neg ?
+			return true
+		}
+	}
+	if y.Sign() > 0{
+		// neg > pos ?
+		return false
+	}
+	// neg > neg
+	// -x > -y
+	// x < y
+	return x.Lt(y)
 }
 
 // SetIfGt sets f to 1 if f > g
