@@ -64,6 +64,13 @@ func FromBig(int *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
+func (z  *Int) ToBig() (*big.Int){
+	x := new(big.Int)
+	b := z.Bytes()
+	x.SetBytes(b[:])
+	return x
+}
+
 // SetFromBig is a convenience-setter from big.Int. Not optimized for speed, mainly for easy testing
 func (z *Int) SetFromBig(int *big.Int) bool {
 	z.SetBytes(int.Bytes())
@@ -100,13 +107,24 @@ func (z *Int) SetBytes(buf []byte) *Int {
 }
 
 // Bytes returns a the 32 bytes of z (little-endian)
-func (z *Int) Bytes() [32]byte {
+func (z *Int) Bytes32() [32]byte {
 	var b [32]byte
 	for i := 0; i < 32; i++ {
 		b[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
 	}
 	return b
 }
+
+// Bytes returns the bytes of z
+func (z *Int) Bytes() []byte {
+	length := z.ByteLen()
+	buf := make([]byte, length)
+	for i := 0; i < length; i++ {
+		buf[length] = byte(z[i/8] >> uint64(8*(i%8)))
+	}
+	return buf
+}
+
 
 // Uint64 returns the lower 64-bits of z
 func (z *Int) Uint64() uint64 {
@@ -220,13 +238,13 @@ func (z *Int) PaddedBytes(n int) []byte {
 func (z *Int) Sub64(x *Int, y uint64) {
 	var underflow bool
 
-	if z[0], underflow = u64Sub(z[0], y, underflow); !underflow {
+	if z[0], underflow = u64Sub(x[0], y, underflow); !underflow {
 		return
 	}
-	if z[1], underflow = u64Sub(z[1], 0, underflow); !underflow {
+	if z[1], underflow = u64Sub(x[1], 0, underflow); !underflow {
 		return
 	}
-	if z[2], underflow = u64Sub(z[2], 0, underflow); !underflow {
+	if z[2], underflow = u64Sub(x[2], 0, underflow); !underflow {
 		return
 	}
 	z[3]--
@@ -453,7 +471,7 @@ func (z *Int) SlowDiv(n, d *Int) *Int {
 	r := &Int{}
 	q := &Int{}
 
-	for i := n.Bitlen() - 1; i >= 0; i-- {
+	for i := n.BitLen() - 1; i >= 0; i-- {
 		// Left-shift r by 1 bit
 		r.lshOne()
 		// SetFromBig the least-significant bit of r equal to bit i of the numerator
@@ -630,8 +648,8 @@ func (z *Int) Sign() int {
 	return -1
 }
 
-// Bitlen returns the number of bits required to represent x
-func (z *Int) Bitlen() int {
+// BitLen returns the number of bits required to represent x
+func (z *Int) BitLen() int {
 	switch {
 	case z[3] != 0:
 		return 192 + bits.Len64(z[3])
@@ -642,6 +660,9 @@ func (z *Int) Bitlen() int {
 	default:
 		return bits.Len64(z[0])
 	}
+}
+func (z *Int) ByteLen() int {
+	return (z.BitLen()+7) / 8
 }
 
 func (z *Int) lsh64(x *Int) *Int {
@@ -1077,7 +1098,7 @@ func ExpF(base, exponent *Int) *Int {
 		word uint64
 		bits int
 	)
-	expBitlen := exponent.Bitlen()
+	expBitlen := exponent.BitLen()
 
 	word = exponent[0]
 	bits = 0
@@ -1123,5 +1144,37 @@ func ExpF(base, exponent *Int) *Int {
 //  - num if back  > 31
 //  - num interpreted as a signed number with sign-bit at (back*8+7), extended to the full 256 bits
 func (z *Int) SignExtend(back, num *Int) {
-	panic("implement me")
+	if back.GtUint64(31){
+		z.Copy(num)
+		return
+	}
+	bit := uint(back.Uint64()*8+7)
+
+	mask := back.Lsh(back.SetOne(), bit)
+	mask.Sub64(mask, 1)
+	if num.isBitSet(bit){
+		num.Or(num, mask.Not())
+	}else{
+		num.And(num, mask)
+	}
+
 }
+/**
+	back := stack.pop()
+	if back.Cmp(big.NewInt(31)) < 0 {
+		bit := uint(back.Uint64()*8 + 7)
+		num := stack.pop()
+		mask := back.Lsh(common.Big1, bit)
+		mask.Sub(mask, common.Big1)
+		if num.Bit(int(bit)) > 0 {
+			num.Or(num, mask.Not(mask))
+		} else {
+			num.And(num, mask)
+		}
+
+		stack.push(math.U256(num))
+	}
+
+	evm.interpreter.intPool.put(back)
+return nil, nil
+ */
