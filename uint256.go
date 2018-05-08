@@ -64,7 +64,7 @@ func FromBig(int *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
-func (z  *Int) ToBig() (*big.Int){
+func (z *Int) ToBig() *big.Int {
 	x := new(big.Int)
 	b := z.Bytes()
 	x.SetBytes(b[:])
@@ -120,11 +120,10 @@ func (z *Int) Bytes() []byte {
 	length := z.ByteLen()
 	buf := make([]byte, length)
 	for i := 0; i < length; i++ {
-		buf[length] = byte(z[i/8] >> uint64(8*(i%8)))
+		buf[length-1-i] = byte(z[i/8] >> uint64(8*(i%8)))
 	}
 	return buf
 }
-
 
 // Uint64 returns the lower 64-bits of z
 func (z *Int) Uint64() uint64 {
@@ -148,7 +147,7 @@ func (z *Int) Clone() *Int {
 
 const bitmask32 = 0x00000000ffffffff
 
-// u64Add adds return a+b+carry and whether overflow occurred
+// u64Add returns a+b+carry and whether overflow occurred
 func u64Add(a, b uint64, c bool) (uint64, bool) {
 	if c {
 		e := a + b + 1
@@ -158,7 +157,7 @@ func u64Add(a, b uint64, c bool) (uint64, bool) {
 	return e, e < a
 }
 
-// u64Add adds return a-b-carry and whether underflow occurred
+// u64Sub returns a-b-carry and whether underflow occurred
 func u64Sub(a, b uint64, c bool) (uint64, bool) {
 	if c {
 		return a - b - 1, b >= a
@@ -229,7 +228,7 @@ func (z *Int) PaddedBytes(n int) []byte {
 	b := make([]byte, n)
 
 	for i := 0; i < 32 && i < n; i++ {
-		b[i] = byte(z[4-i/8] >> uint64(8*(i%8)))
+		b[n-1-i] = byte(z[i/8] >> uint64(8*(i%8)))
 	}
 	return b
 }
@@ -662,7 +661,7 @@ func (z *Int) BitLen() int {
 	}
 }
 func (z *Int) ByteLen() int {
-	return (z.BitLen()+7) / 8
+	return (z.BitLen() + 7) / 8
 }
 
 func (z *Int) lsh64(x *Int) *Int {
@@ -722,45 +721,34 @@ func (z *Int) Gt(x *Int) bool {
 // Slt interprets z and x as signed integers, and returns
 // true if z < x
 func (z *Int) Slt(x *Int) bool {
-	if z.Sign() > 0 {
-		if x.Sign() > 0 {
-			// pos < pos ?
-			return z.Lt(x)
-		} else {
-			// pos < neg ?
-			return false
-		}
-	}
-	if x.Sign() > 0 {
-		// neg < pos ?
+
+	zSign := z.Sign()
+	xSign := x.Sign()
+
+	switch {
+	case zSign >= 0 && xSign < 0:
+		return false
+	case zSign < 0 && xSign >= 0:
 		return true
+	default:
+		return z.Lt(x)
 	}
-	// neg < neg
-	// -z < -x
-	// z > x
-	return z.Gt(x)
 }
 
 // Sgt interprets z and x as signed integers, and returns
 // true if z > x
 func (z *Int) Sgt(x *Int) bool {
-	if z.Sign() > 0 {
-		if x.Sign() > 0 {
-			// pos > pos ?
-			return z.Gt(x)
-		} else {
-			// pos > neg ?
-			return true
-		}
-	}
-	if x.Sign() > 0 {
-		// neg > pos ?
+	zSign := z.Sign()
+	xSign := x.Sign()
+
+	switch {
+	case zSign >= 0 && xSign < 0:
+		return true
+	case zSign < 0 && xSign >= 0:
 		return false
+	default:
+		return z.Gt(x)
 	}
-	// neg > neg
-	// -z > -x
-	// z < x
-	return z.Lt(x)
 }
 
 // SetIfGt sets z to 1 if z > x
@@ -1058,9 +1046,11 @@ func (z *Int) Xor(x, y *Int) *Int {
 // if 'n' > 32, f is set to 0
 // Example: f = '5', n=31 => 5
 func (z *Int) Byte(n *Int) *Int {
+	// in z, z[0] is the least significant
+	//
 	if number, overflow := n.Uint64WithOverflow(); !overflow {
 		if number < 32 {
-			number := z[number/8]
+			number := z[4-1-number/8]
 			offset := (n[0] & 0x7) << 3 // 8*(n.d % 8)
 			z[0] = (number & (0xff00000000000000 >> offset)) >> (56 - offset)
 			z[3], z[2], z[1] = 0, 0, 0
@@ -1144,37 +1134,18 @@ func ExpF(base, exponent *Int) *Int {
 //  - num if back  > 31
 //  - num interpreted as a signed number with sign-bit at (back*8+7), extended to the full 256 bits
 func (z *Int) SignExtend(back, num *Int) {
-	if back.GtUint64(31){
+	if back.GtUint64(31) {
 		z.Copy(num)
 		return
 	}
-	bit := uint(back.Uint64()*8+7)
+	bit := uint(back.Uint64()*8 + 7)
 
 	mask := back.Lsh(back.SetOne(), bit)
 	mask.Sub64(mask, 1)
-	if num.isBitSet(bit){
+	if num.isBitSet(bit) {
 		num.Or(num, mask.Not())
-	}else{
+	} else {
 		num.And(num, mask)
 	}
 
 }
-/**
-	back := stack.pop()
-	if back.Cmp(big.NewInt(31)) < 0 {
-		bit := uint(back.Uint64()*8 + 7)
-		num := stack.pop()
-		mask := back.Lsh(common.Big1, bit)
-		mask.Sub(mask, common.Big1)
-		if num.Bit(int(bit)) > 0 {
-			num.Or(num, mask.Not(mask))
-		} else {
-			num.And(num, mask)
-		}
-
-		stack.push(math.U256(num))
-	}
-
-	evm.interpreter.intPool.put(back)
-return nil, nil
- */
