@@ -47,8 +47,8 @@ func bigPow(a, b int64) *big.Int {
 	return r.Exp(r, big.NewInt(b), nil)
 }
 
-// Int is represented as an array of 4 uint64, in big-endian order,
-// so that int[4] is the most significant, and int[0] is the least significant
+// Int is represented as an array of 4 uint64, in little-endian order,
+// so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
 func NewInt() *Int {
@@ -77,7 +77,7 @@ func (z *Int) SetFromBig(int *big.Int) bool {
 	if int.Sign() == -1 {
 		z.Neg()
 	}
-	return len(int.Bits()) > 64
+	return len(int.Bits()) > 32
 }
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
