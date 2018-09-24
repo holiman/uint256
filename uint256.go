@@ -486,34 +486,137 @@ func (z *Int) SlowDiv(n, d *Int) *Int {
 	return z
 }
 
-// Div sets z to the quotient n/d for returns z.
+func nlz(d *Int) uint {
+	for i := 3; i >= 0; i-- {
+		if d[i] != 0 {
+			return uint(bits.LeadingZeros64(d[i]) % 32)
+		}
+	}
+	return 0
+}
+
+// Normalized form of d.
+func shl(d *Int, s uint, isdividend bool) []uint32 {
+	dn := make([]uint32, 9)
+	for i := 0; i < 4; i++ {
+		dn[2 * i] = uint32(d[i])
+		dn[2 * i + 1] = uint32(d[i] >> 32)
+	}
+	var n int
+	for i := 7; i >= 0; i-- {
+		if dn[i] != 0 {
+			n = i
+			break
+		}
+	}
+	var prev, t uint32
+	for i := 0; i <= n; i++ {
+		t = dn[i]
+		dn[i] = prev | (dn[i] << s)
+		prev = t >> (32 - s)
+	}
+	if isdividend {
+		n = n + 1
+		dn[n] = prev
+	}
+	return dn[:n + 1]
+}
+
+func divKnuth(x, y []uint32) []uint32 {
+	m, n := len(x) - 1, len(y)
+	q := make([]uint32, m - n + 1)
+	// Number base (2**32)
+	var b uint64 = 0x100000000
+
+	// Take care of the case of a single-digit.
+	if n == 1 {
+		var k uint64
+		k = uint64(x[m])
+		for i := m - 1; i >= 0; i-- {
+			q[i] = uint32((k * b + uint64(x[i])) / uint64(y[0]))
+			k = k * b + uint64(x[i]) - uint64(q[i]) * uint64(y[0])
+		}
+		return q
+	}
+
+	// Main Loop
+	var qhat, rhat uint64
+	for j := m - n; j >= 0; j-- {
+		qhat = (uint64(x[j + n]) * b + uint64(x[j + n - 1])) / uint64(y[n - 1])
+		rhat = uint64(x[j + n]) * b + uint64(x[j + n - 1]) - qhat * uint64(y[n - 1])
+
+		AGAIN:
+		if qhat >= b || (qhat * uint64(y[n - 2]) > b * rhat + uint64(x[j + n - 2])) {
+			qhat = qhat - 1
+			rhat = rhat + uint64(y[n - 1])
+			if rhat < b {
+				goto AGAIN
+			}
+		}
+
+		// Multiply and subtract.
+		var p uint64
+		var t, k int64
+		for i := 0; i < n; i++ {
+			p = qhat * uint64(y[i])
+			t = int64(x[i + j]) - k - int64(p & 0xffffffff)
+			x[i + j] = uint32(t)
+			k = int64(p >> 32) - (t >> 32)
+		}
+		t = int64(x[j + n]) - k
+		x[j + n] = uint32(t)
+
+
+		q[j] = uint32(qhat)
+		if t < 0 {
+			// If we subtracted too much, add back.
+			q[j] = q[j] - 1
+			var k, t uint64
+			for i := 0; i < n; i++ {
+				t = uint64(x[i + j]) + uint64(y[i]) + k
+				x[i + j] = uint32(t)
+				k = t >> 32
+			}
+			x[j + n] = x[j + n] + uint32(k)
+		}
+	}
+	return q
+}
+
+// Div sets z to the quotient x/y for returns z.
 // If d == 0, z is set to 0
-func (z *Int) Div(n, d *Int) *Int {
-	if d.IsZero() || d.Gt(n) {
+func (z *Int) Div(x, y *Int) *Int {
+	if y.IsZero() || y.Gt(x) {
 		return z.Clear()
 	}
-	if n.Eq(d) {
+	if x.Eq(y) {
 		return z.SetOne()
 	}
 	// Shortcut some cases
-	if n.IsUint64() {
-		return z.SetUint64(n.Uint64() / d.Uint64())
+	if x.IsUint64() {
+		return z.SetUint64(x.Uint64() / y.Uint64())
 	}
-	// At this point, we know
-	// n/d ; n > d > 0
-	// For now, fall back to wrapping bigint,
-	// which has asm implementations. This results in about
-	// doubling the runtime, and is ripe for optimizatio
-	x := new(big.Int)
-	y := new(big.Int)
-	nb := n.Bytes()
-	db := d.Bytes()
-	x.SetBytes(nb[:])
-	y.SetBytes(db[:])
-	x.Div(x, y)
-	z.SetFromBig(x)
-	return z
 
+	// At this point, we know
+	// x/y ; x > y > 0
+	// See Knuth, Volume 2, section 4.3.1, Algorithm D.
+
+	// Normalize by shifting divisor left just enough so that its high-order
+	// bit is on and u left the same amount.
+	// function nlz do the caculating of the amount and shl do the left operation.
+	s := nlz(y)
+	xn := shl(x, s, true)
+	yn := shl(y, s, false)
+
+	// divKnuth do the division of normalized dividend and divisor with Knuth Algorithm D.
+	q := divKnuth(xn, yn)
+
+	z.Clear()
+	for i := 0; i < len(q); i++ {
+		z[i / 2] = z[i / 2] | uint64(q[i]) << (32 * (uint64(i) % 2))
+	}
+
+	return z
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
