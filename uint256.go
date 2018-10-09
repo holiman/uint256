@@ -20,6 +20,7 @@ package uint256
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"math/bits"
 )
@@ -499,8 +500,8 @@ func nlz(d *Int) uint {
 func shl(d *Int, s uint, isdividend bool) []uint32 {
 	dn := make([]uint32, 9)
 	for i := 0; i < 4; i++ {
-		dn[2 * i] = uint32(d[i])
-		dn[2 * i + 1] = uint32(d[i] >> 32)
+		dn[2*i] = uint32(d[i])
+		dn[2*i+1] = uint32(d[i] >> 32)
 	}
 	var n int
 	for i := 7; i >= 0; i-- {
@@ -519,12 +520,12 @@ func shl(d *Int, s uint, isdividend bool) []uint32 {
 		n = n + 1
 		dn[n] = prev
 	}
-	return dn[:n + 1]
+	return dn[:n+1]
 }
 
 func divKnuth(x, y []uint32) []uint32 {
-	m, n := len(x) - 1, len(y)
-	q := make([]uint32, m - n + 1)
+	m, n := len(x)-1, len(y)
+	q := make([]uint32, m-n+1)
 	// Number base (2**32)
 	var b uint64 = 0x100000000
 
@@ -533,8 +534,8 @@ func divKnuth(x, y []uint32) []uint32 {
 		var k uint64
 		k = uint64(x[m])
 		for i := m - 1; i >= 0; i-- {
-			q[i] = uint32((k * b + uint64(x[i])) / uint64(y[0]))
-			k = k * b + uint64(x[i]) - uint64(q[i]) * uint64(y[0])
+			q[i] = uint32((k*b + uint64(x[i])) / uint64(y[0]))
+			k = k*b + uint64(x[i]) - uint64(q[i])*uint64(y[0])
 		}
 		return q
 	}
@@ -542,13 +543,13 @@ func divKnuth(x, y []uint32) []uint32 {
 	// Main Loop
 	var qhat, rhat uint64
 	for j := m - n; j >= 0; j-- {
-		qhat = (uint64(x[j + n]) * b + uint64(x[j + n - 1])) / uint64(y[n - 1])
-		rhat = uint64(x[j + n]) * b + uint64(x[j + n - 1]) - qhat * uint64(y[n - 1])
+		qhat = (uint64(x[j+n])*b + uint64(x[j+n-1])) / uint64(y[n-1])
+		rhat = uint64(x[j+n])*b + uint64(x[j+n-1]) - qhat*uint64(y[n-1])
 
-		AGAIN:
-		if qhat >= b || (qhat * uint64(y[n - 2]) > b * rhat + uint64(x[j + n - 2])) {
+	AGAIN:
+		if qhat >= b || (qhat*uint64(y[n-2]) > b*rhat+uint64(x[j+n-2])) {
 			qhat = qhat - 1
-			rhat = rhat + uint64(y[n - 1])
+			rhat = rhat + uint64(y[n-1])
 			if rhat < b {
 				goto AGAIN
 			}
@@ -559,13 +560,12 @@ func divKnuth(x, y []uint32) []uint32 {
 		var t, k int64
 		for i := 0; i < n; i++ {
 			p = qhat * uint64(y[i])
-			t = int64(x[i + j]) - k - int64(p & 0xffffffff)
-			x[i + j] = uint32(t)
-			k = int64(p >> 32) - (t >> 32)
+			t = int64(x[i+j]) - k - int64(p&0xffffffff)
+			x[i+j] = uint32(t)
+			k = int64(p>>32) - (t >> 32)
 		}
-		t = int64(x[j + n]) - k
-		x[j + n] = uint32(t)
-
+		t = int64(x[j+n]) - k
+		x[j+n] = uint32(t)
 
 		q[j] = uint32(qhat)
 		if t < 0 {
@@ -573,11 +573,11 @@ func divKnuth(x, y []uint32) []uint32 {
 			q[j] = q[j] - 1
 			var k, t uint64
 			for i := 0; i < n; i++ {
-				t = uint64(x[i + j]) + uint64(y[i]) + k
-				x[i + j] = uint32(t)
+				t = uint64(x[i+j]) + uint64(y[i]) + k
+				x[i+j] = uint32(t)
 				k = t >> 32
 			}
-			x[j + n] = x[j + n] + uint32(k)
+			x[j+n] = x[j+n] + uint32(k)
 		}
 	}
 	return q
@@ -613,7 +613,7 @@ func (z *Int) Div(x, y *Int) *Int {
 
 	z.Clear()
 	for i := 0; i < len(q); i++ {
-		z[i / 2] = z[i / 2] | uint64(q[i]) << (32 * (uint64(i) % 2))
+		z[i/2] = z[i/2] | uint64(q[i])<<(32*(uint64(i)%2))
 	}
 
 	return z
@@ -791,6 +791,18 @@ func (z *Int) rsh192(x *Int) *Int {
 	z[3], z[2], z[1], z[0] = 0, 0, 0, x[3]
 	return z
 }
+func (z *Int) srsh64(x *Int) *Int {
+	z[3], z[2], z[1], z[0] = math.MaxUint64, x[3], x[2], x[1]
+	return z
+}
+func (z *Int) srsh128(x *Int) *Int {
+	z[3], z[2], z[1], z[0] = math.MaxUint64, math.MaxUint64, x[3], x[2]
+	return z
+}
+func (z *Int) srsh192(x *Int) *Int {
+	z[3], z[2], z[1], z[0] = math.MaxUint64, math.MaxUint64, math.MaxUint64, x[3]
+	return z
+}
 
 // Not sets z = ^x and returns z.
 func (z *Int) Not() *Int {
@@ -964,6 +976,12 @@ func (z *Int) Clear() *Int {
 	return z
 }
 
+// SetAllOne sets all the bits of z to 1
+func (z *Int) SetAllOne() *Int {
+	z[3], z[2], z[1], z[0] = math.MaxUint64, math.MaxUint64, math.MaxUint64, math.MaxUint64
+	return z
+}
+
 // SetOne sets z to 1
 func (z *Int) SetOne() *Int {
 	z[3], z[2], z[1], z[0] = 0, 0, 0, 1
@@ -1108,7 +1126,62 @@ sh192:
 // considers z to be a signed integer, during right-shift
 // and sets z = x >> n and returns z.
 func (z *Int) Srsh(x *Int, n uint) *Int {
-	panic("implement me")
+	// If the MSB is 0, Srsh is same as Rsh.
+	if !z.isBitSet(255) {
+		return z.Rsh(x, n)
+	}
+	// n % 64 == 0
+	if n&0x3f == 0 {
+		switch n {
+		case 0:
+			return z.Copy(x)
+		case 64:
+			return z.srsh64(x)
+		case 128:
+			return z.srsh128(x)
+		case 192:
+			return z.srsh192(x)
+		default:
+			return z.SetAllOne()
+		}
+	}
+	var (
+		a uint64 = math.MaxUint64 << (64 - n%64)
+	)
+	// Big swaps first
+	switch {
+	case n > 192:
+		if n > 256 {
+			return z.SetAllOne()
+		}
+		z.srsh192(x)
+		n -= 192
+		goto sh192
+	case n > 128:
+		z.srsh128(x)
+		n -= 128
+		goto sh128
+	case n > 64:
+		z.srsh64(x)
+		n -= 64
+		goto sh64
+	default:
+		z.Copy(x)
+	}
+
+	// remaining shifts
+	z[3], a = (z[3]>>n)|a, z[3]<<(64-n)
+
+sh64:
+	z[2], a = (z[2]>>n)|a, z[2]<<(64-n)
+
+sh128:
+	z[1], a = (z[1]>>n)|a, z[1]<<(64-n)
+
+sh192:
+	z[0] = (z[0] >> n) | a
+
+	return z
 }
 
 // Copy copies the value x into z, and returns z

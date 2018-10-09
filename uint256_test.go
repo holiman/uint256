@@ -296,6 +296,73 @@ func TestRandomRsh(t *testing.T) {
 		}
 	}
 }
+
+func TestSrsh(t *testing.T) {
+	var n uint = 16
+	actual := new(Int).SetBytes(Hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected := new(Int).SetBytes(Hex2Bytes("FFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 64
+	actual = new(Int).SetBytes(Hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(Hex2Bytes("FFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 96
+	actual = new(Int).SetBytes(Hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(Hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 256
+	actual = new(Int).SetBytes(Hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(Hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 300
+	actual = new(Int).SetBytes(Hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(Hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 16
+	actual = new(Int).SetBytes(Hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(Hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 64
+	actual = new(Int).SetBytes(Hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(Hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"))
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+
+	n = 256
+	actual = new(Int).SetBytes(Hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
+	actual.Srsh(actual, n)
+	expected = new(Int).SetBytes(nil)
+	if !actual.Eq(expected) {
+		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+	}
+}
+
 func TestByte(t *testing.T) {
 	z := new(Int).SetBytes(Hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
 	actual := z.Byte(NewInt().SetUint64(0))
