@@ -197,6 +197,40 @@ func TestRandomSMod(t *testing.T) {
 	)
 }
 
+func TestRandomMulMod(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		b1, f1, err := randNums()
+		if err != nil {
+			t.Fatalf("Error getting a random number: %v", err)
+		}
+
+		b2, f2, err := randNums()
+		if err != nil {
+			t.Fatalf("Error getting a random number: %v", err)
+		}
+
+		b3, f3, err := randNums()
+		if err != nil {
+			t.Fatalf("Error getting a random number: %v", err)
+		}
+
+		b4, f4, err := randNums()
+		for b4.Cmp(big.NewInt(0)) == 0 {
+			b4, f4, err = randNums()
+			if err != nil {
+				t.Fatalf("Error getting a random number: %v", err)
+			}
+		}
+
+		f1.MulMod(f2, f3, f4)
+		b1.Mod(big.NewInt(0).Mul(b2, b3), b4)
+
+		if !checkEq(b1, f1) {
+			t.Fatalf("Expected equality:\nf2= %v\nf3= %v\nf4= %v\n[ op ]==\nf = %v\nb = %x\n", f2.Hex(), f3.Hex(), f4.Hex(), f1.Hex(), b1)
+		}
+	}
+}
+
 var bigtt255 = bigPow(2, 255)
 
 func S256(x *big.Int) *big.Int {

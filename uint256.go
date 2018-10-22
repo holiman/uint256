@@ -679,6 +679,22 @@ func (z *Int) Smod(x, y *Int) *Int {
 	return z
 }
 
+// MulMod calculates the modulo-n multiplication of x and y and
+// returns z
+func (z *Int) MulMod(x, y, m *Int) *Int {
+	// xm := NewInt().Mod(x, m)
+	// ym := NewInt().Mod(y, m)
+	bx := big.NewInt(0)
+	by := big.NewInt(0)
+	bm := big.NewInt(0)
+	bx.SetBytes(x.Bytes()[:])
+	by.SetBytes(y.Bytes()[:])
+	bm.SetBytes(m.Bytes()[:])
+	zm := big.NewInt(0).Mul(bx, by)
+	z.SetFromBig(big.NewInt(0).Mod(zm, bm))
+	return z
+}
+
 // Abs interprets x as a a signed number, and sets z to the Abs value
 //   S256(0)        = 0
 //   S256(1)        = 1
