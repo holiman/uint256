@@ -682,16 +682,13 @@ func (z *Int) Smod(x, y *Int) *Int {
 // MulMod calculates the modulo-n multiplication of x and y and
 // returns z
 func (z *Int) MulMod(x, y, m *Int) *Int {
-	// xm := NewInt().Mod(x, m)
-	// ym := NewInt().Mod(y, m)
 	bx := big.NewInt(0)
 	by := big.NewInt(0)
-	bm := big.NewInt(0)
 	bx.SetBytes(x.Bytes()[:])
 	by.SetBytes(y.Bytes()[:])
-	bm.SetBytes(m.Bytes()[:])
-	zm := big.NewInt(0).Mul(bx, by)
-	z.SetFromBig(big.NewInt(0).Mod(zm, bm))
+	bx.Mul(bx, by)
+	by.SetBytes(m.Bytes()[:])
+	z.SetFromBig(bx.Mod(bx, by))
 	return z
 }
 
@@ -718,16 +715,6 @@ func (z *Int) Neg() *Int {
 // If d == 0, z is set to 0
 // OBS! This method (potentially) modifies both n and d
 func (z *Int) Sdiv(n, d *Int) *Int {
-	if d.IsZero() || n.IsZero() {
-		return z.Clear()
-	}
-	if n.Eq(d) {
-		return z.SetOne()
-	}
-	// Shortcut some cases
-	if n.IsUint64() && d.IsUint64() {
-		return z.SetUint64(n.Uint64() / d.Uint64())
-	}
 	if n.Sign() > 0 {
 		if d.Sign() > 0 {
 			// pos / pos

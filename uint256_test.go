@@ -728,7 +728,7 @@ func benchmark_Add_Big(bench *testing.B) {
 }
 func Benchmark_Add(bench *testing.B) {
 	bench.Run("big", benchmark_Add_Big)
-	bench.Run("fixedbit", benchmark_Add_Bit)
+	bench.Run("uint256", benchmark_Add_Bit)
 }
 
 func benchmark_SubOverflow_Bit(bench *testing.B) {
@@ -765,8 +765,8 @@ func benchmark_Sub_Big(bench *testing.B) {
 }
 func Benchmark_Sub(bench *testing.B) {
 	bench.Run("big", benchmark_Sub_Big)
-	bench.Run("fixedbit", benchmark_Sub_Bit)
-	bench.Run("fixedbit_of", benchmark_SubOverflow_Bit)
+	bench.Run("uint256", benchmark_Sub_Bit)
+	bench.Run("uint256_of", benchmark_SubOverflow_Bit)
 }
 
 func benchmark_Mul_Big(bench *testing.B) {
@@ -817,11 +817,11 @@ func benchmark_Squared_Big(bench *testing.B) {
 
 func Benchmark_Mul(bench *testing.B) {
 	bench.Run("big", benchmark_Mul_Big)
-	bench.Run("fixedbit", benchmark_Mul_Bit)
+	bench.Run("uint256", benchmark_Mul_Bit)
 }
 func Benchmark_Square(bench *testing.B) {
 	bench.Run("big", benchmark_Squared_Big)
-	bench.Run("fixedbit", benchmark_Squared_Bit)
+	bench.Run("uint256", benchmark_Squared_Bit)
 }
 
 func benchmark_And_Big(bench *testing.B) {
@@ -844,7 +844,7 @@ func benchmark_And_Bit(bench *testing.B) {
 }
 func Benchmark_And(bench *testing.B) {
 	bench.Run("big", benchmark_And_Big)
-	bench.Run("fixedbit", benchmark_And_Bit)
+	bench.Run("uint256", benchmark_And_Bit)
 }
 
 func benchmark_Or_Big(bench *testing.B) {
@@ -867,7 +867,7 @@ func benchmark_Or_Bit(bench *testing.B) {
 }
 func Benchmark_Or(bench *testing.B) {
 	bench.Run("big", benchmark_Or_Big)
-	bench.Run("fixedbit", benchmark_Or_Bit)
+	bench.Run("uint256", benchmark_Or_Bit)
 }
 
 func benchmark_Xor_Big(bench *testing.B) {
@@ -891,7 +891,7 @@ func benchmark_Xor_Bit(bench *testing.B) {
 
 func Benchmark_Xor(bench *testing.B) {
 	bench.Run("big", benchmark_Xor_Big)
-	bench.Run("fixedbit", benchmark_Xor_Bit)
+	bench.Run("uint256", benchmark_Xor_Bit)
 }
 
 func benchmark_Cmp_Big(bench *testing.B) {
@@ -915,7 +915,7 @@ func benchmark_Cmp_Bit(bench *testing.B) {
 }
 func Benchmark_Cmp(bench *testing.B) {
 	bench.Run("big", benchmark_Cmp_Big)
-	bench.Run("fixedbit", benchmark_Cmp_Bit)
+	bench.Run("uint256", benchmark_Cmp_Bit)
 }
 
 func benchmark_Lsh_Big(n uint, bench *testing.B) {
@@ -972,11 +972,11 @@ func Benchmark_Lsh(bench *testing.B) {
 	bench.Run("big/n_gt_64", benchmark_Lsh_Big_N_GT_64)
 	bench.Run("big/n_gt_0", benchmark_Lsh_Big_N_GT_0)
 
-	bench.Run("fixedbit/n_eq_0", benchmark_Lsh_Bit_N_EQ_0)
-	bench.Run("fixedbit/n_gt_192", benchmark_Lsh_Bit_N_GT_192)
-	bench.Run("fixedbit/n_gt_128", benchmark_Lsh_Bit_N_GT_128)
-	bench.Run("fixedbit/n_gt_64", benchmark_Lsh_Bit_N_GT_64)
-	bench.Run("fixedbit/n_gt_0", benchmark_Lsh_Bit_N_GT_0)
+	bench.Run("uint256/n_eq_0", benchmark_Lsh_Bit_N_EQ_0)
+	bench.Run("uint256/n_gt_192", benchmark_Lsh_Bit_N_GT_192)
+	bench.Run("uint256/n_gt_128", benchmark_Lsh_Bit_N_GT_128)
+	bench.Run("uint256/n_gt_64", benchmark_Lsh_Bit_N_GT_64)
+	bench.Run("uint256/n_gt_0", benchmark_Lsh_Bit_N_GT_0)
 }
 
 func benchmark_Rsh_Big(n uint, bench *testing.B) {
@@ -1033,11 +1033,11 @@ func Benchmark_Rsh(bench *testing.B) {
 	bench.Run("big/n_gt_64", benchmark_Rsh_Big_N_GT_64)
 	bench.Run("big/n_gt_0", benchmark_Rsh_Big_N_GT_0)
 
-	bench.Run("fixedbit/n_eq_0", benchmark_Rsh_Bit_N_EQ_0)
-	bench.Run("fixedbit/n_gt_192", benchmark_Rsh_Bit_N_GT_192)
-	bench.Run("fixedbit/n_gt_128", benchmark_Rsh_Bit_N_GT_128)
-	bench.Run("fixedbit/n_gt_64", benchmark_Rsh_Bit_N_GT_64)
-	bench.Run("fixedbit/n_gt_0", benchmark_Rsh_Bit_N_GT_0)
+	bench.Run("uint256/n_eq_0", benchmark_Rsh_Bit_N_EQ_0)
+	bench.Run("uint256/n_gt_192", benchmark_Rsh_Bit_N_GT_192)
+	bench.Run("uint256/n_gt_128", benchmark_Rsh_Bit_N_GT_128)
+	bench.Run("uint256/n_gt_64", benchmark_Rsh_Bit_N_GT_64)
+	bench.Run("uint256/n_gt_0", benchmark_Rsh_Bit_N_GT_0)
 }
 
 func benchmark_Exp_Big(bench *testing.B) {
@@ -1104,21 +1104,93 @@ func benchmark_ExpSmall_Bit(bench *testing.B) {
 }
 func Benchmark_Exp(bench *testing.B) {
 	bench.Run("large/big", benchmark_Exp_Big)
-	bench.Run("large/fixedbit", benchmark_Exp_Bit)
+	bench.Run("large/uint256", benchmark_Exp_Bit)
 	bench.Run("small/big", benchmark_ExpSmall_Big)
-	bench.Run("small/fixedbit", benchmark_ExpSmall_Bit)
-}
-func Benchmark_SDiv(bench *testing.B) {
-	bench.Run("large/big", benchmark_SdivLarge_Big)
-	bench.Run("large/fixedbit", benchmark_SdivLarge_Bit)
+	bench.Run("small/uint256", benchmark_ExpSmall_Bit)
 }
 
 func Benchmark_Div(bench *testing.B) {
 	bench.Run("large/big", benchmark_DivLarge_Big)
-	bench.Run("large/fixedbit", benchmark_DivLarge_Bit)
+	bench.Run("large/uint256", benchmark_DivLarge_Bit)
 
 	bench.Run("small/big", benchmark_DivSmall_Big)
-	bench.Run("small/fixedbit", benchmark_DivSmall_Bit)
+	bench.Run("small/uint256", benchmark_DivSmall_Bit)
+}
+
+func benchMulModBigint(a, b, m string) func(*testing.B) {
+	return func(bench *testing.B) {
+		x := big.NewInt(0).SetBytes(Hex2Bytes(a))
+		y := big.NewInt(0).SetBytes(Hex2Bytes(b))
+		z := big.NewInt(0).SetBytes(Hex2Bytes(m))
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			b1 := big.NewInt(0)
+			b1.Mul(x, y)
+			b1.Mod(b1, z)
+			U256(b1)
+		}
+	}
+}
+func benchMulModUint256(a, b, m string) func(*testing.B) {
+	return func(bench *testing.B) {
+		x, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(a)))
+		y, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(b)))
+		z, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(m)))
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			f := NewInt()
+			f.MulMod(x, y, z)
+		}
+	}
+}
+
+func Benchmark_MulMod(bench *testing.B) {
+	a := "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeffef"
+	b := "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeff9"
+	m := "defefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe"
+	bench.Run("large/big", benchMulModBigint(a, b, m))
+	bench.Run("large/uint256", benchMulModUint256(a, b, m))
+	a = "00000000000000000000000000000000000000000000000000000000fefeffef"
+	b = "00000000000000000000000000000000000000000000000000000000000feff9"
+	m = "00000000000000000000000000000000000000000000000000000000000000fe"
+	bench.Run("small/big", benchMulModBigint(a, b, m))
+	bench.Run("small/uint256", benchMulModUint256(a, b, m))
+}
+
+func benchModBigint(a, b string) func(*testing.B) {
+	return func(bench *testing.B) {
+		x := big.NewInt(0).SetBytes(Hex2Bytes(a))
+		y := big.NewInt(0).SetBytes(Hex2Bytes(b))
+		z := big.NewInt(0)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			z.Mod(x, y)
+		}
+	}
+}
+func benchModUint256(a, b string) func(*testing.B) {
+	return func(bench *testing.B) {
+		x, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(a)))
+		y, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(b)))
+		z := NewInt()
+
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			z.Mod(x, y)
+		}
+	}
+}
+func Benchmark_Mod(bench *testing.B) {
+	a := "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeffef"
+	b := "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeff9"
+	bench.Run("large/big", benchModBigint(a, b))
+	bench.Run("large/uint256", benchModUint256(a, b))
+
+	a = "0000000000000000000000000000000000000000000000000000000000feffef"
+	b = "00000000000000000000000000000000000000000000000000000000000000f9"
+	bench.Run("small/big", benchModBigint(a, b))
+	bench.Run("small/uint256", benchModUint256(a, b))
+
 }
 
 func benchmark_DivSmall_Big(bench *testing.B) {
@@ -1193,6 +1265,11 @@ func benchmark_SdivLarge_Bit(bench *testing.B) {
 		f := NewInt()
 		f.Sdiv(fa, fb)
 	}
+}
+
+func Benchmark_SDiv(bench *testing.B) {
+	bench.Run("large/big", benchmark_SdivLarge_Big)
+	bench.Run("large/uint256", benchmark_SdivLarge_Bit)
 }
 
 func TestByteRepresentation(t *testing.T) {

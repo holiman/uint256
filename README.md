@@ -6,67 +6,72 @@ This is a library specialized at replacing the big.Int library for math based on
 
 Current benchmarks, with tests ending with `big` being the standard `big.Int` library, and `fixedbit` being this library. 
 
-As of 2018-03-06:
+As of 2018-10-30:
 ```
-goos: linux
-goarch: amd64
-pkg: github.com/holiman/uint256
-
-Benchmark_Add/big-2  	100000000	        22.9 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Add/fixedbit-2         	300000000	         4.66 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Sub/big-2              	50000000	        23.0 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Sub/fixedbit-2         	300000000	         4.73 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Sub/fixedbit_of-2      	300000000	         5.12 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Mul/big-2              	10000000	       153 ns/op	     128 B/op	       2 allocs/op
-Benchmark_Mul/fixedbit-2         	20000000	        64.1 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Square/big-2           	10000000	       153 ns/op	     128 B/op	       2 allocs/op
-Benchmark_Square/fixedbit-2      	30000000	        49.2 ns/op	       0 B/op	       0 allocs/op
-Benchmark_And/big-2              	100000000	        14.9 ns/op	       0 B/op	       0 allocs/op
-Benchmark_And/fixedbit-2         	1000000000	         1.97 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Or/big-2               	100000000	        18.9 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Or/fixedbit-2          	1000000000	         1.99 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Xor/big-2              	100000000	        19.1 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Xor/fixedbit-2         	2000000000	         2.01 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Cmp/big-2              	200000000	         8.13 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Cmp/fixedbit-2         	300000000	         4.44 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Lsh/big/n_eq_0-2       	20000000	        93.8 ns/op	     112 B/op	       2 allocs/op
-Benchmark_Lsh/big/n_gt_192-2     	20000000	       100 ns/op	     128 B/op	       2 allocs/op
-Benchmark_Lsh/big/n_gt_128-2     	20000000	       105 ns/op	     128 B/op	       2 allocs/op
-Benchmark_Lsh/big/n_gt_64-2      	20000000	       103 ns/op	     112 B/op	       2 allocs/op
-Benchmark_Lsh/big/n_gt_0-2       	20000000	        96.9 ns/op	     112 B/op	       2 allocs/op
-Benchmark_Lsh/fixedbit/n_eq_0-2  	500000000	         3.97 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Lsh/fixedbit/n_gt_192-2         	300000000	         4.59 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Lsh/fixedbit/n_gt_128-2         	200000000	         6.53 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Lsh/fixedbit/n_gt_64-2          	200000000	         8.41 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Lsh/fixedbit/n_gt_0-2           	100000000	        10.1 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Rsh/big/n_eq_0-2                	20000000	        89.5 ns/op	      96 B/op	       2 allocs/op
-Benchmark_Rsh/big/n_gt_192-2              	20000000	        83.3 ns/op	      80 B/op	       2 allocs/op
-Benchmark_Rsh/big/n_gt_128-2              	20000000	        84.6 ns/op	      80 B/op	       2 allocs/op
-Benchmark_Rsh/big/n_gt_64-2               	20000000	        92.4 ns/op	      96 B/op	       2 allocs/op
-Benchmark_Rsh/big/n_gt_0-2                	20000000	        88.5 ns/op	      96 B/op	       2 allocs/op
-Benchmark_Rsh/fixedbit/n_eq_0-2           	500000000	         3.96 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Rsh/fixedbit/n_gt_192-2         	300000000	         4.59 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Rsh/fixedbit/n_gt_128-2         	200000000	         6.17 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Rsh/fixedbit/n_gt_64-2          	200000000	         8.97 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Rsh/fixedbit/n_gt_0-2           	100000000	        10.3 ns/op	       0 B/op	       0 allocs/op
-Benchmark_Exp/large/big-2                 	   50000	     28595 ns/op	   18224 B/op	     191 allocs/op
-Benchmark_Exp/large/fixedbit-2            	  100000	     18504 ns/op	      32 B/op	       1 allocs/op
-Benchmark_Exp/small/big-2                 	  200000	      7982 ns/op	    7472 B/op	      79 allocs/op
-Benchmark_Exp/small/fixedbit-2            	 1000000	      1677 ns/op	      32 B/op	       1 allocs/op
-Benchmark_SDiv/large/big-2                	20000000	        94.3 ns/op	      48 B/op	       1 allocs/op
-Benchmark_SDiv/large/fixedbit-2           	 2000000	       780 ns/op	     288 B/op	       5 allocs/op
-Benchmark_Div/large/big-2                 	 5000000	       340 ns/op	     176 B/op	       3 allocs/op
-Benchmark_Div/large/fixedbit-2            	 2000000	       758 ns/op	     288 B/op	       5 allocs/op
-Benchmark_Div/small/big-2                 	10000000	       154 ns/op	     128 B/op	       3 allocs/op
-Benchmark_Div/small/fixedbit-2            	100000000	        16.2 ns/op	       0 B/op	       0 allocs/op
-
+Benchmark_Add/big-6                 100000000	        21.7 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Add/uint256-6         	300000000	         4.47 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Sub/big-6             	100000000	        21.6 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Sub/uint256-6         	300000000	         4.27 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Sub/uint256_of-6      	300000000	         4.74 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Mul/big-6             	10000000	       146 ns/op	     128 B/op	       2 allocs/op
+Benchmark_Mul/uint256-6         	30000000	        58.1 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Square/big-6          	10000000	       143 ns/op	     128 B/op	       2 allocs/op
+Benchmark_Square/uint256-6      	30000000	        46.2 ns/op	       0 B/op	       0 allocs/op
+Benchmark_And/big-6             	100000000	        14.0 ns/op	       0 B/op	       0 allocs/op
+Benchmark_And/uint256-6         	2000000000	         1.91 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Or/big-6              	100000000	        17.4 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Or/uint256-6          	2000000000	         1.89 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Xor/big-6             	100000000	        17.3 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Xor/uint256-6         	2000000000	         1.90 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Cmp/big-6             	200000000	         7.87 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Cmp/uint256-6         	300000000	         3.91 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Lsh/big/n_eq_0-6      	20000000	        92.0 ns/op	     112 B/op	       2 allocs/op
+Benchmark_Lsh/big/n_gt_192-6    	20000000	       103 ns/op	     128 B/op	       2 allocs/op
+Benchmark_Lsh/big/n_gt_128-6    	20000000	        91.6 ns/op	     128 B/op	       2 allocs/op
+Benchmark_Lsh/big/n_gt_64-6     	20000000	        90.1 ns/op	     112 B/op	       2 allocs/op
+Benchmark_Lsh/big/n_gt_0-6      	20000000	        87.5 ns/op	     112 B/op	       2 allocs/op
+Benchmark_Lsh/uint256/n_eq_0-6  	500000000	         3.79 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Lsh/uint256/n_gt_192-6         	300000000	         4.60 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Lsh/uint256/n_gt_128-6         	200000000	         5.80 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Lsh/uint256/n_gt_64-6          	200000000	         7.67 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Lsh/uint256/n_gt_0-6           	200000000	         9.94 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Rsh/big/n_eq_0-6               	20000000	        82.1 ns/op	      96 B/op	       2 allocs/op
+Benchmark_Rsh/big/n_gt_192-6             	20000000	        77.3 ns/op	      80 B/op	       2 allocs/op
+Benchmark_Rsh/big/n_gt_128-6             	20000000	        79.7 ns/op	      80 B/op	       2 allocs/op
+Benchmark_Rsh/big/n_gt_64-6              	20000000	        80.9 ns/op	      96 B/op	       2 allocs/op
+Benchmark_Rsh/big/n_gt_0-6               	20000000	        81.9 ns/op	      96 B/op	       2 allocs/op
+Benchmark_Rsh/uint256/n_eq_0-6           	500000000	         3.85 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Rsh/uint256/n_gt_192-6         	300000000	         4.32 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Rsh/uint256/n_gt_128-6         	200000000	         5.80 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Rsh/uint256/n_gt_64-6          	200000000	         8.58 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Rsh/uint256/n_gt_0-6           	100000000	        10.4 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Exp/large/big-6                	   50000	     27726 ns/op	   18224 B/op	     191 allocs/op
+Benchmark_Exp/large/uint256-6            	  100000	     16855 ns/op	      32 B/op	       1 allocs/op
+Benchmark_Exp/small/big-6                	  200000	      7647 ns/op	    7472 B/op	      79 allocs/op
+Benchmark_Exp/small/uint256-6            	 1000000	      1606 ns/op	      32 B/op	       1 allocs/op
+Benchmark_SDiv/large/big-6               	20000000	        98.8 ns/op	      48 B/op	       1 allocs/op
+Benchmark_SDiv/large/uint256-6           	 5000000	       261 ns/op	     128 B/op	       3 allocs/op
+Benchmark_Div/large/big-6                	 5000000	       318 ns/op	     176 B/op	       3 allocs/op
+Benchmark_Div/large/uint256-6            	 5000000	       251 ns/op	     128 B/op	       3 allocs/op
+Benchmark_Div/small/big-6                	10000000	       142 ns/op	     128 B/op	       3 allocs/op
+Benchmark_Div/small/uint256-6            	100000000	        14.6 ns/op	       0 B/op	       0 allocs/op
+Benchmark_Mulmod/large/big-6             	 5000000	       320 ns/op	     176 B/op	       3 allocs/op
+Benchmark_Mulmod/large/uint256-6         	 1000000	      1272 ns/op	     608 B/op	      11 allocs/op
+Benchmark_Mod/large/big-6         	        10000000	       143 ns/op	      48 B/op	       1 allocs/op
+Benchmark_Mod/large/uint256-6     	         2000000	       686 ns/op	     352 B/op	       7 allocs/op
+Benchmark_Mod/small/big-6         	        20000000	        63.0 ns/op	      48 B/op	       1 allocs/op
+Benchmark_Mod/small/uint256-6     	       100000000	        16.1 ns/op	       0 B/op	       0 allocs/op
+PASS
 
 ```
 
 The fixed lib wins over big in most cases, with a few exceptions: 
 
-- Division of large numbers. The division algo needs to be replaced with a (pure go) implementation of Knuth's Algorithm D. It
-currently wraps `big.Int`
+- Signed division is slower on `uint256`. 
+- `MulMod` is slower on `uint256`. 
+- `Mod` on large numbers is slower on `uint256`. 
+
+Both `MulMod` and `Mod` currently wraps `big.Int`, which is suboptimal. 
 
 ## Help out
 
