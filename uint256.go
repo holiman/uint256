@@ -448,45 +448,6 @@ func (z *Int) isBitSet(n uint) bool {
 	return (z[n>>6] & (1 << (n & 0x3f))) != 0
 }
 
-// Div sets z to the quotient n/d for returns z.
-// If d == 0, z is set to 0
-func (z *Int) SlowDiv(n, d *Int) *Int {
-	if d.IsZero() || d.Gt(n) {
-		return z.Clear()
-	}
-	if n.Eq(d) {
-		return z.SetOne()
-	}
-	// Shortcut some cases
-	if n.IsUint64() {
-		return z.SetUint64(n.Uint64() / d.Uint64())
-	}
-	// At this point, we know
-	// n/d ; n > d > 0
-
-	// The rest is a pretty un-optimized implementation of "Long division"
-	// from https://en.wikipedia.org/wiki/Division_algorithm.
-	// Could probably be improved upon (it's very slow now)
-
-	r := &Int{}
-	q := &Int{}
-
-	for i := n.BitLen() - 1; i >= 0; i-- {
-		// Left-shift r by 1 bit
-		r.lshOne()
-		// SetFromBig the least-significant bit of r equal to bit i of the numerator
-		if ni := n.isBitSet(uint(i)); ni {
-			r[0] |= 1
-		}
-		if !r.Lt(d) {
-			r.Sub(r, d)
-			q.setBit(uint(i))
-		}
-	}
-	z.Copy(q)
-	return z
-}
-
 func nlz(d *Int) uint {
 	for i := 3; i >= 0; i-- {
 		if d[i] != 0 {
@@ -629,7 +590,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 	case -1:
 		// x < y
 		copy(z[:], x[:])
-		return x
+		return z
 	case 0:
 		// x == y
 		return z.Clear() // They are equal
@@ -644,15 +605,11 @@ func (z *Int) Mod(x, y *Int) *Int {
 	if x.IsUint64() {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
-	// Wrap bigint
-	bx := new(big.Int)
-	by := new(big.Int)
-	nx := x.Bytes()
-	ny := y.Bytes()
-	bx.SetBytes(nx[:])
-	by.SetBytes(ny[:])
-	bx.Mod(bx, by)
-	z.SetFromBig(bx)
+
+	q := NewInt()
+	q.Div(x, y)
+	q.Mul(q, y)
+	z.Sub(x, q)
 	return z
 }
 
