@@ -629,7 +629,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 	case -1:
 		// x < y
 		copy(z[:], x[:])
-		return x
+		return z
 	case 0:
 		// x == y
 		return z.Clear() // They are equal
@@ -644,15 +644,11 @@ func (z *Int) Mod(x, y *Int) *Int {
 	if x.IsUint64() {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
-	// Wrap bigint
-	bx := new(big.Int)
-	by := new(big.Int)
-	nx := x.Bytes()
-	ny := y.Bytes()
-	bx.SetBytes(nx[:])
-	by.SetBytes(ny[:])
-	bx.Mod(bx, by)
-	z.SetFromBig(bx)
+
+	q := NewInt()
+	q.Div(x, y)
+	q.Mul(q, y)
+	z.Sub(x, q)
 	return z
 }
 

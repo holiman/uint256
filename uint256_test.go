@@ -1246,11 +1246,16 @@ func benchmark_SdivLarge_Big(bench *testing.B) {
 	b := big.NewInt(0).SetBytes(Hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
 
 	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		a = S256(a)
-		b = S256(b)
 
-		U256(Sdiv(a, b))
+	var (
+		x = big.NewInt(0)
+		y = big.NewInt(0)
+	)
+
+	for i := 0; i < bench.N; i++ {
+		x.Set(a)
+		y.Set(b)
+		U256(Sdiv(S256(x), S256(y)))
 	}
 }
 
