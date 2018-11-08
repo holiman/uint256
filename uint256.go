@@ -639,6 +639,15 @@ func (z *Int) Smod(x, y *Int) *Int {
 // MulMod calculates the modulo-n multiplication of x and y and
 // returns z
 func (z *Int) MulMod(x, y, m *Int) *Int {
+	// If we can do multiplication within 256 bytes, no need to wrap bigints
+	// i.e: if both x and y are <= 128 bytes
+	if x.IsUint128() && y.IsUint128() {
+		z.Mul(x, y)
+		z.Mod(z, m)
+		return z
+	}
+	// At this point, we _could_ do x=x mod m, y = y mod m, and test again
+	// if they fit within 256 bytes. But for now just wrap big.Int instead
 	bx := big.NewInt(0)
 	by := big.NewInt(0)
 	bx.SetBytes(x.Bytes()[:])
@@ -918,6 +927,11 @@ func (z *Int) GtUint64(n uint64) bool {
 // IsUint64 reports whether z can be represented as a uint64.
 func (z *Int) IsUint64() bool {
 	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0)
+}
+
+// IsUint128 reports whether z can be represented in 128 bits.
+func (z *Int) IsUint128() bool {
+	return (z[3] == 0) && (z[2] == 0)
 }
 
 // IsZero returns true if z == 0
@@ -1207,8 +1221,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	return z.Copy(ExpF(base, exponent))
 }
 
-// ExpF returns a newly-allocated big integer and does not change
-// base or exponent.
+// ExpF returns a newly-allocated big integer. This method _may_ modify base.
 func ExpF(base, exponent *Int) *Int {
 	z := &Int{1, 0, 0, 0}
 	// b^0 == 1

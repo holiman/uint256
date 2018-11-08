@@ -4,9 +4,9 @@ This is a library specialized at replacing the big.Int library for math based on
 
 ## Benchmarks
 
-Current benchmarks, with tests ending with `big` being the standard `big.Int` library, and `fixedbit` being this library. 
+Current benchmarks, with tests ending with `big` being the standard `big.Int` library, and `uint256` being this library. 
 
-As of 2018-10-30:
+As of 2018-11-08:
 ```
 Benchmark_Add/big-6  	100000000	        21.6 ns/op	       0 B/op	       0 allocs/op
 Benchmark_Add/uint256-6         	300000000	         4.48 ns/op	       0 B/op	       0 allocs/op
@@ -53,10 +53,10 @@ Benchmark_Div/large/big-6                	 5000000	       309 ns/op	     176 B/o
 Benchmark_Div/large/uint256-6            	 5000000	       241 ns/op	     128 B/op	       3 allocs/op
 Benchmark_Div/small/big-6                	10000000	       141 ns/op	     128 B/op	       3 allocs/op
 Benchmark_Div/small/uint256-6            	100000000	        14.3 ns/op	       0 B/op	       0 allocs/op
-Benchmark_MulMod/large/big-6             	 3000000	       534 ns/op	     320 B/op	       4 allocs/op
-Benchmark_MulMod/large/uint256-6         	 1000000	      1236 ns/op	     608 B/op	      11 allocs/op
-Benchmark_MulMod/small/big-6             	10000000	       163 ns/op	     128 B/op	       3 allocs/op
-Benchmark_MulMod/small/uint256-6         	 5000000	       369 ns/op	     224 B/op	       9 allocs/op
+Benchmark_MulMod/large/big-6             	 3000000	       560 ns/op	     320 B/op	       4 allocs/op
+Benchmark_MulMod/large/uint256-6        	 1000000	      1287 ns/op	     608 B/op	      11 allocs/op
+Benchmark_MulMod/small/big-6            	10000000	       206 ns/op	     128 B/op	       3 allocs/op
+Benchmark_MulMod/small/uint256-6        	30000000	        56.7 ns/op	       0 B/op	       0 allocs/op
 Benchmark_Mod/large/big-6                	10000000	       131 ns/op	      48 B/op	       1 allocs/op
 Benchmark_Mod/large/uint256-6            	10000000	       219 ns/op	     100 B/op	       3 allocs/op
 Benchmark_Mod/small/big-6                	20000000	        69.0 ns/op	      48 B/op	       1 allocs/op
@@ -68,10 +68,9 @@ Benchmark_SDiv/large/uint256-6           	 5000000	       251 ns/op	     128 B/o
 
 The fixed lib wins over big in most cases, with a few exceptions: 
 
-- `MulMod` is slower on `uint256` by ~2x. 
+- `MulMod` on large numbers is slower on `uint256` by ~2x, since they wrap `big.Int` when the multiplication 
+would overflow `256` bits.
 - `Mod` on large numbers is slower on `uint256` by ~2x. 
-
-Both `MulMod` currently wraps `big.Int`, which is suboptimal. 
 
 ## Help out
 
