@@ -51,6 +51,15 @@ func checkEq(b *big.Int, f *Int) bool {
 	return f.Eq(f2)
 }
 
+func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
+	expF, _ := FromBig(exp)
+	if !expF.Eq(got) {
+		t.Errorf("got %v expected %v: %v\n", got.Hex(), expF.Hex(), txt)
+		return false
+	}
+	return true
+}
+
 func TestBasicStuff(t *testing.T) {
 	i, _ := FromBig(big.NewInt(1))
 	fmt.Printf("1 %v\n", i.Hex())
@@ -535,27 +544,6 @@ func TestRandomExp(t *testing.T) {
 }
 
 func TestFixed256bit_Add(t *testing.T) {
-	//	b := big.NewInt(0).SetBytes(Hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	//	b2 := big.NewInt(0).SetBytes(Hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-
-	/*
-			f= 0000000000000000.00000001d1f4043c.ffc96b146ec8f42e.780bfa023e3ffb94
-			b= 1d1f4043cffc96b146ec8f42f780bfa023e3ffb94
-			f1= 0000000000000000.000000000f91a6e3.514d614d40e14ca3.d285eea405bd4b42
-			f2= 0000000000000000.00000001c2625d59.ae7c09c72de7a78b.a5860b5e3882b052
-
-		b := big.NewInt(0).SetBytes(Hex2Bytes( "0f91a6e3514d614d40e14ca3d285eea405bd4b42"))
-		b2 := big.NewInt(0).SetBytes(Hex2Bytes("01c2625d59ae7c09c72de7a78ba5860b5e3882b052"))
-
-	*/
-
-	/*
-		f1= 000282209f633a3c.a040e862bb69d925.73449d21bce09ea3.a74348fbf1ced62e
-		f2= 0000000000000000.0000000000000000.000000000000003a.fd56300e26f61922
-		++
-		f= 000282209f633a3c.a040e862bb69d925.73449d21bce09edd.a499790a18c4ef50
-		b= 282209f633a3ca040e862bb69d92573449d21bce09edea499790a18c4ef50
-	*/
 	b1 := big.NewInt(0).SetBytes(Hex2Bytes("000282209f633a3ca040e862bb69d92573449d21bce09ea3a74348fbf1ced62e"))
 	b2 := big.NewInt(0).SetBytes(Hex2Bytes("00000000000000000000000000000000000000000000003afd56300e26f61922"))
 
@@ -570,10 +558,6 @@ func TestFixed256bit_Add(t *testing.T) {
 	f.Add(f, f2)
 	fmt.Printf("B: %x\n", b1)
 	fmt.Printf("F: %s\n", f.Hex())
-	/*
-		b	000282209f633a3c.a040e862bb69d925.73449d21bce09ede.a499790a18c4ef50
-		f	000282209f633a3c.a040e862bb69d925.73449d21bce09edd.a499790a18c4ef50
-	*/
 
 }
 
@@ -636,27 +620,6 @@ func TestFixed256bit_Mul(t *testing.T) {
 
 func TestFixed256bit_Div(t *testing.T) {
 
-	/*
-		b1 := big.NewInt(0).SetBytes(Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000C"))
-		b2 := big.NewInt(0).SetBytes(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000004"))
-
-		f1= 0000000000000000.0000000000000000.0000000000000000.0000015fa035e510
-		f2= 0000000000000000.0000000000000000.0000000000000000.00000000001d0209
-		[ / ]==
-		f = 0000000000000000.0000000000000000.0000000000000000.0000015fa035e510
-		bf= 0000000000000000.0000000000000000.0000000000000000.00000000000c1f28
-
-		b1 := big.NewInt(0).SetBytes(Hex2Bytes("0000000000000000000000000000000000000000000000000000015fa035e510"))
-		b2 := big.NewInt(0).SetBytes(Hex2Bytes("00000000000000000000000000000000000000000000000000000000001d0209"))
-
-
-		f1= 12cbafcee8f60f9f.3fa308c90fde8d29.8772ffea667aa6bc.109d5c661e7929a5
-		f2= 00000c76f4afb041.407a8ea478d65024.f5c3dfe1db1a1bb1.0c5ea8bec314ccf9
-		[ / ]==
-		f = 0000000000000000.0000000000000000.0000000000000000.0000000000000000
-		bf= 0000000000000000.0000000000000000.0000000000000000.0000000000018206
-
-	*/
 	b1 := big.NewInt(0).SetBytes(Hex2Bytes("12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5"))
 	b2 := big.NewInt(0).SetBytes(Hex2Bytes("00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"))
 
@@ -706,6 +669,57 @@ func TestFixedExp(t *testing.T) {
 	fb_res, _ := FromBig(b_res)
 	fmt.Printf("EQ  : %v\n", res.Eq(fb_res))
 
+}
+func TestAddmod(t *testing.T) {
+	b1 := big.NewInt(0).SetBytes(Hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"))
+	b2 := big.NewInt(0).SetBytes(Hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
+	b3 := big.NewInt(0).SetBytes(Hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+	ex := big.NewInt(0).SetBytes(Hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc"))
+
+	f1, _ := FromBig(b1)
+	f2, _ := FromBig(b2)
+	f3, _ := FromBig(b3)
+	res := NewInt()
+	res.AddMod(f1, f2, f3)
+	requireEq(t, ex, res, "1 res wrong")
+	requireEq(t, b1, f1, "1 f1 changed")
+	requireEq(t, b2, f2, "1 f2 changed")
+	requireEq(t, b3, f3, "1 f3 changed")
+
+	f1, _ = FromBig(b1)
+	f2, _ = FromBig(b2)
+	f3, _ = FromBig(b3)
+	f1.AddMod(f1, f2, f3)
+	requireEq(t, ex, f1, "2 f1 wrong")
+	requireEq(t, b2, f2, "2 f2 changed")
+	requireEq(t, b3, f3, "2 f3 changed")
+
+	f1, _ = FromBig(b1)
+	f2, _ = FromBig(b2)
+	f3, _ = FromBig(b3)
+	f2.AddMod(f1, f2, f3)
+	requireEq(t, ex, f2, "3 f2 wrong")
+	requireEq(t, b1, f1, "3 f1 changed")
+	requireEq(t, b3, f3, "3 f3 changed")
+
+	f1, _ = FromBig(b1)
+	f2, _ = FromBig(b2)
+	f3, _ = FromBig(b3)
+	f3.AddMod(f1, f2, f3)
+	requireEq(t, ex, f3, "4 f3 wrong")
+	requireEq(t, b1, f1, "4 f1 changed")
+	requireEq(t, b2, f2, "4 f2 changed")
+
+	b1 = big.NewInt(0).SetBytes(Hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"))
+	b2 = big.NewInt(0).SetBytes(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000003"))
+	b3 = big.NewInt(0).SetBytes(Hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
+	ex = big.NewInt(0).SetBytes(Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
+
+	f1, _ = FromBig(b1)
+	f2, _ = FromBig(b2)
+	f3, _ = FromBig(b3)
+	f3.AddMod(f1, f2, f3)
+	requireEq(t, ex, f3, "5 f3 wrong")
 }
 
 func benchmark_Add_Bit(bench *testing.B) {
@@ -1305,4 +1319,45 @@ func TestByteRepresentation2(t *testing.T) {
 	fmt.Printf("padded %x\n", bb.PaddedBytes(32))
 	fmt.Printf("padded %x\n", bb.PaddedBytes(20))
 	fmt.Printf("padded %x\n", bb.PaddedBytes(40))
+}
+
+func benchAddModBigint(a, b, m string) func(*testing.B) {
+	return func(bench *testing.B) {
+		x := big.NewInt(0).SetBytes(Hex2Bytes(a))
+		y := big.NewInt(0).SetBytes(Hex2Bytes(b))
+		z := big.NewInt(0).SetBytes(Hex2Bytes(m))
+		b1 := big.NewInt(0)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+
+			b1.Add(x, y)
+			b1.Mod(b1, z)
+			U256(b1)
+		}
+	}
+}
+func benchAddModUint256(a, b, m string) func(*testing.B) {
+	return func(bench *testing.B) {
+		x, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(a)))
+		y, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(b)))
+		z, _ := FromBig(big.NewInt(0).SetBytes(Hex2Bytes(m)))
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			f := NewInt()
+			f.AddMod(x, y, z)
+		}
+	}
+}
+
+func Benchmark_AddMod(bench *testing.B) {
+	a := "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0"
+	b := "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa"
+	m := "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+	bench.Run("large/big", benchAddModBigint(a, b, m))
+	bench.Run("large/uint256", benchAddModUint256(a, b, m))
+	a = "00000000000000000000000000000000000000000000000000000000fefeffef"
+	b = "00000000000000000000000000000000000000000000000000000000000feff9"
+	m = "00000000000000000000000000000000000000000000000000000000000000fe"
+	bench.Run("small/big", benchAddModBigint(a, b, m))
+	bench.Run("small/uint256", benchAddModUint256(a, b, m))
 }

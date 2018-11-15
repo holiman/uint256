@@ -3,7 +3,7 @@
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
+// the Free Sofware Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
 // The go-ethereum library is distributed in the hope that it will be useful,
@@ -188,6 +188,31 @@ func (z *Int) AddOverflow(x, y *Int) bool {
 		z[i], carry = u64Add(x[i], y[i], carry)
 	}
 	return carry
+}
+
+// Add sets z to the sum ( x+y ) mod m
+func (z *Int) AddMod(x, y, m *Int) {
+
+	if z == m { //z is an alias for m
+		m = m.Clone()
+	}
+	if overflow := z.AddOverflow(x, y); overflow {
+		// It overflowed. the actual value is
+		// 0x10 00..0 + 0x???..??
+		//
+		// We can split it into
+		// 0xffff...f + 0x1 + 0x???..??
+		// And mod each item individually
+		a := NewInt().SetAllOne()
+		a.Mod(a, m)
+		z.Mod(z, m)
+		z.Add(z, a)
+		// reuse a
+		a.SetOne()
+		z.Add(z, a)
+
+	}
+	z.Mod(z, m)
 }
 
 // addLow128 adds two uint64 integers to the lower half of z ( y is the least significant)
@@ -642,6 +667,10 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	// If we can do multiplication within 256 bytes, no need to wrap bigints
 	// i.e: if both x and y are <= 128 bytes
 	if x.IsUint128() && y.IsUint128() {
+
+		if z == m { //z is an alias for m
+			m = m.Clone()
+		}
 		z.Mul(x, y)
 		z.Mod(z, m)
 		return z
