@@ -126,6 +126,42 @@ func (z *Int) Bytes() []byte {
 	return buf
 }
 
+// WriteToSlice writes the content of z into the given byteslice.
+// If dest is larger than 32 bytes, z will fill the first parts, and leave
+// the end untouched.
+// OBS! If dest is smaller than 32 bytes, only the end parts of z will be used
+// for filling the array, making it useful for filling an Address object
+func (z *Int) WriteToSlice(dest []byte) {
+	// ensure 32 bytes
+	// A too large buffer. Fill last 32 bytes
+	end := len(dest) - 1
+	if end > 31 {
+		end = 31
+	}
+	for i := 0; i <= end; i++ {
+		dest[end-i] = byte(z[i/8] >> uint64(8*(i%8)))
+	}
+}
+
+// WriteToArray32 writes all 32 bytes of z to the destination array, including zero-bytes
+func (z *Int) WriteToArray32(dest *[32]byte) {
+	for i := 0; i < 32; i++ {
+		dest[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
+	}
+}
+
+// WriteToArray20 writes the last 20 bytes of z to the destination array, including zero-bytes
+func (z *Int) WriteToArray20(dest *[20]byte) {
+	for i := 0; i < 20; i++ {
+		dest[19-i] = byte(z[i/8] >> uint64(8*(i%8)))
+	}
+}
+
+//func (z *Int) WriteToArr32(dest [32]bytes){
+//	for i := 0; i < 32; i++ {
+//		dest[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
+//	}
+//}
 // Uint64 returns the lower 64-bits of z
 func (z *Int) Uint64() uint64 {
 	return z[0]
