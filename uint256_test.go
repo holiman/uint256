@@ -1,9 +1,11 @@
 package uint256
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"testing"
 )
@@ -1360,4 +1362,79 @@ func Benchmark_AddMod(bench *testing.B) {
 	m = "00000000000000000000000000000000000000000000000000000000000000fe"
 	bench.Run("small/big", benchAddModBigint(a, b, m))
 	bench.Run("small/uint256", benchAddModUint256(a, b, m))
+}
+
+func TestWriteToSlice(t *testing.T) {
+	x1 := common.FromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611")
+
+	a := big.NewInt(0).SetBytes(x1)
+	fa, _ := FromBig(a)
+
+	dest := make([]byte, 32)
+	fa.WriteToSlice(dest)
+	if bytes.Compare(dest, x1) != 0 {
+		t.Errorf("got %x, expected %x", dest, x1)
+	}
+
+	fb := NewInt()
+	exp := make([]byte, 32)
+	fb.WriteToSlice(dest)
+	if bytes.Compare(dest, exp) != 0 {
+		t.Errorf("got %x, expected %x", dest, exp)
+	}
+	// a too small buffer
+	// Should fill the lower parts, masking upper bytes
+	exp = common.FromHex("683fd1e870eec79504c60144cc7f5fc2bad1e611")
+	dest = make([]byte, 20)
+	fa.WriteToSlice(dest)
+	if bytes.Compare(dest, exp) != 0 {
+		t.Errorf("got %x, expected %x", dest, exp)
+	}
+
+	// a too large buffer, already filled with stuff
+	// Should fill the leftmost 32 bytes, not touch the other things
+	dest = common.FromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	exp = common.FromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
+
+	fa.WriteToSlice(dest)
+	if bytes.Compare(dest, exp) != 0 {
+		t.Errorf("got %x, expected %x", dest, x1)
+	}
+
+	// an empty slice, no panics please
+	dest = []byte{}
+	exp = []byte{}
+
+	fa.WriteToSlice(dest)
+	if bytes.Compare(dest, exp) != 0 {
+		t.Errorf("got %x, expected %x", dest, x1)
+	}
+
+}
+func TestInt_WriteToArray(t *testing.T) {
+	x1 := common.FromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+	a := big.NewInt(0).SetBytes(x1)
+	fa, _ := FromBig(a)
+
+	{
+		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		fa.WriteToArray20(&dest)
+		exp := common.FromHex("0000d1e870eec79504c60144cc7f5fc2bad1e611")
+		if bytes.Compare(dest[:], exp) != 0 {
+			t.Errorf("got %x, expected %x", dest, exp)
+		}
+
+	}
+
+	{
+		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		fa.WriteToArray32(&dest)
+		exp := common.FromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+		if bytes.Compare(dest[:], exp) != 0 {
+			t.Errorf("got %x, expected %x", dest, exp)
+		}
+
+	}
+
 }
