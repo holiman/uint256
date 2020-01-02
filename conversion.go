@@ -8,7 +8,6 @@
 package uint256
 
 import (
-	"fmt"
 	"math/big"
 	"math/bits"
 )
