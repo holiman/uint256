@@ -67,7 +67,7 @@ func (z *Int) SetFromBig(int *big.Int) bool {
 	if int.Sign() == -1 {
 		z.Neg()
 	}
-	return len(int.Bits()) > 32
+	return int.BitLen() > 256
 }
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
