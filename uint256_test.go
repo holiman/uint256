@@ -1441,5 +1441,41 @@ func TestInt_WriteToArray(t *testing.T) {
 		}
 
 	}
+}
 
+func TestFromBFromBigigOld(t *testing.T) {
+	z, o := FromBig(new(big.Int).SetBytes(Hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	fmt.Printf("z %x\n", z)
+	if !o {
+		t.Errorf("expected overflow, got %v", o)
+	}
+	z, o = FromBig(new(big.Int).SetBytes(Hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	if o {
+		t.Errorf("expected no overflow, got %v", o)
+	}
+	b := new(big.Int).SetBytes(Hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
+	z, o = FromBig(b.Neg(b))
+	fmt.Printf("z %x\n", z)
+	if o {
+		t.Errorf("expected no overflow, got %v", o)
+	}
+
+}
+
+func TestFromBig(t *testing.T) {
+	z, o := NewFromBig(new(big.Int).SetBytes(Hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	fmt.Printf("z %x\n", z)
+	if !o {
+		t.Errorf("expected overflow, got %v", o)
+	}
+	z, o = NewFromBig(new(big.Int).SetBytes(Hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	if o {
+		t.Errorf("expected no overflow, got %v", o)
+	}
+	b := new(big.Int).SetBytes(Hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
+	z, o = NewFromBig(b.Neg(b))
+	fmt.Printf("z %x\n", z)
+	if o {
+		t.Errorf("expected no overflow, got %v", o)
+	}
 }
