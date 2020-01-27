@@ -10,7 +10,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
+
 	"math/big"
 	"testing"
 )
@@ -1370,7 +1370,7 @@ func Benchmark_AddMod(bench *testing.B) {
 }
 
 func TestWriteToSlice(t *testing.T) {
-	x1 := common.FromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611")
+	x1 := fromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611")
 
 	a := big.NewInt(0).SetBytes(x1)
 	fa, _ := FromBig(a)
@@ -1389,7 +1389,7 @@ func TestWriteToSlice(t *testing.T) {
 	}
 	// a too small buffer
 	// Should fill the lower parts, masking upper bytes
-	exp = common.FromHex("683fd1e870eec79504c60144cc7f5fc2bad1e611")
+	exp = fromHex("683fd1e870eec79504c60144cc7f5fc2bad1e611")
 	dest = make([]byte, 20)
 	fa.WriteToSlice(dest)
 	if bytes.Compare(dest, exp) != 0 {
@@ -1398,8 +1398,8 @@ func TestWriteToSlice(t *testing.T) {
 
 	// a too large buffer, already filled with stuff
 	// Should fill the leftmost 32 bytes, not touch the other things
-	dest = common.FromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-	exp = common.FromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
+	dest = fromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	exp = fromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
 
 	fa.WriteToSlice(dest)
 	if bytes.Compare(dest, exp) != 0 {
@@ -1417,14 +1417,14 @@ func TestWriteToSlice(t *testing.T) {
 
 }
 func TestInt_WriteToArray(t *testing.T) {
-	x1 := common.FromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+	x1 := fromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
 	a := big.NewInt(0).SetBytes(x1)
 	fa, _ := FromBig(a)
 
 	{
 		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray20(&dest)
-		exp := common.FromHex("0000d1e870eec79504c60144cc7f5fc2bad1e611")
+		exp := fromHex("0000d1e870eec79504c60144cc7f5fc2bad1e611")
 		if bytes.Compare(dest[:], exp) != 0 {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
@@ -1435,7 +1435,7 @@ func TestInt_WriteToArray(t *testing.T) {
 		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray32(&dest)
-		exp := common.FromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+		exp := fromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
 		if bytes.Compare(dest[:], exp) != 0 {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
@@ -1478,4 +1478,62 @@ func TestFromBig(t *testing.T) {
 	if o {
 		t.Errorf("expected no overflow, got %v", o)
 	}
+}
+
+const addrSize = 20
+
+type gethAddress [addrSize]byte
+
+// SetBytes sets the address to the value of b.
+// If b is larger than len(a) it will panic.
+func (a *gethAddress) setBytes(b []byte) {
+	if len(b) > len(a) {
+		b = b[len(b)-addrSize:]
+	}
+	copy(a[addrSize-len(b):], b)
+}
+
+// BytesToAddress returns Address with value b.
+// If b is larger than len(h), b will be cropped from the left.
+func bytesToAddress(b []byte) gethAddress {
+	var a gethAddress
+	a.setBytes(b)
+	return a
+}
+
+// BigToAddress returns Address with byte values of b.
+// If b is larger than len(h), b will be cropped from the left.
+func bigToAddress(b *big.Int) gethAddress { return bytesToAddress(b.Bytes()) }
+
+func TestByte20Representation(t *testing.T) {
+
+	for i, tt := range []string{
+		"1337fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
+		"fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
+		"0e320219838e859b2f9f18b72e3d4073ca50b37d",
+		"320219838e859b2f9f18b72e3d4073ca50b37d",
+		"838e859b2f9f18b72e3d4073ca50b37d",
+		"38e859b2f9f18b72e3d4073ca50b37d",
+		"f18b72e3d4073ca50b37d",
+		"b37d",
+		"01",
+		"",
+		"00",
+	} {
+		bytearr := Hex2Bytes(tt)
+		// big.Int -> address
+		a := big.NewInt(0).SetBytes(bytearr)
+		exp := bytesToAddress(a.Bytes())
+
+		// uint256.Int -> address
+		b := NewInt().SetBytes(bytearr)
+		got := gethAddress(b.Bytes20())
+
+		if got != exp {
+			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		}
+		fmt.Printf("got %x \n", got)
+
+	}
+
 }

@@ -105,6 +105,15 @@ func (z *Int) Bytes32() [32]byte {
 	return b
 }
 
+// Bytes returns the least significant 20 bytes of z (little-endian)
+func (z *Int) Bytes20() [20]byte {
+	var b [20]byte
+	for i := 0; i < 20; i++ {
+		b[19-i] = byte(z[i/8] >> uint64(8*(i%8)))
+	}
+	return b
+}
+
 // Bytes returns the bytes of z
 func (z *Int) Bytes() []byte {
 	length := z.ByteLen()
