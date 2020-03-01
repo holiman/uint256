@@ -92,11 +92,10 @@ func (z *Int) SetBytes(buf []byte) *Int {
 	if k < len(z) {
 		z[k] = d
 	}
-	//fmt.Printf("z %v \n", z.Hex())
 	return z
 }
 
-// Bytes returns a the 32 bytes of z (little-endian)
+// Bytes32 returns a the a 32 byte big-endian array.
 func (z *Int) Bytes32() [32]byte {
 	var b [32]byte
 	for i := 0; i < 32; i++ {
@@ -105,7 +104,7 @@ func (z *Int) Bytes32() [32]byte {
 	return b
 }
 
-// Bytes returns the least significant 20 bytes of z (little-endian)
+// Bytes20 returns a the a 32 byte big-endian array.
 func (z *Int) Bytes20() [20]byte {
 	var b [20]byte
 	for i := 0; i < 20; i++ {
@@ -114,7 +113,7 @@ func (z *Int) Bytes20() [20]byte {
 	return b
 }
 
-// Bytes returns the bytes of z
+// Bytes returns the value of z as a big-endian byte slice.
 func (z *Int) Bytes() []byte {
 	length := z.ByteLen()
 	buf := make([]byte, length)

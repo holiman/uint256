@@ -36,11 +36,11 @@ func NewFromBig(b *big.Int) (*Int, bool) {
 	// Code below is for 64-bit platforms only (numWords: [1-4] )
 	fixed := &Int{}
 	fixed[0] = uint64(z[0])
-	if numWords > 0 {
+	if numWords > 1 {
 		fixed[1] = uint64(z[1])
-		if numWords > 1 {
+		if numWords > 2 {
 			fixed[2] = uint64(z[2])
-			if numWords > 2 {
+			if numWords > 3 {
 				fixed[3] = uint64(z[3])
 			}
 		}

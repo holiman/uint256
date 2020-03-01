@@ -1480,17 +1480,15 @@ func TestFromBig(t *testing.T) {
 	}
 }
 
-const addrSize = 20
-
-type gethAddress [addrSize]byte
+type gethAddress [20]byte
 
 // SetBytes sets the address to the value of b.
 // If b is larger than len(a) it will panic.
 func (a *gethAddress) setBytes(b []byte) {
 	if len(b) > len(a) {
-		b = b[len(b)-addrSize:]
+		b = b[len(b)-20:]
 	}
-	copy(a[addrSize-len(b):], b)
+	copy(a[20-len(b):], b)
 }
 
 // BytesToAddress returns Address with value b.
@@ -1501,12 +1499,30 @@ func bytesToAddress(b []byte) gethAddress {
 	return a
 }
 
+type gethHash [32]byte
+
+// SetBytes sets the address to the value of b.
+// If b is larger than len(a) it will panic.
+func (a *gethHash) setBytes(b []byte) {
+	if len(b) > len(a) {
+		b = b[len(b)-32:]
+	}
+	copy(a[32-len(b):], b)
+}
+
+// BytesToHash returns gethHash with value b.
+// If b is larger than len(h), b will be cropped from the left.
+func bytesToHash(b []byte) gethHash {
+	var a gethHash
+	a.setBytes(b)
+	return a
+}
+
 // BigToAddress returns Address with byte values of b.
 // If b is larger than len(h), b will be cropped from the left.
 func bigToAddress(b *big.Int) gethAddress { return bytesToAddress(b.Bytes()) }
 
 func TestByte20Representation(t *testing.T) {
-
 	for i, tt := range []string{
 		"1337fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
 		"fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
@@ -1533,7 +1549,61 @@ func TestByte20Representation(t *testing.T) {
 			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
 		}
 		fmt.Printf("got %x \n", got)
-
 	}
+}
+
+func TestByte32Representation(t *testing.T) {
+	for i, tt := range []string{
+		"1337fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
+		"fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
+		"0e320219838e859b2f9f18b72e3d4073ca50b37d",
+		"320219838e859b2f9f18b72e3d4073ca50b37d",
+		"838e859b2f9f18b72e3d4073ca50b37d",
+		"38e859b2f9f18b72e3d4073ca50b37d",
+		"f18b72e3d4073ca50b37d",
+		"b37d",
+		"01",
+		"",
+		"00",
+	} {
+		bytearr := Hex2Bytes(tt)
+		// big.Int -> hash
+		a := big.NewInt(0).SetBytes(bytearr)
+		exp := bytesToHash(a.Bytes())
+
+		// uint256.Int -> address
+		b := NewInt().SetBytes(bytearr)
+		got := gethHash(b.Bytes32())
+
+		if got != exp {
+			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		}
+		fmt.Printf("got %x \n", got)
+	}
+}
+
+func TestConversion(t *testing.T) {
+	a := big.NewInt(1)
+	b, _ := NewFromBig(a)
+	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
+	fmt.Printf("big.Int:     %x\n", a.Bytes())
+	fmt.Printf("uint256.Int: %x\n", b.Bytes())
+	a = big.NewInt(0x1000000000000000)
+	b, _ = NewFromBig(a)
+	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
+	fmt.Printf("big.Int:     %x\n", a.Bytes())
+	fmt.Printf("uint256.Int: %x\n", b.Bytes())
+
+	a = big.NewInt(0x1234)
+	b, _ = NewFromBig(a)
+	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
+	fmt.Printf("big.Int:     %x\n", a.Bytes())
+	fmt.Printf("uint256.Int: %x\n", b.Bytes())
 
 }
