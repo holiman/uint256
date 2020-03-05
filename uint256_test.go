@@ -1370,7 +1370,7 @@ func Benchmark_AddMod(bench *testing.B) {
 }
 
 func TestWriteToSlice(t *testing.T) {
-	x1 := fromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611")
+	x1 := Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611")
 
 	a := big.NewInt(0).SetBytes(x1)
 	fa, _ := FromBig(a)
@@ -1389,7 +1389,7 @@ func TestWriteToSlice(t *testing.T) {
 	}
 	// a too small buffer
 	// Should fill the lower parts, masking upper bytes
-	exp = fromHex("683fd1e870eec79504c60144cc7f5fc2bad1e611")
+	exp = Hex2Bytes("683fd1e870eec79504c60144cc7f5fc2bad1e611")
 	dest = make([]byte, 20)
 	fa.WriteToSlice(dest)
 	if bytes.Compare(dest, exp) != 0 {
@@ -1398,8 +1398,8 @@ func TestWriteToSlice(t *testing.T) {
 
 	// a too large buffer, already filled with stuff
 	// Should fill the leftmost 32 bytes, not touch the other things
-	dest = fromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-	exp = fromHex("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
+	dest = Hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+	exp = Hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
 
 	fa.WriteToSlice(dest)
 	if bytes.Compare(dest, exp) != 0 {
@@ -1417,14 +1417,14 @@ func TestWriteToSlice(t *testing.T) {
 
 }
 func TestInt_WriteToArray(t *testing.T) {
-	x1 := fromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+	x1 := Hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
 	a := big.NewInt(0).SetBytes(x1)
 	fa, _ := FromBig(a)
 
 	{
 		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray20(&dest)
-		exp := fromHex("0000d1e870eec79504c60144cc7f5fc2bad1e611")
+		exp := Hex2Bytes("0000d1e870eec79504c60144cc7f5fc2bad1e611")
 		if bytes.Compare(dest[:], exp) != 0 {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
@@ -1435,7 +1435,7 @@ func TestInt_WriteToArray(t *testing.T) {
 		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray32(&dest)
-		exp := fromHex("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+		exp := Hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
 		if bytes.Compare(dest[:], exp) != 0 {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
