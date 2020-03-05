@@ -1222,7 +1222,7 @@ sh192:
 
 // Copy copies the value x into z, and returns z
 func (z *Int) Copy(x *Int) *Int {
-	z[0], z[1], z[2], z[3] = x[0], x[1], x[2], x[3]
+	*z = *x
 	return z
 }
 
