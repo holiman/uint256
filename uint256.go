@@ -179,8 +179,6 @@ func (z *Int) Clone() *Int {
 	return &Int{z[0], z[1], z[2], z[3]}
 }
 
-const bitmask32 = 0x00000000ffffffff
-
 // u64Add returns a+b+carry and whether overflow occurred
 func u64Add(a, b uint64, c bool) (uint64, bool) {
 	if c {
@@ -334,72 +332,6 @@ func (z *Int) Sub(x, y *Int) {
 	}
 }
 
-// mulIntoLower128 multiplies two 64-bit uints and sets the result as the lower two uint64s (c,d) in x.
-// This method does not touch the upper two (a,b)
-func (z *Int) mulIntoLower128(x, y uint64) *Int {
-
-	if x == 0 || y == 0 {
-		z[0], z[1] = 0, 0
-		return z
-	}
-	low32x, low32y := x&bitmask32, y&bitmask32
-	high32x, high32y := x>>32, y>>32
-
-	z[1], z[0] = high32x*high32y, low32x*low32y
-
-	d := low32x * high32y // Needs up 32
-	z.addLow128(d>>32, (d&bitmask32)<<32)
-
-	d = high32x * low32y // Needs up 32
-	z.addLow128(d>>32, (d&bitmask32)<<32)
-
-	return z
-}
-
-// mulIntoMiddle128 multiplies two 64-bit uints and sets the result as the middle two uint64s (b,c) in x.
-// This method does not touch the other two (a,d)
-func (z *Int) mulIntoMiddle128(x, y uint64) *Int {
-
-	if x == 0 || y == 0 {
-		z[1], z[2] = 0, 0
-		return z
-	}
-	low32x, low32y := x&bitmask32, y&bitmask32
-	high32x, high32y := x>>32, y>>32
-
-	z[2], z[1] = high32x*high32y, low32x*low32y
-
-	d := low32x * high32y // Needs up 32
-	z.addMiddle128(d>>32, (d&bitmask32)<<32)
-
-	d = high32x * low32y // Needs up 32
-	z.addMiddle128(d>>32, (d&bitmask32)<<32)
-
-	return z
-}
-
-// mulIntoUpper128 multiplies two 64-bit uints and sets the result as the upper two uint64s (a,b) in x.
-// This method does not touch the other two (c,d)
-func (z *Int) mulIntoUpper128(x, y uint64) *Int {
-
-	if x == 0 || y == 0 {
-		z[2], z[3] = 0, 0
-		return z
-	}
-	low32x, low32y := x&bitmask32, y&bitmask32
-	high32x, high32y := x>>32, y>>32
-
-	z[3], z[2] = high32x*high32y, low32x*low32y
-
-	d := low32x * high32y // Needs up 32
-	z.addHigh128(d>>32, (d&bitmask32)<<32)
-
-	d = high32x * low32y // Needs up 32
-	z.addHigh128(d>>32, (d&bitmask32)<<32)
-
-	return z
-}
-
 // Mul sets z to the sum x*y
 func (z *Int) Mul(x, y *Int) {
 
@@ -445,24 +377,24 @@ func (z *Int) Mul(x, y *Int) {
 	//
 	// b1 * d2 (upshift 128)
 
-	alfa.mulIntoLower128(x[0], y[0])
-	alfa.mulIntoUpper128(x[0], y[2])
+	alfa[1], alfa[0] = bits.Mul64(x[0], y[0])
+	alfa[3], alfa[2] = bits.Mul64(x[0], y[2])
 	alfa[3] += x[0]*y[3] + x[1]*y[2] + x[2]*y[1] + x[3]*y[0] // Top ones, ignore overflow
 
-	beta.mulIntoMiddle128(x[0], y[1])
+	beta[2], beta[1] = bits.Mul64(x[0], y[1])
 	alfa.Add(alfa, beta)
 
-	beta.Clear().mulIntoMiddle128(x[1], y[0])
+	beta[2], beta[1] = bits.Mul64(x[1], y[0])
 	alfa.Add(alfa, beta)
 
-	beta.Clear().mulIntoUpper128(x[1], y[1])
+	beta[3], beta[2] = bits.Mul64(x[1], y[1])
 	alfa.addHigh128(beta[3], beta[2])
 
-	beta.Clear().mulIntoUpper128(x[2], y[0])
+	beta[3], beta[2] = bits.Mul64(x[2], y[0])
 	alfa.addHigh128(beta[3], beta[2])
 	z.Copy(alfa)
-
 }
+
 func (z *Int) Squared() {
 
 	var (
@@ -472,18 +404,20 @@ func (z *Int) Squared() {
 	// This algo is based on Mul, but since it's squaring, we know that
 	// e.g. z.b*y.c + z.c*y.c == 2 * z.b * z.c, and can save some calculations
 	// 2 * d * b
-	alfa.mulIntoUpper128(z[0], z[2]).lshOne()
-	alfa.mulIntoLower128(z[0], z[0])
+	alfa[3], alfa[2] = bits.Mul64(z[0], z[2])
+	alfa.lshOne()
+	alfa[1], alfa[0] = bits.Mul64(z[0], z[0])
 
 	// 2 * a * d + 2 * b * c
 	alfa[3] += (z[0]*z[3] + z[1]*z[2]) << 1
 
 	// 2 * d * c
-	beta.mulIntoMiddle128(z[0], z[1]).lshOne()
+	beta[2], beta[1] = bits.Mul64(z[0], z[1])
+	beta.lshOne()
 	alfa.Add(alfa, beta)
 
 	// c * c
-	beta.Clear().mulIntoUpper128(z[1], z[1])
+	beta[3], beta[2] = bits.Mul64(z[1], z[1])
 	alfa.addHigh128(beta[3], beta[2])
 	z.Copy(alfa)
 }
