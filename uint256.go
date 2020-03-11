@@ -1157,7 +1157,6 @@ func (z *Int) Hex() string {
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
-// This method _may_ modify base.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	res := Int{1, 0, 0, 0}
 	// b^0 == 1
@@ -1171,6 +1170,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	var (
 		word uint64
 		bits int
+		multiplier = *base;
 	)
 	expBitlen := exponent.BitLen()
 
@@ -1178,36 +1178,36 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	bits = 0
 	for ; bits < expBitlen && bits < 64; bits++ {
 		if word&1 == 1 {
-			res.Mul(&res, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 
 	word = exponent[1]
 	for ; bits < expBitlen && bits < 128; bits++ {
 		if word&1 == 1 {
-			res.Mul(&res, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 
 	word = exponent[2]
 	for ; bits < expBitlen && bits < 192; bits++ {
 		if word&1 == 1 {
-			res.Mul(&res, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 
 	word = exponent[3]
 	for ; bits < expBitlen && bits < 256; bits++ {
 		if word&1 == 1 {
-			res.Mul(&res, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 	return z.Copy(&res)
