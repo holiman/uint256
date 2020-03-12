@@ -248,15 +248,15 @@ func (z *Int) PaddedBytes(n int) []byte {
 
 // Sub64 set z to the difference x - y, where y is a 64 bit uint
 func (z *Int) Sub64(x *Int, y uint64) {
-	var underflow bool
+	var carry uint64
 
-	if z[0], underflow = u64Sub(x[0], y, underflow); !underflow {
+	if z[0], carry = bits.Sub64(x[0], y, carry); carry == 0 {
 		return
 	}
-	if z[1], underflow = u64Sub(x[1], 0, underflow); !underflow {
+	if z[1], carry = bits.Sub64(x[1], 0, carry); carry == 0 {
 		return
 	}
-	if z[2], underflow = u64Sub(x[2], 0, underflow); !underflow {
+	if z[2], carry = bits.Sub64(x[2], 0, carry); carry == 0 {
 		return
 	}
 	z[3]--
@@ -264,28 +264,17 @@ func (z *Int) Sub64(x *Int, y uint64) {
 
 // Sub sets z to the difference x-y and returns true if the operation underflowed
 func (z *Int) SubOverflow(x, y *Int) bool {
-	var (
-		underflow bool
-	)
-	z[0], underflow = u64Sub(x[0], y[0], underflow)
-	z[1], underflow = u64Sub(x[1], y[1], underflow)
-	z[2], underflow = u64Sub(x[2], y[2], underflow)
-	z[3], underflow = u64Sub(z[3], y[3], underflow)
-	return underflow
+	var carry uint64
+	z[0], carry = bits.Sub64(x[0], y[0], carry)
+	z[1], carry = bits.Sub64(x[1], y[1], carry)
+	z[2], carry = bits.Sub64(x[2], y[2], carry)
+	z[3], carry = bits.Sub64(x[3], y[3], carry)
+	return carry != 0
 }
 
 // Sub sets z to the difference x-y
 func (z *Int) Sub(x, y *Int) {
-	var underflow bool
-
-	z[0], underflow = u64Sub(x[0], y[0], underflow)
-	z[1], underflow = u64Sub(x[1], y[1], underflow)
-	z[2], underflow = u64Sub(x[2], y[2], underflow)
-	if underflow {
-		z[3] = x[3] - y[3] - 1
-	} else {
-		z[3] = x[3] - y[3]
-	}
+	z.SubOverflow(x, y) // Inlined.
 }
 
 // Mul sets z to the sum x*y
