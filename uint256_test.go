@@ -686,8 +686,29 @@ func TestFixedExp(t *testing.T) {
 
 	fb_res, _ := FromBig(b_res)
 	fmt.Printf("EQ  : %v\n", res.Eq(fb_res))
-
 }
+
+// TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
+func TestFixedExpReusedArgs(t *testing.T) {
+	f2 := Int{2, 0, 0, 0}
+	f2.Exp(&f2, &f2)
+	requireEq(t, big.NewInt(2*2), &f2, "")
+
+	f3 := Int{3, 0, 0, 0}
+	f4 := Int{4, 0, 0, 0}
+	f3.Exp(&f4, &f3)
+	requireEq(t, big.NewInt(4*4*4), &f3, "")
+
+	f5 := Int{5, 0, 0, 0}
+	f6 := Int{6, 0, 0, 0}
+	f6.Exp(&f6, &f5)
+	requireEq(t, big.NewInt(6*6*6*6*6), &f6, "")
+
+	f3 = Int{3, 0, 0, 0}
+	fr := new(Int).Exp(&f3, &f3)
+	requireEq(t, big.NewInt(3*3*3), fr, "")
+}
+
 func TestAddmod(t *testing.T) {
 	b1 := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"))
 	b2 := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
