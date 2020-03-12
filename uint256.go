@@ -179,16 +179,6 @@ func (z *Int) Clone() *Int {
 	return &Int{z[0], z[1], z[2], z[3]}
 }
 
-// u64Add returns a+b+carry and whether overflow occurred
-func u64Add(a, b uint64, c bool) (uint64, bool) {
-	if c {
-		e := a + b + 1
-		return e, e <= a
-	}
-	e := a + b
-	return e, e < a
-}
-
 // u64Sub returns a-b-carry and whether underflow occurred
 func u64Sub(a, b uint64, c bool) (uint64, bool) {
 	if c {
@@ -199,26 +189,17 @@ func u64Sub(a, b uint64, c bool) (uint64, bool) {
 
 // Add sets z to the sum x+y
 func (z *Int) Add(x, y *Int) {
-	var (
-		carry bool
-	)
-	z[0], carry = u64Add(x[0], y[0], carry)
-	z[1], carry = u64Add(x[1], y[1], carry)
-	z[2], carry = u64Add(x[2], y[2], carry)
-	// Last group
-	z[3] = x[3] + y[3]
-	if carry {
-		z[3]++
-	}
+	z.AddOverflow(x, y) // Inlined.
 }
 
 // AddOverflow sets z to the sum x+y, and returns whether overflow occurred
 func (z *Int) AddOverflow(x, y *Int) bool {
-	var carry bool
-	for i := range z {
-		z[i], carry = u64Add(x[i], y[i], carry)
-	}
-	return carry
+	var carry uint64
+	z[0], carry = bits.Add64(x[0], y[0], 0)
+	z[1], carry = bits.Add64(x[1], y[1], carry)
+	z[2], carry = bits.Add64(x[2], y[2], carry)
+	z[3], carry = bits.Add64(x[3], y[3], carry)
+	return carry != 0
 }
 
 // Add sets z to the sum ( x+y ) mod m
@@ -246,36 +227,11 @@ func (z *Int) AddMod(x, y, m *Int) {
 	z.Mod(z, m)
 }
 
-// addLow128 adds two uint64 integers to the lower half of z ( y is the least significant)
-func (z *Int) addLow128(x, y uint64) {
-	var carry bool
-	z[0], carry = u64Add(z[0], y, carry)
-	z[1], carry = u64Add(z[1], x, carry)
-	if carry {
-		if z[2]++; z[2] == 0 {
-			z[3]++
-		}
-	}
-}
-
-// addMiddle128 adds two uint64 integers to the middle part of z
-func (z *Int) addMiddle128(x, y uint64) {
-	var carry bool
-	z[1], carry = u64Add(z[1], y, carry)
-	z[2], carry = u64Add(z[2], x, carry)
-	if carry {
-		z[3]++
-	}
-}
-
 // addMiddle128 adds two uint64 integers to the upper part of z
 func (z *Int) addHigh128(x, y uint64) {
-	var carry bool
-	z[2], carry = u64Add(z[2], y, carry)
-	if carry {
-		z[3]++
-	}
-	z[3] += x
+	var carry uint64
+	z[2], carry = bits.Add64(z[2], y, carry) // TODO: The order of adding x, y is confusing.
+	z[3], carry = bits.Add64(z[3], x, carry)
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
