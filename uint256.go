@@ -220,10 +220,10 @@ func (z *Int) AddMod(x, y, m *Int) {
 }
 
 // addMiddle128 adds two uint64 integers to the upper part of z
-func (z *Int) addHigh128(x, y uint64) {
+func addTo128(z []uint64, x0, x1 uint64) {
 	var carry uint64
-	z[2], carry = bits.Add64(z[2], y, carry) // TODO: The order of adding x, y is confusing.
-	z[3], _ = bits.Add64(z[3], x, carry)
+	z[0], carry = bits.Add64(z[0], x0, carry) // TODO: The order of adding x, y is confusing.
+	z[1], _ = bits.Add64(z[1], x1, carry)
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
@@ -325,10 +325,10 @@ func (z *Int) Mul(x, y *Int) {
 	alfa.Add(alfa, beta)
 
 	beta[3], beta[2] = bits.Mul64(x[1], y[1])
-	alfa.addHigh128(beta[3], beta[2])
+	addTo128(alfa[2:], beta[2], beta[3])
 
 	beta[3], beta[2] = bits.Mul64(x[2], y[0])
-	alfa.addHigh128(beta[3], beta[2])
+	addTo128(alfa[2:], beta[2], beta[3])
 	z.Copy(alfa)
 }
 
@@ -355,7 +355,7 @@ func (z *Int) Squared() {
 
 	// c * c
 	beta[3], beta[2] = bits.Mul64(z[1], z[1])
-	alfa.addHigh128(beta[3], beta[2])
+	addTo128(alfa[2:], beta[2], beta[3])
 	z.Copy(alfa)
 }
 
@@ -1160,8 +1160,8 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		return z.Copy(base)
 	}
 	var (
-		word uint64
-		bits int
+		word       uint64
+		bits       int
 		multiplier = *base
 	)
 	expBitlen := exponent.BitLen()
