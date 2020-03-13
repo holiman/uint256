@@ -11,7 +11,14 @@ jobs:
           command: |
             go version
             go env
+      - run:
+          name: "Install tools"
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.23.8
       - checkout
+      - run:
+          name: "Lint"
+          command: golangci-lint run
       - run:
           name: "Test"
           command: go test -v
