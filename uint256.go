@@ -284,10 +284,11 @@ func umul(x, y *Int) [8]uint64 {
 	var res [8]uint64
 	for j := 0; j < len(y); j++ {
 		var carry uint64
-		for i := 0; i < len(x); i++ {
-			res[i+j], carry = umulStep(res[i+j], x[i], y[j], carry)
-		}
-		res[j+len(x)] = carry
+		res[j+0], carry = umulStep(res[j+0], x[0], y[j], carry)
+		res[j+1], carry = umulStep(res[j+1], x[1], y[j], carry)
+		res[j+2], carry = umulStep(res[j+2], x[2], y[j], carry)
+		res[j+3], carry = umulStep(res[j+3], x[3], y[j], carry)
+		res[j+4] = carry
 	}
 	return res
 }
