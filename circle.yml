@@ -1,0 +1,27 @@
+version: 2.1
+
+jobs:
+
+  linux:
+    docker:
+      - image: cimg/go:1.14
+    steps:
+      - run:
+          name: "Go version"
+          command: |
+            go version
+            go env
+      - checkout
+      - run:
+          name: "Test"
+          command: go test -v
+      - run:
+          name: "Benchmark"
+          command: go test -run=- -bench=. -benchmem
+
+
+workflows:
+  version: 2
+  uint256:
+    jobs:
+      - linux
