@@ -614,34 +614,14 @@ func TestFixed256bit_Sub(t *testing.T) {
 func TestFixed256bit_Mul(t *testing.T) {
 
 	b1 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000002a3f8ba829e365f479526"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
+	b2 := big.NewInt(0).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"))
 
-	/*
-		f1= 0000000000000000.0000000000000000.000000000003e6da.5c61238a298b16ec
-		f2= 0000000000000000.0000000000000000.0000000000000000.000000000000206c
-		[ * ]==
-		f = 1d6c3e387e80a3f8.0000000000000bb3.1d6c3e387e80afab.1d6c437ae98b2b90
-		bf= 0000000000000000.0000000000000000.000000007e80afab.1d6c437ae98b2b90
-		b = 7e80afab1d6c437ae98b2b90
-
-	*/
-
-	f, _ := FromBig(b1)
+	f1, _ := FromBig(b1)
 	f2, _ := FromBig(b2)
 
-	fmt.Printf("B1   : %x\n", b1)
-	fmt.Printf("B2   : %x\n", b2)
-	fmt.Printf("F1   : %s\n", f.Hex())
-	fmt.Printf("F2   : %s\n", f2.Hex())
-	fmt.Println("--")
 	b1.Mul(b1, b2)
-	f.Mul(f, f2)
-	fmt.Printf("B   : %x\n", b1)
-	fmt.Printf("F   : %s\n", f.Hex())
-
-	res, _ := FromBig(b1)
-	fmt.Printf("b->f: %s\n", res.Hex())
-	fmt.Printf("EQ  : %v\n", f.Eq(res))
+	f1.Mul(f1, f2)
+	requireEq(t, b1, f1, "")
 }
 
 func TestFixed256bit_Div(t *testing.T) {
