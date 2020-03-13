@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	_S          = bits.UintSize / 8   // word size in bytes
 	u256_nWords = 256 / bits.UintSize // number of Words in 256-bit
 )
 
