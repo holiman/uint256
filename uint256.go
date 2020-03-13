@@ -179,14 +179,6 @@ func (z *Int) Clone() *Int {
 	return &Int{z[0], z[1], z[2], z[3]}
 }
 
-// u64Sub returns a-b-carry and whether underflow occurred
-func u64Sub(a, b uint64, c bool) (uint64, bool) {
-	if c {
-		return a - b - 1, b >= a
-	}
-	return a - b, b > a
-}
-
 // Add sets z to the sum x+y
 func (z *Int) Add(x, y *Int) {
 	z.AddOverflow(x, y) // Inlined.
@@ -231,7 +223,7 @@ func (z *Int) AddMod(x, y, m *Int) {
 func (z *Int) addHigh128(x, y uint64) {
 	var carry uint64
 	z[2], carry = bits.Add64(z[2], y, carry) // TODO: The order of adding x, y is confusing.
-	z[3], carry = bits.Add64(z[3], x, carry)
+	z[3], _ = bits.Add64(z[3], x, carry)
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
@@ -1170,7 +1162,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	var (
 		word uint64
 		bits int
-		multiplier = *base;
+		multiplier = *base
 	)
 	expBitlen := exponent.BitLen()
 

@@ -29,6 +29,14 @@ func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	return nil
 }
 
+func checkUnderflow(b *big.Int, f *Int, underflow bool) error {
+	shouldUnderflow := (b.Cmp(big.NewInt(0)) < 0)
+	if underflow != shouldUnderflow {
+		return fmt.Errorf("Undeflow should be %v, was %v\nf= %v\nb= %x\b", shouldUnderflow, underflow, f.Hex(), b)
+	}
+	return nil
+}
+
 func randNums() (*big.Int, *Int, error) {
 	//How many bits? 0-256
 	nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
@@ -125,7 +133,9 @@ func TestRandomSubOverflow(t *testing.T) {
 		f1a, f2a := f1.Clone(), f2.Clone()
 		overflow := f1.SubOverflow(f1, f2)
 		b.Sub(b, b2)
-		checkOverflow(b, f1, overflow)
+		if err := checkUnderflow(b, f1, overflow); err != nil {
+			t.Fatal(err)
+		}
 		if eq := checkEq(b, f1); !eq {
 			t.Fatalf("Expected equality:\nf1= %v\nf2= %v\n[ - ]==\nf= %v\nb= %x\n", f1a.Hex(), f2a.Hex(), f1.Hex(), b)
 		}
@@ -230,7 +240,7 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Error getting a random number: %v", err)
 		}
 
-		b4, f4, err := randNums()
+		b4, f4, _ := randNums()
 		for b4.Cmp(big.NewInt(0)) == 0 {
 			b4, f4, err = randNums()
 			if err != nil {
@@ -465,8 +475,6 @@ func TestSGT(t *testing.T) {
 const (
 	// number of bits in a big.Word
 	wordBits = 32 << (uint64(^big.Word(0)) >> 63)
-	// number of bytes in a big.Word
-	wordBytes = wordBits / 8
 )
 
 var (
@@ -1411,14 +1419,14 @@ func TestWriteToSlice(t *testing.T) {
 
 	dest := make([]byte, 32)
 	fa.WriteToSlice(dest)
-	if bytes.Compare(dest, x1) != 0 {
+	if !bytes.Equal(dest, x1) {
 		t.Errorf("got %x, expected %x", dest, x1)
 	}
 
 	fb := NewInt()
 	exp := make([]byte, 32)
 	fb.WriteToSlice(dest)
-	if bytes.Compare(dest, exp) != 0 {
+	if !bytes.Equal(dest, exp) {
 		t.Errorf("got %x, expected %x", dest, exp)
 	}
 	// a too small buffer
@@ -1426,7 +1434,7 @@ func TestWriteToSlice(t *testing.T) {
 	exp = hex2Bytes("683fd1e870eec79504c60144cc7f5fc2bad1e611")
 	dest = make([]byte, 20)
 	fa.WriteToSlice(dest)
-	if bytes.Compare(dest, exp) != 0 {
+	if !bytes.Equal(dest, exp) {
 		t.Errorf("got %x, expected %x", dest, exp)
 	}
 
@@ -1436,7 +1444,7 @@ func TestWriteToSlice(t *testing.T) {
 	exp = hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
 
 	fa.WriteToSlice(dest)
-	if bytes.Compare(dest, exp) != 0 {
+	if !bytes.Equal(dest, exp) {
 		t.Errorf("got %x, expected %x", dest, x1)
 	}
 
@@ -1445,7 +1453,7 @@ func TestWriteToSlice(t *testing.T) {
 	exp = []byte{}
 
 	fa.WriteToSlice(dest)
-	if bytes.Compare(dest, exp) != 0 {
+	if !bytes.Equal(dest, exp) {
 		t.Errorf("got %x, expected %x", dest, x1)
 	}
 
@@ -1459,7 +1467,7 @@ func TestInt_WriteToArray(t *testing.T) {
 		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray20(&dest)
 		exp := hex2Bytes("0000d1e870eec79504c60144cc7f5fc2bad1e611")
-		if bytes.Compare(dest[:], exp) != 0 {
+		if !bytes.Equal(dest[:], exp) {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
 
@@ -1470,7 +1478,7 @@ func TestInt_WriteToArray(t *testing.T) {
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray32(&dest)
 		exp := hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
-		if bytes.Compare(dest[:], exp) != 0 {
+		if !bytes.Equal(dest[:], exp) {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
 
@@ -1483,7 +1491,7 @@ func TestFromBFromBigigOld(t *testing.T) {
 	if !o {
 		t.Errorf("expected overflow, got %v", o)
 	}
-	z, o = FromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	_, o = FromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
 	if o {
 		t.Errorf("expected no overflow, got %v", o)
 	}
@@ -1502,7 +1510,7 @@ func TestFromBig(t *testing.T) {
 	if !o {
 		t.Errorf("expected overflow, got %v", o)
 	}
-	z, o = NewFromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	_, o = NewFromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
 	if o {
 		t.Errorf("expected no overflow, got %v", o)
 	}
@@ -1551,10 +1559,6 @@ func bytesToHash(b []byte) gethHash {
 	a.setBytes(b)
 	return a
 }
-
-// BigToAddress returns Address with byte values of b.
-// If b is larger than len(h), b will be cropped from the left.
-func bigToAddress(b *big.Int) gethAddress { return bytesToAddress(b.Bytes()) }
 
 func TestByte20Representation(t *testing.T) {
 	for i, tt := range []string{
