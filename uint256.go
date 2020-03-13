@@ -269,18 +269,23 @@ func (z *Int) Sub(x, y *Int) {
 	z.SubOverflow(x, y) // Inlined.
 }
 
+// umulStep computes (carry, z) = z + (x * y) + carry.
+func umulStep(z, x, y, carry uint64) (uint64, uint64) {
+	ph, p := bits.Mul64(x, y)
+	p, carry = bits.Add64(p, carry, 0)
+	carry, _ = bits.Add64(ph, 0, carry)
+	p, carry1 := bits.Add64(p, z, 0)
+	carry, _ = bits.Add64(carry, 0, carry1)
+	return p, carry
+}
+
 // umul computes full 256 x 256 -> 512 multiplication.
 func umul(x, y *Int) [8]uint64 {
 	var res [8]uint64
 	for j := 0; j < len(y); j++ {
 		var carry uint64
 		for i := 0; i < len(x); i++ {
-			var p [2]uint64
-			p[1], p[0] = bits.Mul64(x[i], y[j])
-			addTo128(p[:], res[i+j], 0)
-			addTo128(p[:], carry, 0)
-			res[i+j] = p[0]
-			carry = p[1]
+			res[i+j], carry = umulStep(res[i+j], x[i], y[j], carry)
 		}
 		res[j+len(x)] = carry
 	}
