@@ -1156,27 +1156,21 @@ func (z *Int) Hex() string {
 	return fmt.Sprintf("%016x.%016x.%016x.%016x", z[3], z[2], z[1], z[0])
 }
 
-// Exp implements exponentiation by squaring, and sets
-// z to base^exp
+// Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
-	return z.Copy(ExpF(base, exponent))
-}
-
-// ExpF returns a newly-allocated big integer. This method _may_ modify base.
-func ExpF(base, exponent *Int) *Int {
-	z := &Int{1, 0, 0, 0}
+	res := Int{1, 0, 0, 0}
 	// b^0 == 1
 	if exponent.IsZero() || base.IsOne() {
-		return z
+		return z.Copy(&res)
 	}
 	// b^1 == b
 	if exponent.IsOne() {
-		z.Copy(base)
-		return z
+		return z.Copy(base)
 	}
 	var (
 		word uint64
 		bits int
+		multiplier = *base;
 	)
 	expBitlen := exponent.BitLen()
 
@@ -1184,39 +1178,39 @@ func ExpF(base, exponent *Int) *Int {
 	bits = 0
 	for ; bits < expBitlen && bits < 64; bits++ {
 		if word&1 == 1 {
-			z.Mul(z, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 
 	word = exponent[1]
 	for ; bits < expBitlen && bits < 128; bits++ {
 		if word&1 == 1 {
-			z.Mul(z, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 
 	word = exponent[2]
 	for ; bits < expBitlen && bits < 192; bits++ {
 		if word&1 == 1 {
-			z.Mul(z, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
 
 	word = exponent[3]
 	for ; bits < expBitlen && bits < 256; bits++ {
 		if word&1 == 1 {
-			z.Mul(z, base)
+			res.Mul(&res, &multiplier)
 		}
-		base.Squared()
+		multiplier.Squared()
 		word >>= 1
 	}
-	return z
+	return z.Copy(&res)
 }
 
 //Extend length of two’s complement signed integer

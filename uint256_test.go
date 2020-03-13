@@ -529,6 +529,13 @@ func Smod(x, y *big.Int) *big.Int {
 	return U256(res)
 
 }
+
+func referenceExp(base, exponent *big.Int) *big.Int {
+	// TODO: Maybe use the Exp() procedure from above?
+	res := new(big.Int)
+	return res.Exp(base, exponent, bigtt256)
+}
+
 func TestRandomExp(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b_base, base, err := randNums()
@@ -541,7 +548,11 @@ func TestRandomExp(t *testing.T) {
 		}
 		basecopy, expcopy := base.Clone(), exp.Clone()
 
-		f_res := ExpF(base, exp)
+		f_res, overflow := FromBig(referenceExp(base.ToBig(), exp.ToBig()))
+		if overflow {
+			t.Fatal("FromBig(exp) overflow")
+		}
+
 		b_res := Exp(b_base, b_exp)
 		if eq := checkEq(b_res, f_res); !eq {
 			bf, _ := FromBig(b_res)
@@ -664,7 +675,7 @@ func TestFixedExp(t *testing.T) {
 
 	//	base.d = 2
 	//	exp.d = 255
-	res := ExpF(base, exp)
+	res := new(Int).Exp(base, exp)
 
 	b_res := Exp(b_base, b_exp)
 
@@ -675,8 +686,29 @@ func TestFixedExp(t *testing.T) {
 
 	fb_res, _ := FromBig(b_res)
 	fmt.Printf("EQ  : %v\n", res.Eq(fb_res))
-
 }
+
+// TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
+func TestFixedExpReusedArgs(t *testing.T) {
+	f2 := Int{2, 0, 0, 0}
+	f2.Exp(&f2, &f2)
+	requireEq(t, big.NewInt(2*2), &f2, "")
+
+	f3 := Int{3, 0, 0, 0}
+	f4 := Int{4, 0, 0, 0}
+	f3.Exp(&f4, &f3)
+	requireEq(t, big.NewInt(4*4*4), &f3, "")
+
+	f5 := Int{5, 0, 0, 0}
+	f6 := Int{6, 0, 0, 0}
+	f6.Exp(&f6, &f5)
+	requireEq(t, big.NewInt(6*6*6*6*6), &f6, "")
+
+	f3 = Int{3, 0, 0, 0}
+	fr := new(Int).Exp(&f3, &f3)
+	requireEq(t, big.NewInt(3*3*3), fr, "")
+}
+
 func TestAddmod(t *testing.T) {
 	b1 := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"))
 	b2 := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
@@ -1085,10 +1117,11 @@ func benchmark_Exp_Bit(bench *testing.B) {
 	f_base, _ := FromBig(base)
 	f_orig, _ := FromBig(base)
 	f_exp, _ := FromBig(exp)
+	f_res := Int{}
 
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		ExpF(f_base, f_exp)
+		f_res.Exp(f_base, f_exp)
 		f_base.Copy(f_orig)
 	}
 }
@@ -1116,10 +1149,11 @@ func benchmark_ExpSmall_Bit(bench *testing.B) {
 	f_base, _ := FromBig(base)
 	f_orig, _ := FromBig(base)
 	f_exp, _ := FromBig(exp)
+	f_res := Int{}
 
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		ExpF(f_base, f_exp)
+		f_res.Exp(f_base, f_exp)
 		f_base.Copy(f_orig)
 	}
 }
