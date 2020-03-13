@@ -269,6 +269,24 @@ func (z *Int) Sub(x, y *Int) {
 	z.SubOverflow(x, y) // Inlined.
 }
 
+// umul computes full 256 x 256 -> 512 multiplication.
+func umul(x, y *Int) [8]uint64 {
+	var res [8]uint64
+	for j := 0; j < len(y); j++ {
+		var carry uint64
+		for i := 0; i < len(x); i++ {
+			var p [2]uint64
+			p[1], p[0] = bits.Mul64(x[i], y[j])
+			addTo128(p[:], res[i+j], 0)
+			addTo128(p[:], carry, 0)
+			res[i+j] = p[0]
+			carry = p[1]
+		}
+		res[j+len(x)] = carry
+	}
+	return res
+}
+
 // Mul sets z to the sum x*y
 func (z *Int) Mul(x, y *Int) {
 
