@@ -586,26 +586,33 @@ func (z *Int) Smod(x, y *Int) *Int {
 // MulMod calculates the modulo-n multiplication of x and y and
 // returns z
 func (z *Int) MulMod(x, y, m *Int) *Int {
-	// If we can do multiplication within 256 bytes, no need to wrap bigints
-	// i.e: if both x and y are <= 128 bytes
-	if x.IsUint128() && y.IsUint128() {
+	p := umul(x, y)
+	var (
+		pl Int
+		ph Int
+	)
+	copy(pl[:], p[:4])
+	copy(ph[:], p[4:])
 
-		if z == m { //z is an alias for m
+	// If the multiplication is within 256 bits use Mod().
+	if ph.IsZero() {
+		if z == m { //z is an alias for m; TODO: This should not be needed.
 			m = m.Clone()
 		}
-		z.Mul(x, y)
-		z.Mod(z, m)
+		z.Mod(&pl, m)
 		return z
 	}
+
+	var pbytes [len(p) * 8]byte
+	for i := 0; i < len(pbytes); i++ {
+		pbytes[len(pbytes)-1-i] = byte(p[i/8] >> uint64(8*(i%8)))
+	}
+
 	// At this point, we _could_ do x=x mod m, y = y mod m, and test again
 	// if they fit within 256 bytes. But for now just wrap big.Int instead
-	bx := big.NewInt(0)
-	by := big.NewInt(0)
-	bx.SetBytes(x.Bytes()[:])
-	by.SetBytes(y.Bytes()[:])
-	bx.Mul(bx, by)
-	by.SetBytes(m.Bytes()[:])
-	z.SetFromBig(bx.Mod(bx, by))
+	bp := new(big.Int)
+	bp.SetBytes(pbytes[:])
+	z.SetFromBig(bp.Mod(bp, m.ToBig()))
 	return z
 }
 
