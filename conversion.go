@@ -16,13 +16,23 @@ const (
 	u256_nWords = 256 / bits.UintSize // number of Words in 256-bit
 )
 
-// marshallBigintGeneric is a platform-independent implementation of MarshallBigInt
+// NewFromBig is a platform-independent implementation of MarshallBigInt
 func NewFromBig(b *big.Int) (*Int, bool) {
+	fixed := &Int{}
+	overflow := fixed.SetFromBigFast(b)
+	return fixed, overflow
+}
+
+// SetFromBigFast
+// TODO: finish implementation by adding 32-bit platform support,
+// ensure we have sufficient testing, esp for negative bigints
+func (fixed *Int) SetFromBigFast(b *big.Int) bool {
 	var overflow bool
+	fixed.Clear()
 	z := b.Bits()
 	numWords := len(z)
 	if numWords == 0 {
-		return &Int{}, overflow
+		return overflow
 	}
 	// If there's more than 64 bits, we can skip all higher words
 	// z consists of 64 or 32-bit words. So we only care about the last
@@ -33,7 +43,6 @@ func NewFromBig(b *big.Int) (*Int, bool) {
 		overflow = true
 	}
 	// Code below is for 64-bit platforms only (numWords: [1-4] )
-	fixed := &Int{}
 	fixed[0] = uint64(z[0])
 	if numWords > 1 {
 		fixed[1] = uint64(z[1])
@@ -47,6 +56,5 @@ func NewFromBig(b *big.Int) (*Int, bool) {
 	if b.Sign() == -1 {
 		fixed.Neg()
 	}
-	return fixed, overflow
-
+	return overflow
 }
