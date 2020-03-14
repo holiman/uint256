@@ -220,10 +220,10 @@ func (z *Int) AddMod(x, y, m *Int) {
 }
 
 // addMiddle128 adds two uint64 integers to the upper part of z
-func (z *Int) addHigh128(x, y uint64) {
+func addTo128(z []uint64, x0, x1 uint64) {
 	var carry uint64
-	z[2], carry = bits.Add64(z[2], y, carry) // TODO: The order of adding x, y is confusing.
-	z[3], _ = bits.Add64(z[3], x, carry)
+	z[0], carry = bits.Add64(z[0], x0, carry) // TODO: The order of adding x, y is confusing.
+	z[1], _ = bits.Add64(z[1], x1, carry)
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
@@ -267,6 +267,30 @@ func (z *Int) SubOverflow(x, y *Int) bool {
 // Sub sets z to the difference x-y
 func (z *Int) Sub(x, y *Int) {
 	z.SubOverflow(x, y) // Inlined.
+}
+
+// umulStep computes (carry, z) = z + (x * y) + carry.
+func umulStep(z, x, y, carry uint64) (uint64, uint64) {
+	ph, p := bits.Mul64(x, y)
+	p, carry = bits.Add64(p, carry, 0)
+	carry, _ = bits.Add64(ph, 0, carry)
+	p, carry1 := bits.Add64(p, z, 0)
+	carry, _ = bits.Add64(carry, 0, carry1)
+	return p, carry
+}
+
+// umul computes full 256 x 256 -> 512 multiplication.
+func umul(x, y *Int) [8]uint64 {
+	var res [8]uint64
+	for j := 0; j < len(y); j++ {
+		var carry uint64
+		res[j+0], carry = umulStep(res[j+0], x[0], y[j], carry)
+		res[j+1], carry = umulStep(res[j+1], x[1], y[j], carry)
+		res[j+2], carry = umulStep(res[j+2], x[2], y[j], carry)
+		res[j+3], carry = umulStep(res[j+3], x[3], y[j], carry)
+		res[j+4] = carry
+	}
+	return res
 }
 
 // Mul sets z to the sum x*y
@@ -325,10 +349,10 @@ func (z *Int) Mul(x, y *Int) {
 	alfa.Add(alfa, beta)
 
 	beta[3], beta[2] = bits.Mul64(x[1], y[1])
-	alfa.addHigh128(beta[3], beta[2])
+	addTo128(alfa[2:], beta[2], beta[3])
 
 	beta[3], beta[2] = bits.Mul64(x[2], y[0])
-	alfa.addHigh128(beta[3], beta[2])
+	addTo128(alfa[2:], beta[2], beta[3])
 	z.Copy(alfa)
 }
 
@@ -355,7 +379,7 @@ func (z *Int) Squared() {
 
 	// c * c
 	beta[3], beta[2] = bits.Mul64(z[1], z[1])
-	alfa.addHigh128(beta[3], beta[2])
+	addTo128(alfa[2:], beta[2], beta[3])
 	z.Copy(alfa)
 }
 
@@ -568,26 +592,33 @@ func (z *Int) Smod(x, y *Int) *Int {
 // MulMod calculates the modulo-n multiplication of x and y and
 // returns z
 func (z *Int) MulMod(x, y, m *Int) *Int {
-	// If we can do multiplication within 256 bytes, no need to wrap bigints
-	// i.e: if both x and y are <= 128 bytes
-	if x.IsUint128() && y.IsUint128() {
+	p := umul(x, y)
+	var (
+		pl Int
+		ph Int
+	)
+	copy(pl[:], p[:4])
+	copy(ph[:], p[4:])
 
-		if z == m { //z is an alias for m
+	// If the multiplication is within 256 bits use Mod().
+	if ph.IsZero() {
+		if z == m { //z is an alias for m; TODO: This should not be needed.
 			m = m.Clone()
 		}
-		z.Mul(x, y)
-		z.Mod(z, m)
+		z.Mod(&pl, m)
 		return z
 	}
+
+	var pbytes [len(p) * 8]byte
+	for i := 0; i < len(pbytes); i++ {
+		pbytes[len(pbytes)-1-i] = byte(p[i/8] >> uint64(8*(i%8)))
+	}
+
 	// At this point, we _could_ do x=x mod m, y = y mod m, and test again
 	// if they fit within 256 bytes. But for now just wrap big.Int instead
-	bx := big.NewInt(0)
-	by := big.NewInt(0)
-	bx.SetBytes(x.Bytes()[:])
-	by.SetBytes(y.Bytes()[:])
-	bx.Mul(bx, by)
-	by.SetBytes(m.Bytes()[:])
-	z.SetFromBig(bx.Mod(bx, by))
+	bp := new(big.Int)
+	bp.SetBytes(pbytes[:])
+	z.SetFromBig(bp.Mod(bp, m.ToBig()))
 	return z
 }
 
@@ -1160,8 +1191,8 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		return z.Copy(base)
 	}
 	var (
-		word uint64
-		bits int
+		word       uint64
+		bits       int
 		multiplier = *base
 	)
 	expBitlen := exponent.BitLen()
