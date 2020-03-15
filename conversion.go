@@ -13,40 +13,55 @@ import (
 )
 
 const (
-	u256_nWords = 256 / bits.UintSize // number of Words in 256-bit
+	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
 )
 
-// marshallBigintGeneric is a platform-independent implementation of MarshallBigInt
+// NewFromBig creates new Int from big.Int.
 func NewFromBig(b *big.Int) (*Int, bool) {
-	var overflow bool
-	z := b.Bits()
-	numWords := len(z)
-	if numWords == 0 {
-		return &Int{}, overflow
-	}
-	// If there's more than 64 bits, we can skip all higher words
-	// z consists of 64 or 32-bit words. So we only care about the last
-	// (or last two)
-	if numWords > u256_nWords {
-		z = z[:u256_nWords]
-		numWords = len(z)
-		overflow = true
-	}
-	// Code below is for 64-bit platforms only (numWords: [1-4] )
-	fixed := &Int{}
-	fixed[0] = uint64(z[0])
-	if numWords > 1 {
-		fixed[1] = uint64(z[1])
-		if numWords > 2 {
-			fixed[2] = uint64(z[2])
-			if numWords > 3 {
-				fixed[3] = uint64(z[3])
+	z := &Int{}
+	overflow := z.SetFromBig(b)
+	return z, overflow
+}
+
+// SetFromBig converts a big.Int to Int and sets the value to z.
+// TODO: Ensure we have sufficient testing, esp for negative bigints.
+func (z *Int) SetFromBig(b *big.Int) bool {
+	z.Clear()
+	words := b.Bits()
+	overflow := len(words) > maxWords
+
+	switch maxWords { // Compile-time check.
+	case 4: // 64-bit architectures.
+		if len(words) > 0 {
+			z[0] = uint64(words[0])
+			if len(words) > 1 {
+				z[1] = uint64(words[1])
+				if len(words) > 2 {
+					z[2] = uint64(words[2])
+					if len(words) > 3 {
+						z[3] = uint64(words[3])
+					}
+				}
 			}
 		}
+	case 8: // 32-bit architectures.
+		numWords := len(words)
+		if overflow {
+			numWords = maxWords
+		}
+		for i := 0; i < numWords; i++ {
+			if i%2 == 0 {
+				z[i/2] = uint64(words[i])
+			} else {
+				z[i/2] |= uint64(words[i]) << 32
+			}
+		}
+	default:
+		panic("unsupported architecture")
 	}
-	if b.Sign() == -1 {
-		fixed.Neg()
-	}
-	return fixed, overflow
 
+	if b.Sign() == -1 {
+		z.Neg()
+	}
+	return overflow
 }

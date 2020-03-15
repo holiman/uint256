@@ -1320,6 +1320,31 @@ func Benchmark_SDiv(bench *testing.B) {
 	bench.Run("large/uint256", benchmark_SdivLarge_Bit)
 }
 
+func benchmarkSetFromBig(bench *testing.B, b *big.Int) Int {
+	var f Int
+	for i := 0; i < bench.N; i++ {
+		f.SetFromBig(b)
+	}
+	return f
+}
+
+func BenchmarkSetFromBig(bench *testing.B) {
+	param1 := big.NewInt(0xff)
+	bench.Run("1word", func(bench *testing.B) { benchmarkSetFromBig(bench, param1) })
+
+	param2 := new(big.Int).Lsh(param1, 64)
+	bench.Run("2words", func(bench *testing.B) { benchmarkSetFromBig(bench, param2) })
+
+	param3 := new(big.Int).Lsh(param2, 64)
+	bench.Run("3words", func(bench *testing.B) { benchmarkSetFromBig(bench, param3) })
+
+	param4 := new(big.Int).Lsh(param3, 64)
+	bench.Run("4words", func(bench *testing.B) { benchmarkSetFromBig(bench, param4) })
+
+	param5 := new(big.Int).Lsh(param4, 64)
+	bench.Run("overflow", func(bench *testing.B) { benchmarkSetFromBig(bench, param5) })
+}
+
 func TestByteRepresentation(t *testing.T) {
 
 	//0e320219838e859b2f9f18b72e3d4073ca50b37d

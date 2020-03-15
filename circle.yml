@@ -1,16 +1,28 @@
 version: 2.1
 
+commands:
+  test:
+    parameters:
+      arch:
+        default: "amd64"
+        description: The target architecture.
+        type: enum
+        enum: ["amd64", "386"]
+    steps:
+      - run:
+          name: "Test (<<parameters.arch>>)"
+          command: |
+            export GOARCH=<<parameters.arch>>
+            go version
+            go env
+            go test -v
+
 jobs:
 
   linux:
     docker:
       - image: cimg/go:1.14
     steps:
-      - run:
-          name: "Go version"
-          command: |
-            go version
-            go env
       - run:
           name: "Install tools"
           command: |
@@ -19,9 +31,10 @@ jobs:
       - run:
           name: "Lint"
           command: golangci-lint run
-      - run:
-          name: "Test"
-          command: go test -v
+      - test:
+          arch: "amd64"
+      - test:
+          arch: "386"
       - run:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
