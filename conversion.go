@@ -13,48 +13,48 @@ import (
 )
 
 const (
-	u256_nWords = 256 / bits.UintSize // number of Words in 256-bit
+	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
 )
 
-// NewFromBig is a platform-independent implementation of MarshallBigInt
+// NewFromBig creates new Int from big.Int.
 func NewFromBig(b *big.Int) (*Int, bool) {
-	fixed := &Int{}
-	overflow := fixed.SetFromBig(b)
-	return fixed, overflow
+	z := &Int{}
+	overflow := z.SetFromBig(b)
+	return z, overflow
 }
 
 // SetFromBig
 // TODO: finish implementation by adding 32-bit platform support,
 // ensure we have sufficient testing, esp for negative bigints
-func (fixed *Int) SetFromBig(b *big.Int) bool {
+func (z *Int) SetFromBig(b *big.Int) bool {
 	var overflow bool
-	fixed.Clear()
-	z := b.Bits()
-	numWords := len(z)
+	z.Clear()
+	words := b.Bits()
+	numWords := len(words)
 	if numWords == 0 {
 		return overflow
 	}
 	// If there's more than 64 bits, we can skip all higher words
-	// z consists of 64 or 32-bit words. So we only care about the last
+	// words consists of 64 or 32-bit words. So we only care about the last
 	// (or last two)
-	if numWords > u256_nWords {
-		z = z[:u256_nWords]
-		numWords = len(z)
+	if numWords > maxWords {
+		words = words[:maxWords]
+		numWords = len(words)
 		overflow = true
 	}
 	// Code below is for 64-bit platforms only (numWords: [1-4] )
-	fixed[0] = uint64(z[0])
+	z[0] = uint64(words[0])
 	if numWords > 1 {
-		fixed[1] = uint64(z[1])
+		z[1] = uint64(words[1])
 		if numWords > 2 {
-			fixed[2] = uint64(z[2])
+			z[2] = uint64(words[2])
 			if numWords > 3 {
-				fixed[3] = uint64(z[3])
+				z[3] = uint64(words[3])
 			}
 		}
 	}
 	if b.Sign() == -1 {
-		fixed.Neg()
+		z.Neg()
 	}
 	return overflow
 }
