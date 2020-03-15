@@ -61,15 +61,6 @@ func (z *Int) ToBig() *big.Int {
 	return x
 }
 
-// SetFromBig is a convenience-setter from big.Int. Not optimized for speed, mainly for easy testing
-func (z *Int) SetFromBig(int *big.Int) bool {
-	z.SetBytes(int.Bytes())
-	if int.Sign() == -1 {
-		z.Neg()
-	}
-	return int.BitLen() > 256
-}
-
 // SetBytes interprets buf as the bytes of a big-endian unsigned
 // integer, sets z to that value, and returns z.
 func (z *Int) SetBytes(buf []byte) *Int {

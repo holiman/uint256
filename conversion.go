@@ -19,14 +19,14 @@ const (
 // NewFromBig is a platform-independent implementation of MarshallBigInt
 func NewFromBig(b *big.Int) (*Int, bool) {
 	fixed := &Int{}
-	overflow := fixed.SetFromBigFast(b)
+	overflow := fixed.SetFromBig(b)
 	return fixed, overflow
 }
 
-// SetFromBigFast
+// SetFromBig
 // TODO: finish implementation by adding 32-bit platform support,
 // ensure we have sufficient testing, esp for negative bigints
-func (fixed *Int) SetFromBigFast(b *big.Int) bool {
+func (fixed *Int) SetFromBig(b *big.Int) bool {
 	var overflow bool
 	fixed.Clear()
 	z := b.Bits()
