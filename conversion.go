@@ -27,32 +27,24 @@ func NewFromBig(b *big.Int) (*Int, bool) {
 // TODO: finish implementation by adding 32-bit platform support,
 // ensure we have sufficient testing, esp for negative bigints
 func (z *Int) SetFromBig(b *big.Int) bool {
-	var overflow bool
 	z.Clear()
 	words := b.Bits()
-	numWords := len(words)
-	if numWords == 0 {
-		return overflow
-	}
-	// If there's more than 64 bits, we can skip all higher words
-	// words consists of 64 or 32-bit words. So we only care about the last
-	// (or last two)
-	if numWords > maxWords {
-		words = words[:maxWords]
-		numWords = len(words)
-		overflow = true
-	}
-	// Code below is for 64-bit platforms only (numWords: [1-4] )
-	z[0] = uint64(words[0])
-	if numWords > 1 {
-		z[1] = uint64(words[1])
-		if numWords > 2 {
-			z[2] = uint64(words[2])
-			if numWords > 3 {
-				z[3] = uint64(words[3])
+	overflow := len(words) > maxWords
+
+	// Code below is for 64-bit platforms only (len(words): [1-4])
+	if len(words) > 0 {
+		z[0] = uint64(words[0])
+		if len(words) > 1 {
+			z[1] = uint64(words[1])
+			if len(words) > 2 {
+				z[2] = uint64(words[2])
+				if len(words) > 3 {
+					z[3] = uint64(words[3])
+				}
 			}
 		}
 	}
+
 	if b.Sign() == -1 {
 		z.Neg()
 	}
