@@ -23,9 +23,8 @@ func NewFromBig(b *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
-// SetFromBig
-// TODO: finish implementation by adding 32-bit platform support,
-// ensure we have sufficient testing, esp for negative bigints
+// SetFromBig converts a big.Int to Int and sets the value to z.
+// TODO: Ensure we have sufficient testing, esp for negative bigints.
 func (z *Int) SetFromBig(b *big.Int) bool {
 	z.Clear()
 	words := b.Bits()
@@ -43,6 +42,18 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 						z[3] = uint64(words[3])
 					}
 				}
+			}
+		}
+	case 8: // 32-bit architectures.
+		numWords := len(words)
+		if overflow {
+			numWords = maxWords
+		}
+		for i := 0; i < numWords; i++ {
+			if i%2 == 0 {
+				z[i/2] = uint64(words[i])
+			} else {
+				z[i/2] |= uint64(words[i]) << 32
 			}
 		}
 	default:
