@@ -31,18 +31,22 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 	words := b.Bits()
 	overflow := len(words) > maxWords
 
-	// Code below is for 64-bit platforms only (len(words): [1-4])
-	if len(words) > 0 {
-		z[0] = uint64(words[0])
-		if len(words) > 1 {
-			z[1] = uint64(words[1])
-			if len(words) > 2 {
-				z[2] = uint64(words[2])
-				if len(words) > 3 {
-					z[3] = uint64(words[3])
+	switch maxWords { // Compile-time check.
+	case 4: // 64-bit architectures.
+		if len(words) > 0 {
+			z[0] = uint64(words[0])
+			if len(words) > 1 {
+				z[1] = uint64(words[1])
+				if len(words) > 2 {
+					z[2] = uint64(words[2])
+					if len(words) > 3 {
+						z[3] = uint64(words[3])
+					}
 				}
 			}
 		}
+	default:
+		panic("unsupported architecture")
 	}
 
 	if b.Sign() == -1 {
