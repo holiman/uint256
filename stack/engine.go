@@ -2,169 +2,83 @@ package stack
 
 import "github.com/holiman/uint256"
 
-// 0x0 range - arithmetic ops.
-const (
-	STOP byte = iota
-	ADD
-	MUL
-	SUB
-	DIV
-	SDIV
-	MOD
-	SMOD
-	ADDMOD
-	MULMOD
-	EXP
-	SIGNEXTEND
-)
+type simpleOp func(*StackMachine)
+type simpleOp func(*StackMachine, uint64) (uint64, error)
 
-// 0x10 range - comparison ops.
-const (
-	LT byte = iota + 0x10
-	GT
-	SLT
-	SGT
-	EQ
-	ISZERO
-	AND
-	OR
-	XOR
-	NOT
-	BYTE
-	SHL
-	SHR
-	SAR
 
-	SHA3 = 0x20
-)
-const (
-	ADDRESS     = byte(0x30)
-	ORIGIN      = byte(0x32)
-	CALLER      = byte(0x33)
-	CALLVALUE   = byte(0x34)
-	GASPRICE    = byte(0x3a)
-	COINBASE    = byte(0x41)
-	TIMESTAMP   = byte(0x42)
-	NUMBER      = byte(0x43)
-	DIFFICULTY  = byte(0x44)
-	GASLIMIT    = byte(0x45)
-	CHAINID     = byte(0x46)
-	SELFBALANCE = byte(0x47)
-)
-
-const (
-	POP byte = 0x50 + iota
-	MLOAD
-	MSTORE
-	MSTORE8
-	SLOAD
-	SSTORE
-	JUMP
-	JUMPI
-	PC
-	MSIZE
-	GAS
-	JUMPDEST
-)
-
-// 0x60 range.
-// 0x60 range.
-const (
-	PUSH1 byte = 0x60 + iota
-	PUSH2
-	PUSH3
-	PUSH4
-	PUSH5
-	PUSH6
-	PUSH7
-	PUSH8
-	PUSH9
-	PUSH10
-	PUSH11
-	PUSH12
-	PUSH13
-	PUSH14
-	PUSH15
-	PUSH16
-	PUSH17
-	PUSH18
-	PUSH19
-	PUSH20
-	PUSH21
-	PUSH22
-	PUSH23
-	PUSH24
-	PUSH25
-	PUSH26
-	PUSH27
-	PUSH28
-	PUSH29
-	PUSH30
-	PUSH31
-	PUSH32
-	DUP1
-	DUP2
-	DUP3
-	DUP4
-	DUP5
-	DUP6
-	DUP7
-	DUP8
-	DUP9
-	DUP10
-	DUP11
-	DUP12
-	DUP13
-	DUP14
-	DUP15
-	DUP16
-	SWAP1
-	SWAP2
-	SWAP3
-	SWAP4
-	SWAP5
-	SWAP6
-	SWAP7
-	SWAP8
-	SWAP9
-	SWAP10
-	SWAP11
-	SWAP12
-	SWAP13
-	SWAP14
-	SWAP15
-	SWAP16
-)
-
-type stackOp func(*StackMachine)
-
-var stackFuncs [256]stackOp
+var simpleFuncs [256]simpleOp
+var complexFuncs [256]complexOp
 
 func init() {
 
-	stackFuncs[ADD] = (*StackMachine).opAdd
-	stackFuncs[MUL] = (*StackMachine).opMul
-	stackFuncs[SUB] = (*StackMachine).opSub
-	stackFuncs[DIV] = (*StackMachine).opDiv
-	stackFuncs[SDIV] = (*StackMachine).opSdiv
-	stackFuncs[MOD] = (*StackMachine).opMod
-	stackFuncs[SMOD] = (*StackMachine).opSMod
-	stackFuncs[ADDMOD] = (*StackMachine).opAddmod
-	stackFuncs[MULMOD] = (*StackMachine).opMulmod
-	stackFuncs[EXP] = (*StackMachine).opExp
-	stackFuncs[SIGNEXTEND] = (*StackMachine).opSignExtend
+	simpleFuncs[ADD] = (*StackMachine).opAdd
+	simpleFuncs[MUL] = (*StackMachine).opMul
+	simpleFuncs[SUB] = (*StackMachine).opSub
+	simpleFuncs[DIV] = (*StackMachine).opDiv
+	simpleFuncs[SDIV] = (*StackMachine).opSdiv
+	simpleFuncs[MOD] = (*StackMachine).opMod
+	simpleFuncs[SMOD] = (*StackMachine).opSMod
+	simpleFuncs[ADDMOD] = (*StackMachine).opAddmod
+	simpleFuncs[MULMOD] = (*StackMachine).opMulmod
+	simpleFuncs[EXP] = (*StackMachine).opExp
+	simpleFuncs[SIGNEXTEND] = (*StackMachine).opSignExtend
 
-	stackFuncs[ORIGIN] = (*StackMachine).opOrigin
-	stackFuncs[GASPRICE] = (*StackMachine).opGasprice
-	stackFuncs[COINBASE] = (*StackMachine).opCoinbase
-	stackFuncs[TIMESTAMP] = (*StackMachine).opTimestamp
-	stackFuncs[NUMBER] = (*StackMachine).opNumber
-	stackFuncs[DIFFICULTY] = (*StackMachine).opDifficulty
-	stackFuncs[CHAINID] = (*StackMachine).opChainId
+	simpleFuncs[ORIGIN] = (*StackMachine).opOrigin
+	simpleFuncs[GASPRICE] = (*StackMachine).opGasprice
+	simpleFuncs[COINBASE] = (*StackMachine).opCoinbase
+	simpleFuncs[TIMESTAMP] = (*StackMachine).opTimestamp
+	simpleFuncs[NUMBER] = (*StackMachine).opNumber
+	simpleFuncs[DIFFICULTY] = (*StackMachine).opDifficulty
+	simpleFuncs[CHAINID] = (*StackMachine).opChainId
+
+	complexFuncs[MLOAD] = (*StackMachine).opTodo()
+	simpleFuncs[MSIZE] = (*StackMachine).opMsize()
+
+	complexFuncs[STOP] = (*StackMachine).opTodo()
+	complexFuncs[ADDRESS] = (*StackMachine).opTodo()
+	complexFuncs[CALLER] = (*StackMachine).opTodo()
+	complexFuncs[CALLVALUE] = (*StackMachine).opTodo()
+	complexFuncs[CALLDATALOAD] = (*StackMachine).opTodo()
+	complexFuncs[CALLDATACOPY] = (*StackMachine).opTodo()
+	complexFuncs[CODESIZE] = (*StackMachine).opTodo()
+	complexFuncs[EXTCODESIZE] = (*StackMachine).opTodo()
+	complexFuncs[RETURNDATASIZE] = (*StackMachine).opTodo()
+	complexFuncs[EXTCODEHASH] = (*StackMachine).opTodo()
+	complexFuncs[SELFBALANCE] = (*StackMachine).opTodo()
+	complexFuncs[MSTORE] = (*StackMachine).opMstore()
+	complexFuncs[MSTORE8] = (*StackMachine).opTodo()
+	complexFuncs[SLOAD] = (*StackMachine).opTodo()
+	complexFuncs[SSTORE] = (*StackMachine).opTodo()
+	complexFuncs[JUMP] = (*StackMachine).opTodo()
+	complexFuncs[JUMPI] = (*StackMachine).opTodo()
+	complexFuncs[PC] = (*StackMachine).opTodo()
+
+
+	complexFuncs[GAS] = (*StackMachine).opTodo()
+	complexFuncs[JUMPDEST] = (*StackMachine).opTodo()
+	complexFuncs[SELFBALANCE] = (*StackMachine).opTodo()
+
+	complexFuncs[LOG0] = (*StackMachine).opTodo()
+	complexFuncs[LOG1] = (*StackMachine).opTodo()
+	complexFuncs[LOG2] = (*StackMachine).opTodo()
+	complexFuncs[LOG3] = (*StackMachine).opTodo()
+	complexFuncs[LOG4] = (*StackMachine).opTodo()
+
+	complexFuncs[CREATE] = (*StackMachine).opTodo()
+	complexFuncs[CALL] = (*StackMachine).opTodo()
+	complexFuncs[RETURN] = (*StackMachine).opTodo()
+	complexFuncs[DELEGATECALL] = (*StackMachine).opTodo()
+	complexFuncs[CREATE2] = (*StackMachine).opTodo()
+
+	complexFuncs[STATICCALL] = (*StackMachine).opTodo()
+	complexFuncs[REVERT] = (*StackMachine).opTodo()
+	complexFuncs[SELFDESTRUCT] = (*StackMachine).opTodo()
+
+
 }
 
 func (machine *StackMachine) DispatchSimple(op byte) (valid bool) {
-	if fn := stackFuncs[op]; fn != nil {
+	if fn := simpleFuncs[op]; fn != nil {
 		machine.fn()
 		return true
 	}
@@ -242,12 +156,18 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 			continue
 		}
 		// All 'simple' opcodes are done. Remaining are calls, tx-context stackbuffer,
-		// and a few otheres
-		machine.DispatchComplex(op)
-
-		// TODO: calc dynamic gas
-		// TODO: memory expansion
-
+		// and a few others.
+		// The non-simple opcodes may
+		// -- require state access,
+		// -- require access to gas,
+		// -- have dynamic costs
+		// -- return errors
+		var err error
+		gas, err = machine.DispatchComplex(op, gas)
+		if err != nil{
+			// TODO handle this?
+			return
+		}
 	}
 
 }
@@ -307,7 +227,7 @@ func (machine *StackMachine) dynamicGasCall(value *uint256.Int, destination [20]
 	return gasCost, sentGas, nil
 }
 
-func (machine *StackMachine) opCall(availableGas uint64) error {
+func (machine *StackMachine) opCall(availableGas uint64) (uint64 remainingGas, err error) {
 
 	var (
 		desiredGas  = uint256.NewInt()
@@ -324,7 +244,7 @@ func (machine *StackMachine) opCall(availableGas uint64) error {
 	machine.PopUints(inOffset, inSize)
 	machine.PopUints(retOffset, retSize)
 
-	// We can do the memory expansion calculation and dynamic gas calc here
+	// We do the memory expansion calculation and dynamic gas calc here
 	memSize, overflow := machine.memoryCall(inOffset, inSize, retOffset, retSize)
 	if overflow {
 		return 0, errGasUintOverflow
@@ -350,8 +270,12 @@ func (machine *StackMachine) opCall(availableGas uint64) error {
 		machine.PushBytes(oneByte32)
 	}
 	if err == nil || err == errExecutionReverted {
-		machine.memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
+		machine.callCtx.memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
 		machine.returnData = ret
 	}
 	return availableGas + returnedGas, nil
+}
+
+func (machine *StackMachine) opTodo(*StackMachine, gas uint64) (uint64, error){
+	panic("not implemented")
 }

@@ -22,7 +22,7 @@ var (
 // a CALL-type.
 // It does not contain ephemeral things like pc
 type CallContext struct {
-	memory      []byte
+	memory      *Memory
 	stackHead   int // index of next free byte
 	stackBottom int // index of first stack item
 
@@ -71,7 +71,7 @@ func New() *StackMachine {
 // 2) A local memory area
 func (machine *StackMachine) NewContext() {
 	ctx := &CallContext{
-		memory:      make([]byte, 0),
+		memory:      NewMemory(),
 		stackHead:   0,
 		stackBottom: 0,
 	}
