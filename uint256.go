@@ -458,6 +458,27 @@ func divKnuth(x, y []uint32) []uint32 {
 	return q
 }
 
+func addTo(x, y []uint64) uint64 {
+	var carry uint64
+	for i := 0; i < len(y); i++ {
+		x[i], carry = bits.Add64(x[i], y[i], carry)
+	}
+	return carry
+}
+
+func subMulTo(x, y []uint64, multiplier uint64) uint64 {
+
+	var borrow uint64
+	for i := 0; i < len(y); i++ {
+		s, carry1 := bits.Sub64(x[i], borrow, 0)
+		ph, pl := bits.Mul64(y[i], multiplier)
+		t, carry2 := bits.Sub64(s, pl, 0)
+		x[i] = t
+		borrow = ph + carry1 + carry2
+	}
+	return borrow
+}
+
 // udivremBy1 divides u by single normalized word d and produces both quotient and remainder.
 func udivremBy1(u []uint64, d uint64) (quot []uint64, rem uint64) {
 	quot = make([]uint64, len(u)-1)
@@ -468,6 +489,42 @@ func udivremBy1(u []uint64, d uint64) (quot []uint64, rem uint64) {
 	}
 
 	return quot, rem
+}
+
+func udivremKnuth(u, d []uint64) (quot []uint64) {
+	quot = make([]uint64, len(u)-len(d))
+	dh := d[len(d)-1]
+	dl := d[len(d)-2]
+
+	for j := len(u) - len(d) - 1; j >= 0; j-- {
+		u2 := u[j+len(d)]
+		u1 := u[j+len(d)-1]
+		u0 := u[j+len(d)-2]
+
+		var qhat, rhat uint64
+		if u2 >= dh { // Division overflows.
+			qhat = ^uint64(0)
+			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+		} else {
+			qhat, rhat = bits.Div64(u2, u1, dh)
+			ph, pl := bits.Mul64(qhat, dl)
+			if ph > rhat || (ph == rhat && pl > u0) {
+				qhat--
+				// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+			}
+		}
+
+		// Multiply and subtract.
+		borrow := subMulTo(u[j:], d, qhat)
+		u[j+len(d)] = u2 - borrow
+		if u2 < borrow { // Too much subtracted, add back.
+			qhat--
+			u[j+len(d)] += addTo(u[j:], d)
+		}
+
+		quot[j] = qhat // Store quotient digit.
+	}
+	return quot
 }
 
 func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
@@ -511,7 +568,15 @@ func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
 		return quot, new(Int).SetUint64(r >> shift), nil
 	}
 
-	return quot, rem, fmt.Errorf("not implemented")
+	quot = udivremKnuth(un, dn)
+
+	rem = new(Int)
+	for i := 0; i < dLen-1; i++ {
+		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
+	}
+	rem[dLen-1] = un[dLen-1] >> shift
+
+	return quot, rem, nil
 }
 
 // Div sets z to the quotient x/y for returns z.
