@@ -16,8 +16,30 @@ const (
 	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
 )
 
-// NewFromBig creates new Int from big.Int.
-func NewFromBig(b *big.Int) (*Int, bool) {
+// ToBig returns a big.Int version of z.
+func (z *Int) ToBig() *big.Int {
+	b := new(big.Int)
+	switch maxWords { // Compile-time check.
+	case 4: // 64-bit architectures.
+		words := [4]big.Word{big.Word(z[0]), big.Word(z[1]), big.Word(z[2]), big.Word(z[3])}
+		b.SetBits(words[:])
+	case 8: // 32-bit architectures.
+		words := [8]big.Word{
+			big.Word(z[0]), big.Word(z[0] >> 32),
+			big.Word(z[1]), big.Word(z[1] >> 32),
+			big.Word(z[2]), big.Word(z[2] >> 32),
+			big.Word(z[3]), big.Word(z[3] >> 32),
+		}
+		return new(big.Int).SetBits(words[:])
+	default:
+		panic("unsupported architecture")
+	}
+	return b
+}
+
+// FromBig is a convenience-constructor from big.Int.
+// Returns a new Int and whether overflow occurred.
+func FromBig(b *big.Int) (*Int, bool) {
 	z := &Int{}
 	overflow := z.SetFromBig(b)
 	return z, overflow
