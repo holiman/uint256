@@ -626,27 +626,21 @@ func TestFixed256bit_Mul(t *testing.T) {
 	requireEq(t, b1, f1, "")
 }
 
-func TestFixed256bit_Div(t *testing.T) {
+func TestDiv(t *testing.T) {
 
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"))
+	b1 := new(big.Int).SetBytes(hex2Bytes("12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5"))
+	b2 := new(big.Int).SetBytes(hex2Bytes("00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"))
 
-	f, _ := FromBig(b1)
+	f1, _ := FromBig(b1)
 	f2, _ := FromBig(b2)
 
-	fmt.Printf("B1   : %x\n", b1)
-	fmt.Printf("B2   : %x\n", b2)
-	fmt.Printf("F1   : %s\n", f.Hex())
-	fmt.Printf("F2   : %s\n", f2.Hex())
-	fmt.Println("--")
-	b1.Div(b1, b2)
-	f.Div(f, f2)
-	fmt.Printf("B   : %x\n", b1)
-	fmt.Printf("F   : %s\n", f.Hex())
-
-	res, _ := FromBig(b1)
-	fmt.Printf("b->f: %s\n", res.Hex())
-	fmt.Printf("EQ  : %v\n", f.Eq(res))
+	expected, _ := FromBig(b1.Div(b1, b2))
+	f1.Div(f1, f2)
+	if !f1.Eq(expected) {
+		t.Logf("exp   : %x\n", expected)
+		t.Logf("got   : %x\n", f1)
+		t.Fail()
+	}
 }
 
 func TestFixedExp(t *testing.T) {
