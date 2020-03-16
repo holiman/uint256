@@ -465,6 +465,10 @@ func divKnuth(x, y []uint32) []uint32 {
 	return q
 }
 
+func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
+	return quot, rem, fmt.Errorf("not implemented")
+}
+
 // Div sets z to the quotient x/y for returns z.
 // If d == 0, z is set to 0
 func (z *Int) Div(x, y *Int) *Int {
@@ -481,6 +485,13 @@ func (z *Int) Div(x, y *Int) *Int {
 
 	// At this point, we know
 	// x/y ; x > y > 0
+
+	if quot, _, err := udivrem(x[:], y); err == nil {
+		z.Clear()
+		copy(z[:len(quot)], quot)
+		return z
+	}
+
 	// See Knuth, Volume 2, section 4.3.1, Algorithm D.
 
 	// Normalize by shifting divisor left just enough so that its high-order
@@ -525,6 +536,10 @@ func (z *Int) Mod(x, y *Int) *Int {
 	// Shortcut trivial case
 	if x.IsUint64() {
 		return z.SetUint64(x.Uint64() % y.Uint64())
+	}
+
+	if _, rem, err := udivrem(x[:], y); err == nil {
+		return z.Copy(rem)
 	}
 
 	q := NewInt()
@@ -575,6 +590,10 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		}
 		z.Mod(&pl, m)
 		return z
+	}
+
+	if _, rem, err := udivrem(p[:], m); err == nil {
+		return z.Copy(rem)
 	}
 
 	var pbytes [len(p) * 8]byte
