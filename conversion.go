@@ -16,11 +16,25 @@ const (
 	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
 )
 
+// ToBig returns a big.Int version of z.
 func (z *Int) ToBig() *big.Int {
-	x := new(big.Int)
-	b := z.Bytes()
-	x.SetBytes(b[:])
-	return x
+	b := new(big.Int)
+	switch maxWords { // Compile-time check.
+	case 4: // 64-bit architectures.
+		words := [4]big.Word{big.Word(z[0]), big.Word(z[1]), big.Word(z[2]), big.Word(z[3])}
+		b.SetBits(words[:])
+	case 8: // 32-bit architectures.
+		words := [8]big.Word{
+			big.Word(z[0]), big.Word(z[0] >> 32),
+			big.Word(z[1]), big.Word(z[1] >> 32),
+			big.Word(z[2]), big.Word(z[2] >> 32),
+			big.Word(z[3]), big.Word(z[3] >> 32),
+		}
+		return new(big.Int).SetBits(words[:])
+	default:
+		panic("unsupported architecture")
+	}
+	return b
 }
 
 // FromBig is a convenience-constructor from big.Int.
