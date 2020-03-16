@@ -1320,31 +1320,6 @@ func Benchmark_SDiv(bench *testing.B) {
 	bench.Run("large/uint256", benchmark_SdivLarge_Bit)
 }
 
-func benchmarkSetFromBig(bench *testing.B, b *big.Int) Int {
-	var f Int
-	for i := 0; i < bench.N; i++ {
-		f.SetFromBig(b)
-	}
-	return f
-}
-
-func BenchmarkSetFromBig(bench *testing.B) {
-	param1 := big.NewInt(0xff)
-	bench.Run("1word", func(bench *testing.B) { benchmarkSetFromBig(bench, param1) })
-
-	param2 := new(big.Int).Lsh(param1, 64)
-	bench.Run("2words", func(bench *testing.B) { benchmarkSetFromBig(bench, param2) })
-
-	param3 := new(big.Int).Lsh(param2, 64)
-	bench.Run("3words", func(bench *testing.B) { benchmarkSetFromBig(bench, param3) })
-
-	param4 := new(big.Int).Lsh(param3, 64)
-	bench.Run("4words", func(bench *testing.B) { benchmarkSetFromBig(bench, param4) })
-
-	param5 := new(big.Int).Lsh(param4, 64)
-	bench.Run("overflow", func(bench *testing.B) { benchmarkSetFromBig(bench, param5) })
-}
-
 func TestByteRepresentation(t *testing.T) {
 
 	//0e320219838e859b2f9f18b72e3d4073ca50b37d
@@ -1490,43 +1465,6 @@ func TestInt_WriteToArray(t *testing.T) {
 	}
 }
 
-func TestFromBFromBigigOld(t *testing.T) {
-	z, o := FromBig(new(big.Int).SetBytes(hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
-	fmt.Printf("z %x\n", z)
-	if !o {
-		t.Errorf("expected overflow, got %v", o)
-	}
-	_, o = FromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
-	if o {
-		t.Errorf("expected no overflow, got %v", o)
-	}
-	b := new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
-	z, o = FromBig(b.Neg(b))
-	fmt.Printf("z %x\n", z)
-	if o {
-		t.Errorf("expected no overflow, got %v", o)
-	}
-
-}
-
-func TestFromBig(t *testing.T) {
-	z, o := NewFromBig(new(big.Int).SetBytes(hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
-	fmt.Printf("z %x\n", z)
-	if !o {
-		t.Errorf("expected overflow, got %v", o)
-	}
-	_, o = NewFromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
-	if o {
-		t.Errorf("expected no overflow, got %v", o)
-	}
-	b := new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
-	z, o = NewFromBig(b.Neg(b))
-	fmt.Printf("z %x\n", z)
-	if o {
-		t.Errorf("expected no overflow, got %v", o)
-	}
-}
-
 type gethAddress [20]byte
 
 // SetBytes sets the address to the value of b.
@@ -1625,28 +1563,3 @@ func TestByte32Representation(t *testing.T) {
 	}
 }
 
-func TestConversion(t *testing.T) {
-	a := big.NewInt(1)
-	b, _ := NewFromBig(a)
-	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
-		t.Fatalf("got %x exp %x", got, exp)
-	}
-	fmt.Printf("big.Int:     %x\n", a.Bytes())
-	fmt.Printf("uint256.Int: %x\n", b.Bytes())
-	a = big.NewInt(0x1000000000000000)
-	b, _ = NewFromBig(a)
-	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
-		t.Fatalf("got %x exp %x", got, exp)
-	}
-	fmt.Printf("big.Int:     %x\n", a.Bytes())
-	fmt.Printf("uint256.Int: %x\n", b.Bytes())
-
-	a = big.NewInt(0x1234)
-	b, _ = NewFromBig(a)
-	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
-		t.Fatalf("got %x exp %x", got, exp)
-	}
-	fmt.Printf("big.Int:     %x\n", a.Bytes())
-	fmt.Printf("uint256.Int: %x\n", b.Bytes())
-
-}
