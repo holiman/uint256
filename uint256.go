@@ -411,15 +411,8 @@ func divKnuth(x, y []uint32) []uint32 {
 	// Number base (2**32)
 	var b uint64 = 0x100000000
 
-	// Take care of the case of a single-digit.
-	if n == 1 {
-		var k uint64
-		k = uint64(x[m])
-		for i := m - 1; i >= 0; i-- {
-			q[i] = uint32((k*b + uint64(x[i])) / uint64(y[0]))
-			k = k*b + uint64(x[i]) - uint64(q[i])*uint64(y[0])
-		}
-		return q
+	if n <= 2 {
+		panic("Should have been handled by udivremBy1()")
 	}
 
 	// Main Loop
