@@ -45,13 +45,6 @@ func NewInt() *Int {
 	return &Int{}
 }
 
-func (z *Int) ToBig() *big.Int {
-	x := new(big.Int)
-	b := z.Bytes()
-	x.SetBytes(b[:])
-	return x
-}
-
 // SetBytes interprets buf as the bytes of a big-endian unsigned
 // integer, sets z to that value, and returns z.
 func (z *Int) SetBytes(buf []byte) *Int {

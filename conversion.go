@@ -16,6 +16,13 @@ const (
 	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
 )
 
+func (z *Int) ToBig() *big.Int {
+	x := new(big.Int)
+	b := z.Bytes()
+	x.SetBytes(b[:])
+	return x
+}
+
 // FromBig is a convenience-constructor from big.Int.
 // Returns a new Int and whether overflow occurred.
 func FromBig(b *big.Int) (*Int, bool) {
