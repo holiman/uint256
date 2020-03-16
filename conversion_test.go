@@ -11,9 +11,9 @@ import (
 	"testing"
 )
 
-func TestNewFromBig(t *testing.T) {
+func TestFromBig(t *testing.T) {
 	a := new(big.Int)
-	b, o := NewFromBig(a)
+	b, o := FromBig(a)
 	if o {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
@@ -22,7 +22,7 @@ func TestNewFromBig(t *testing.T) {
 	}
 
 	a = big.NewInt(1)
-	b, o = NewFromBig(a)
+	b, o = FromBig(a)
 	if o {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
@@ -31,7 +31,7 @@ func TestNewFromBig(t *testing.T) {
 	}
 
 	a = big.NewInt(0x1000000000000000)
-	b, o = NewFromBig(a)
+	b, o = FromBig(a)
 	if o {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
@@ -40,7 +40,7 @@ func TestNewFromBig(t *testing.T) {
 	}
 
 	a = big.NewInt(0x1234)
-	b, o = NewFromBig(a)
+	b, o = FromBig(a)
 	if o {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
@@ -51,7 +51,7 @@ func TestNewFromBig(t *testing.T) {
 	a = big.NewInt(1)
 	a.Lsh(a, 256)
 
-	b, o = NewFromBig(a)
+	b, o = FromBig(a)
 	if !o {
 		t.Fatalf("expected overflow")
 	}
@@ -60,28 +60,12 @@ func TestNewFromBig(t *testing.T) {
 	}
 
 	a.Sub(a, big.NewInt(1))
-	b, o = NewFromBig(a)
+	b, o = FromBig(a)
 	if o {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
-	}
-}
-
-func TestNewFromBigOverflow(t *testing.T) {
-	_, o := NewFromBig(new(big.Int).SetBytes(hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
-	if !o {
-		t.Errorf("expected overflow, got %v", o)
-	}
-	_, o = NewFromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
-	if o {
-		t.Errorf("expected no overflow, got %v", o)
-	}
-	b := new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
-	_, o = NewFromBig(b.Neg(b))
-	if o {
-		t.Errorf("expected no overflow, got %v", o)
 	}
 }
 

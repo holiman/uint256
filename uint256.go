@@ -45,15 +45,6 @@ func NewInt() *Int {
 	return &Int{}
 }
 
-// FromBig is a convenience-constructor from big.Int.
-// returns a new Int and whether overflow occurred
-func FromBig(int *big.Int) (*Int, bool) {
-	// Let's not ruin the argument
-	z := &Int{}
-	overflow := z.SetFromBig(int)
-	return z, overflow
-}
-
 func (z *Int) ToBig() *big.Int {
 	x := new(big.Int)
 	b := z.Bytes()

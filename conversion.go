@@ -16,8 +16,9 @@ const (
 	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
 )
 
-// NewFromBig creates new Int from big.Int.
-func NewFromBig(b *big.Int) (*Int, bool) {
+// FromBig is a convenience-constructor from big.Int.
+// Returns a new Int and whether overflow occurred.
+func FromBig(b *big.Int) (*Int, bool) {
 	z := &Int{}
 	overflow := z.SetFromBig(b)
 	return z, overflow
