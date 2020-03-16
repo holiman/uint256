@@ -85,6 +85,24 @@ func TestFromBigOverflow(t *testing.T) {
 	}
 }
 
+func TestToBig(t *testing.T) {
+
+	if bigZero := new(Int).ToBig(); bigZero.Cmp(new(big.Int)) != 0 {
+		t.Errorf("expected big.Int 0, got %x", bigZero)
+	}
+
+	for i := uint(0); i < 256; i++ {
+		f := new(Int).SetUint64(1)
+		f.Lsh(f, i)
+		b := f.ToBig()
+		expected := big.NewInt(1)
+		expected.Lsh(expected, i)
+		if b.Cmp(expected) != 0 {
+			t.Fatalf("expected %x, got %x", expected, b)
+		}
+	}
+}
+
 func benchmarkSetFromBig(bench *testing.B, b *big.Int) Int {
 	var f Int
 	for i := 0; i < bench.N; i++ {
