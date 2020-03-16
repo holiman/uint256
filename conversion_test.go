@@ -109,3 +109,25 @@ func BenchmarkSetFromBig(bench *testing.B) {
 	param5 := new(big.Int).Lsh(param4, 64)
 	bench.Run("overflow", func(bench *testing.B) { benchmarkSetFromBig(bench, param5) })
 }
+
+func benchmarkToBig(bench *testing.B, f *Int) *big.Int {
+	var b *big.Int
+	for i := 0; i < bench.N; i++ {
+		b = f.ToBig()
+	}
+	return b
+}
+
+func BenchmarkToBig(bench *testing.B) {
+	param1 := new(Int).SetUint64(0xff)
+	bench.Run("1word", func(bench *testing.B) { benchmarkToBig(bench, param1) })
+
+	param2 := new(Int).Lsh(param1, 64)
+	bench.Run("2words", func(bench *testing.B) { benchmarkToBig(bench, param2) })
+
+	param3 := new(Int).Lsh(param2, 64)
+	bench.Run("3words", func(bench *testing.B) { benchmarkToBig(bench, param3) })
+
+	param4 := new(Int).Lsh(param3, 64)
+	bench.Run("4words", func(bench *testing.B) { benchmarkToBig(bench, param4) })
+}
