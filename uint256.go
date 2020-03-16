@@ -465,6 +465,18 @@ func divKnuth(x, y []uint32) []uint32 {
 	return q
 }
 
+// udivremBy1 divides u by single normalized word d and produces both quotient and remainder.
+func udivremBy1(u []uint64, d uint64) (quot []uint64, rem uint64) {
+	quot = make([]uint64, len(u)-1)
+	rem = u[len(u)-1] // Set the top word as remainder.
+
+	for j := len(u) - 2; j >= 0; j-- {
+		quot[j], rem = bits.Div64(rem, u[j], d)
+	}
+
+	return quot, rem
+}
+
 func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
@@ -500,6 +512,11 @@ func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
 	un[0] = u[0] << shift
 
 	// TODO: Skip the highest word of numerator if not significant.
+
+	if dLen == 1 {
+		quot, r := udivremBy1(un, dn[0])
+		return quot, new(Int).SetUint64(r >> shift), nil
+	}
 
 	return quot, rem, fmt.Errorf("not implemented")
 }
