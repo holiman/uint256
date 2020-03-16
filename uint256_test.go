@@ -10,9 +10,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-
 	"math/big"
 	"testing"
+)
+
+var (
+	bigtt256 = new(big.Int).Lsh(big.NewInt(1), 256)
+	bigtt255 = new(big.Int).Lsh(big.NewInt(1), 255)
 )
 
 func hex2Bytes(str string) []byte {
@@ -256,8 +260,6 @@ func TestRandomMulMod(t *testing.T) {
 		}
 	}
 }
-
-var bigtt255 = bigPow(2, 255)
 
 func S256(x *big.Int) *big.Int {
 	if x.Cmp(bigtt255) < 0 {
@@ -1562,4 +1564,3 @@ func TestByte32Representation(t *testing.T) {
 		fmt.Printf("got %x \n", got)
 	}
 }
-

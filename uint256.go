@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	bigtt256  = bigPow(2, 256)
 	SignedMax = &Int{
 		0xffffffffffffffff,
 		0xffffffffffffffff,
@@ -30,12 +29,6 @@ var (
 	}
 	zero = &Int{}
 )
-
-// bigPow returns a ** b as a big integer.
-func bigPow(a, b int64) *big.Int {
-	r := big.NewInt(a)
-	return r.Exp(r, big.NewInt(b), nil)
-}
 
 // Int is represented as an array of 4 uint64, in little-endian order,
 // so that Int[3] is the most significant, and Int[0] is the least significant
