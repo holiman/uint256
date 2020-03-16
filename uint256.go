@@ -10,7 +10,6 @@ package uint256
 import (
 	"fmt"
 	"math"
-	"math/big"
 	"math/bits"
 )
 
@@ -536,7 +535,7 @@ func udivremKnuth(u, d []uint64) (quot []uint64) {
 // udivrem divides u by d and produces both quotient and remainder.
 // It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
 // See Knuth, Volume 2, section 4.3.1, Algorithm D.
-func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
+func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
 		if d[i] != 0 {
@@ -574,7 +573,7 @@ func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
 
 	if dLen == 1 {
 		quot, r := udivremBy1(un, dn[0])
-		return quot, new(Int).SetUint64(r >> shift), nil
+		return quot, new(Int).SetUint64(r >> shift)
 	}
 
 	quot = udivremKnuth(un, dn)
@@ -585,7 +584,7 @@ func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
 	}
 	rem[dLen-1] = un[dLen-1] >> shift
 
-	return quot, rem, nil
+	return quot, rem
 }
 
 // Div sets z to the quotient x/y for returns z.
@@ -605,29 +604,9 @@ func (z *Int) Div(x, y *Int) *Int {
 	// At this point, we know
 	// x/y ; x > y > 0
 
-	if quot, _, err := udivrem(x[:], y); err == nil {
-		z.Clear()
-		copy(z[:len(quot)], quot)
-		return z
-	}
-
-	// See Knuth, Volume 2, section 4.3.1, Algorithm D.
-
-	// Normalize by shifting divisor left just enough so that its high-order
-	// bit is on and u left the same amount.
-	// function nlz do the caculating of the amount and shl do the left operation.
-	s := nlz(y)
-	xn := shl(x, s, true)
-	yn := shl(y, s, false)
-
-	// divKnuth do the division of normalized dividend and divisor with Knuth Algorithm D.
-	q := divKnuth(xn, yn)
-
+	quot, _ := udivrem(x[:], y)
 	z.Clear()
-	for i := 0; i < len(q); i++ {
-		z[i/2] = z[i/2] | uint64(q[i])<<(32*(uint64(i)%2))
-	}
-
+	copy(z[:len(quot)], quot)
 	return z
 }
 
@@ -657,15 +636,8 @@ func (z *Int) Mod(x, y *Int) *Int {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
 
-	if _, rem, err := udivrem(x[:], y); err == nil {
-		return z.Copy(rem)
-	}
-
-	q := NewInt()
-	q.Div(x, y)
-	q.Mul(q, y)
-	z.Sub(x, q)
-	return z
+	_, rem := udivrem(x[:], y)
+	return z.Copy(rem)
 }
 
 // Smod interprets x and y as signed integers sets z to
@@ -711,21 +683,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		return z
 	}
 
-	if _, rem, err := udivrem(p[:], m); err == nil {
-		return z.Copy(rem)
-	}
-
-	var pbytes [len(p) * 8]byte
-	for i := 0; i < len(pbytes); i++ {
-		pbytes[len(pbytes)-1-i] = byte(p[i/8] >> uint64(8*(i%8)))
-	}
-
-	// At this point, we _could_ do x=x mod m, y = y mod m, and test again
-	// if they fit within 256 bytes. But for now just wrap big.Int instead
-	bp := new(big.Int)
-	bp.SetBytes(pbytes[:])
-	z.SetFromBig(bp.Mod(bp, m.ToBig()))
-	return z
+	_, rem := udivrem(p[:], m)
+	return z.Copy(rem)
 }
 
 // Abs interprets x as a a signed number, and sets z to the Abs value
