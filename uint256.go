@@ -466,6 +466,41 @@ func divKnuth(x, y []uint32) []uint32 {
 }
 
 func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
+	var dLen int
+	for i := len(d) - 1; i >= 0; i-- {
+		if d[i] != 0 {
+			dLen = i + 1
+			break
+		}
+	}
+
+	shift := bits.LeadingZeros64(d[dLen-1])
+
+	var dnStorage Int
+	dn := dnStorage[:dLen]
+	for i := dLen - 1; i > 0; i-- {
+		dn[i] = (d[i] << shift) | (d[i-1] >> (64 - shift))
+	}
+	dn[0] = d[0] << shift
+
+	var uLen int
+	for i := len(u) - 1; i >= 0; i-- {
+		if u[i] != 0 {
+			uLen = i + 1
+			break
+		}
+	}
+
+	var unStorage [9]uint64
+	un := unStorage[:uLen+1]
+	un[uLen] = u[uLen-1] >> (64 - shift)
+	for i := uLen - 1; i > 0; i-- {
+		un[i] = (u[i] << shift) | (u[i-1] >> (64 - shift))
+	}
+	un[0] = u[0] << shift
+
+	// TODO: Skip the highest word of numerator if not significant.
+
 	return quot, rem, fmt.Errorf("not implemented")
 }
 
