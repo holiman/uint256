@@ -136,7 +136,7 @@ func (machine *StackMachine) opMstore(availableGas uint64) (uint64, error) {
 		// Determine how much gas is needed for the memory expansion
 		memoryGas, err := memoryGasCost(mem, requiredSize)
 		if err != nil {
-			stack/engine.goreturn 0, err
+			return 0, err
 		}
 		if memoryGas > availableGas {
 			return 0, errOutOfGas
@@ -145,5 +145,59 @@ func (machine *StackMachine) opMstore(availableGas uint64) (uint64, error) {
 		mem.Resize(requiredSize)
 	}
 	mem.Set32(mStart.Uint64(), val)
+	return availableGas, nil
+}
+
+func (machine *StackMachine) opMload(availableGas uint64) (uint64, error) {
+	machine.PopUint(machine.x)
+	offset, overflow := machine.x.Uint64WithOverflow()
+	if overflow {
+		return 0, errOutOfGas
+	}
+	// TODO: Do we need to expand memory if user load outside of current
+	// memory region? Probably
+	available := machine.callCtx.memory.Len()
+	if available < offset {
+		machine.PushZero()
+	} else if available < offset+32 {
+		machine.PushBytes(machine.callCtx.memory[offset:available])
+	} else {
+		machine.PushBytes(machine.callCtx.memory[offset : offset+32])
+	}
+	return availableGas, nil
+}
+
+//
+//
+//func (machine *StackMachine) opMstore8() {
+//	// memStart , value
+//	machine.PopUints(machine.x, machine.y)
+//	offset := machine.x.Int64()
+//	// This will panic if memory is not already expanded
+//	machine.callCtx.memory[offset] = byte(machine.y.Int64() & 0xFF)
+//}
+
+func (machine *StackMachine) opJumpdest() {}
+
+func (machine *StackMachine) opJump(pc *uint64, availableGas uint64) (uint64, error) {
+
+	machine.PopUint(machine.x)
+	pos := machine.x
+	// PC cannot
+	// - go beyond uint64
+	// - len(code)
+	// - and must land on a JUMPDEST
+	udest, overflow := pos.Uint64WithOverflow()
+	if overflow ||
+		udest > len(machine.callCtx.Code) ||
+		OpCode(machine.callCtx.Code.Code[udest]) != JUMPDEST {
+		return 0, errInvalidJump
+	}
+	// Last thing to check is that it's a valid code segment, and not the
+	// data-segment following a PUSHX
+	if !machine.isCode(udest) {
+		return 0, errInvalidJump
+	}
+	*pc = pos.Uint64()
 	return availableGas, nil
 }

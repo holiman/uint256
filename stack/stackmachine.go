@@ -22,10 +22,17 @@ var (
 // a CALL-type.
 // It does not contain ephemeral things like pc
 type CallContext struct {
+	// VM internals
 	memory      *Memory
 	stackHead   int // index of next free byte
 	stackBottom int // index of first stack item
 
+	// VM externals
+	Code     []byte       // The code currently executing
+	CodeHash [32]byte     // Hash of the executing code
+	Input    []byte       // Input to the call
+	Gas      uint64       // Available gas
+	value    *uint256.Int // Value provided in the call
 }
 
 type StackMachine struct {
@@ -50,6 +57,11 @@ type StackMachine struct {
 	x *uint256.Int
 	y *uint256.Int
 	z *uint256.Int
+
+	// bitmaps to store code/data-segment analysis, for jumpdest evaluation
+	// this should be cleared from time to time, e.g. at every transaction
+	// or every block.
+	codeDataLookup map[[32]byte]bitvec
 }
 
 func New() *StackMachine {
@@ -69,17 +81,20 @@ func New() *StackMachine {
 // A context is the CALL-context, meaning
 // 1) A local stack
 // 2) A local memory area
-func (machine *StackMachine) NewContext() {
-	ctx := &CallContext{
+func (machine *StackMachine) NewContext(code []byte, value uint256.Int) {
+	newCtx := &CallContext{
 		memory:      NewMemory(),
 		stackHead:   0,
 		stackBottom: 0,
+		Code:        code,
+		value:       value,
 	}
 	if cur := machine.callCtx; cur != nil {
 		ctx.stackBottom = cur.stackHead
 		ctx.stackHead = cur.stackHead
 		machine.contexts = append(machine.contexts, cur)
 	}
+	machine.callCtx = newCtx
 }
 
 // DropContext drops the current context, restoring the previous context
@@ -90,13 +105,13 @@ func (machine *StackMachine) DropContext() {
 }
 
 // StackDepth returns the number of items in the current stack context
-func (machine *StackMachine) StackDepth() {
+func (machine *StackMachine) StackDepth() int {
 	bottom := machine.callCtx.stackBottom
 	head := machine.callCtx.stackHead
 	return (head - bottom) / 32
 }
 
-func (machine *StackMachine) InitTx(origin, gasPrice *big.Int) {
+func (machine *StackMachine) InitTx(origin, gasPrice *uint256.Int) {
 	// TODO
 	// - clear any contexts
 	//   -- maybe add a panic if they were not properly
@@ -105,13 +120,39 @@ func (machine *StackMachine) InitTx(origin, gasPrice *big.Int) {
 	machine.rom.setTxConstants(origin, gasPrice)
 }
 func (machine *StackMachine) InitBlock(coinbase, timestamp, number,
-	difficulty, chainid *big.Int) {
+	difficulty, chainid *uint256.Int) {
 	// TODO
 	// - clear any contexts
 	//   -- maybe add a panic if they were not properly
 	// 		cleared by deferred dropContexts
 	// - Maybe un-grow the stackbuffer area
 	machine.rom.setBlockConstants(coinbase, timestamp, number, difficulty, chainid)
+	// clear jumpdest analysis
+	machine.codeDataLookup = make(map[[32]byte]bitvec)
+}
+
+func (machine *StackMachine) isCode(udest uint32) bool {
+	ctx := machine.callCtx
+	// Do we have a contract hash already?
+	if ctx.CodeHash != (common.Hash{}) {
+		// Does parent context have the analysis?
+		analysis, exist := machine.codeDataLookup[ctx.CodeHash]
+		if !exist {
+			// Do the analysis and save in parent context
+			// We do not need to store it in c.analysis
+			analysis = codeBitmap(ctx.Code)
+			machine.codeDataLookup[ctx.CodeHash] = analysis
+		}
+		return analysis.codeSegment(udest)
+	}
+	// We don't have the code hash, most likely a piece of initcode not already
+	// in state trie. In that case, we do an analysis, and save it locally, so
+	// we don't have to recalculate it for every JUMP instruction in the execution
+	// However, we don't save it within the parent context
+	if ctx.analysis == nil {
+		ctx.analysis = codeBitmap(ctx.Code)
+	}
+	return ctx.analysis.codeSegment(udest)
 }
 
 // maybeGrow checks if the stack is large enough, otherwise it will grow a bit

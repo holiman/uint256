@@ -1,10 +1,12 @@
 package stack
 
-import "github.com/holiman/uint256"
+import (
+	"fmt"
+	"github.com/holiman/uint256"
+)
 
 type simpleOp func(*StackMachine)
-type simpleOp func(*StackMachine, uint64) (uint64, error)
-
+type complexOp func(*StackMachine, uint64) (uint64, error)
 
 var simpleFuncs [256]simpleOp
 var complexFuncs [256]complexOp
@@ -31,69 +33,70 @@ func init() {
 	simpleFuncs[DIFFICULTY] = (*StackMachine).opDifficulty
 	simpleFuncs[CHAINID] = (*StackMachine).opChainId
 
-	complexFuncs[MLOAD] = (*StackMachine).opTodo()
-	simpleFuncs[MSIZE] = (*StackMachine).opMsize()
+	simpleFuncs[MSIZE] = (*StackMachine).opMsize
+	simpleFuncs[JUMPDEST] = (*StackMachine).opJumpdest
 
-	complexFuncs[STOP] = (*StackMachine).opTodo()
-	complexFuncs[ADDRESS] = (*StackMachine).opTodo()
-	complexFuncs[CALLER] = (*StackMachine).opTodo()
-	complexFuncs[CALLVALUE] = (*StackMachine).opTodo()
-	complexFuncs[CALLDATALOAD] = (*StackMachine).opTodo()
-	complexFuncs[CALLDATACOPY] = (*StackMachine).opTodo()
-	complexFuncs[CODESIZE] = (*StackMachine).opTodo()
-	complexFuncs[EXTCODESIZE] = (*StackMachine).opTodo()
-	complexFuncs[RETURNDATASIZE] = (*StackMachine).opTodo()
-	complexFuncs[EXTCODEHASH] = (*StackMachine).opTodo()
-	complexFuncs[SELFBALANCE] = (*StackMachine).opTodo()
-	complexFuncs[MSTORE] = (*StackMachine).opMstore()
-	complexFuncs[MSTORE8] = (*StackMachine).opTodo()
-	complexFuncs[SLOAD] = (*StackMachine).opTodo()
-	complexFuncs[SSTORE] = (*StackMachine).opTodo()
-	complexFuncs[JUMP] = (*StackMachine).opTodo()
-	complexFuncs[JUMPI] = (*StackMachine).opTodo()
-	complexFuncs[PC] = (*StackMachine).opTodo()
+	complexFuncs[MLOAD] = (*StackMachine).opMload
+	complexFuncs[MSTORE] = (*StackMachine).opMstore
 
+	complexFuncs[STOP] = (*StackMachine).opTodo
+	complexFuncs[ADDRESS] = (*StackMachine).opTodo
+	complexFuncs[CALLER] = (*StackMachine).opTodo
+	complexFuncs[CALLVALUE] = (*StackMachine).opTodo
+	complexFuncs[CALLDATALOAD] = (*StackMachine).opTodo
+	complexFuncs[CALLDATACOPY] = (*StackMachine).opTodo
+	complexFuncs[CODESIZE] = (*StackMachine).opTodo
+	complexFuncs[EXTCODESIZE] = (*StackMachine).opTodo
+	complexFuncs[RETURNDATASIZE] = (*StackMachine).opTodo
+	complexFuncs[EXTCODEHASH] = (*StackMachine).opTodo
+	complexFuncs[SELFBALANCE] = (*StackMachine).opTodo
 
-	complexFuncs[GAS] = (*StackMachine).opTodo()
-	complexFuncs[JUMPDEST] = (*StackMachine).opTodo()
-	complexFuncs[SELFBALANCE] = (*StackMachine).opTodo()
+	complexFuncs[MSTORE8] = (*StackMachine).opTodo
+	complexFuncs[SLOAD] = (*StackMachine).opTodo
+	complexFuncs[SSTORE] = (*StackMachine).opTodo
+	complexFuncs[JUMP] = (*StackMachine).opTodo
+	complexFuncs[JUMPI] = (*StackMachine).opTodo
+	complexFuncs[PC] = (*StackMachine).opTodo
 
-	complexFuncs[LOG0] = (*StackMachine).opTodo()
-	complexFuncs[LOG1] = (*StackMachine).opTodo()
-	complexFuncs[LOG2] = (*StackMachine).opTodo()
-	complexFuncs[LOG3] = (*StackMachine).opTodo()
-	complexFuncs[LOG4] = (*StackMachine).opTodo()
+	complexFuncs[GAS] = (*StackMachine).opTodo
+	complexFuncs[SELFBALANCE] = (*StackMachine).opTodo
 
-	complexFuncs[CREATE] = (*StackMachine).opTodo()
-	complexFuncs[CALL] = (*StackMachine).opTodo()
-	complexFuncs[RETURN] = (*StackMachine).opTodo()
-	complexFuncs[DELEGATECALL] = (*StackMachine).opTodo()
-	complexFuncs[CREATE2] = (*StackMachine).opTodo()
+	complexFuncs[LOG0] = (*StackMachine).opTodo
+	complexFuncs[LOG1] = (*StackMachine).opTodo
+	complexFuncs[LOG2] = (*StackMachine).opTodo
+	complexFuncs[LOG3] = (*StackMachine).opTodo
+	complexFuncs[LOG4] = (*StackMachine).opTodo
 
-	complexFuncs[STATICCALL] = (*StackMachine).opTodo()
-	complexFuncs[REVERT] = (*StackMachine).opTodo()
-	complexFuncs[SELFDESTRUCT] = (*StackMachine).opTodo()
+	complexFuncs[CREATE] = (*StackMachine).opTodo
+	complexFuncs[CALL] = (*StackMachine).opTodo
+	complexFuncs[RETURN] = (*StackMachine).opTodo
+	complexFuncs[DELEGATECALL] = (*StackMachine).opTodo
+	complexFuncs[CREATE2] = (*StackMachine).opTodo
 
+	complexFuncs[STATICCALL] = (*StackMachine).opTodo
+	complexFuncs[REVERT] = (*StackMachine).opTodo
+	complexFuncs[SELFDESTRUCT] = (*StackMachine).opTodo
 
 }
 
-func (machine *StackMachine) DispatchSimple(op byte) (valid bool) {
+func (machine *StackMachine) DispatchSimple(op OpCode) (valid bool) {
 	if fn := simpleFuncs[op]; fn != nil {
-		machine.fn()
+		fn(machine)
 		return true
 	}
 	if op >= PUSH1 && op <= PUSH32 {
-		l := 1 + op - PUSH1
-		if len(code) < int(l) {
-			l = byte(len(code))
+		code := machine.callCtx.Code
+		l := 1 + byte(op-PUSH1)
+		if codeLen := len(code); codeLen < int(l) {
+			l = byte(codeLen)
 		}
-		stack.PushBytes(code[:l])
+		machine.PushBytes(code[:l])
 		return true
 	} else if op >= DUP1 && op <= DUP16 {
-		stack.Dup(int(op - DUP1))
+		machine.Dup(int(op - DUP1))
 		return true
 	} else if op >= SWAP1 && op <= SWAP16 {
-		stack.Swap(int(op - SWAP1))
+		machine.Swap(int(op - SWAP1))
 		return true
 	}
 	return false
@@ -106,7 +109,7 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 		return
 	}
 	// New context
-	machine.NewContext()
+	machine.NewContext(code, value)
 	defer machine.DropContext()
 
 	// Make sure the readOnly is only set if we aren't in readOnly yet.
@@ -118,11 +121,12 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 	var (
 		pc           uint64
 		opStaticCost uint64
+		abort        bool
+		op           OpCode
 	)
 
 	for !abort {
-		op = code[pc]
-
+		op = OpCode(code[pc])
 		// An opcode with a negative static gas value is not valid
 		if cost := machine.staticGasCost[op]; cost < 0 {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
@@ -130,10 +134,10 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 			opStaticCost = cost
 		}
 		// Validate stack
-		if sLen := machine.StackDepth(); sLen < operation.minStack {
-			return nil, fmt.Errorf("stack underflow (%d <=> %d)", sLen, operation.minStack)
-		} else if sLen > operation.maxStack {
-			return nil, fmt.Errorf("stack limit reached %d (%d)", sLen, operation.maxStack)
+		if sLen := machine.StackDepth(); sLen < MinStack[op] {
+			return nil, fmt.Errorf("stack underflow (%d <=> %d)", sLen, MinStack[op])
+		} else if sLen > MaxStack[op] {
+			return nil, fmt.Errorf("stack limit reached %d (%d)", sLen, MaxStack[op])
 		}
 		// If the operation is valid, enforce write restrictions
 		if machine.static {
@@ -152,6 +156,7 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 			return nil, ErrOutOfGas
 		}
 		gas -= opStaticCost
+
 		if machine.DispatchSimple(op) {
 			continue
 		}
@@ -163,13 +168,15 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 		// -- have dynamic costs
 		// -- return errors
 		var err error
-		gas, err = machine.DispatchComplex(op, gas)
-		if err != nil{
+		// Complex ops remaining. Complex ops may return error
+		if fn := complexFuncs[op]; fn != nil {
+			gas, err = fn(machine, gas)
+		}
+		if err != nil {
 			// TODO handle this?
-			return
+			return gas, err
 		}
 	}
-
 }
 
 func (machine *StackMachine) memoryCall(inOff, inSize, retOff, retSize *uint256.Int) (uint64, bool) {
@@ -227,7 +234,7 @@ func (machine *StackMachine) dynamicGasCall(value *uint256.Int, destination [20]
 	return gasCost, sentGas, nil
 }
 
-func (machine *StackMachine) opCall(availableGas uint64) (uint64 remainingGas, err error) {
+func (machine *StackMachine) opCall(availableGas uint64) (remainingGas uint64, err error) {
 
 	var (
 		desiredGas  = uint256.NewInt()
@@ -276,6 +283,6 @@ func (machine *StackMachine) opCall(availableGas uint64) (uint64 remainingGas, e
 	return availableGas + returnedGas, nil
 }
 
-func (machine *StackMachine) opTodo(*StackMachine, gas uint64) (uint64, error){
+func (machine *StackMachine) opTodo(gas uint64) (uint64, error) {
 	panic("not implemented")
 }

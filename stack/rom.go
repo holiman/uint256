@@ -70,7 +70,7 @@ func (rom readonlyMem) setBlockConstants(coinbase, timestamp, number,
 
 // setTxConstants initializes the readonly-memory with transaction-specific
 // stackbuffer
-func (rom readonlyMem) setTxConstants(origin, gasPrice *big.Int) readonlyMem {
+func (rom readonlyMem) setTxConstants(origin, gasPrice *uint256.Int) readonlyMem {
 	copy(rom[romOrigin:romOrigin+32], origin.Bytes())
 	copy(rom[romGasPrice:romGasPrice+32], gasPrice.Bytes())
 	return rom

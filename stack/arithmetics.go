@@ -156,34 +156,3 @@ func (machine *StackMachine) opSAR() {
 	machine.PushUint(machine.y)
 }
 
-func (machine *StackMachine) opMload() {
-	machine.PopUint(machine.x)
-	offset := machine.x.Int64()
-	available := int64(len(machine.callCtx.memory))
-	if available < offset {
-		machine.PushZero()
-	} else if available < offset+32 {
-		machine.PushBytes(machine.callCtx.memory[offset:available])
-	} else {
-		machine.PushBytes(machine.callCtx.memory[offset : offset+32])
-	}
-}
-func (machine *StackMachine) opMstore() {
-	// memStart , value
-	machine.PopUints(machine.x, machine.y)
-	offset := machine.x.Int64()
-	// This will panic if memory is not already expanded
-	machine.y.WriteToSlice(machine.callCtx.memory[offset:])
-}
-
-func (machine *StackMachine) opMstore8() {
-	// memStart , value
-	machine.PopUints(machine.x, machine.y)
-	offset := machine.x.Int64()
-	// This will panic if memory is not already expanded
-	machine.callCtx.memory[offset] = byte(machine.y.Int64() & 0xFF)
-}
-
-func (machine *StackMachine) opMsize() {
-	machine.PushUint64(uint64(len(machine.callCtx.memory)))
-}
