@@ -10,7 +10,6 @@ package uint256
 import (
 	"fmt"
 	"math"
-	"math/big"
 	"math/bits"
 )
 
@@ -369,100 +368,134 @@ func (z *Int) isBitSet(n uint) bool {
 	return (z[n>>6] & (1 << (n & 0x3f))) != 0
 }
 
-func nlz(d *Int) uint {
-	for i := 3; i >= 0; i-- {
-		if d[i] != 0 {
-			return uint(bits.LeadingZeros64(d[i]) % 32)
-		}
+// addTo computes x += y.
+// Requires len(x) >= len(y).
+func addTo(x, y []uint64) uint64 {
+	var carry uint64
+	for i := 0; i < len(y); i++ {
+		x[i], carry = bits.Add64(x[i], y[i], carry)
 	}
-	return 0
+	return carry
 }
 
-// Normalized form of d.
-func shl(d *Int, s uint, isdividend bool) []uint32 {
-	dn := make([]uint32, 9)
-	for i := 0; i < 4; i++ {
-		dn[2*i] = uint32(d[i])
-		dn[2*i+1] = uint32(d[i] >> 32)
+// subMulTo computes x -= y * multiplier.
+// Requires len(x) >= len(y).
+func subMulTo(x, y []uint64, multiplier uint64) uint64 {
+
+	var borrow uint64
+	for i := 0; i < len(y); i++ {
+		s, carry1 := bits.Sub64(x[i], borrow, 0)
+		ph, pl := bits.Mul64(y[i], multiplier)
+		t, carry2 := bits.Sub64(s, pl, 0)
+		x[i] = t
+		borrow = ph + carry1 + carry2
 	}
-	var n int
-	for i := 7; i >= 0; i-- {
-		if dn[i] != 0 {
-			n = i
-			break
-		}
-	}
-	var prev, t uint32
-	for i := 0; i <= n; i++ {
-		t = dn[i]
-		dn[i] = prev | (dn[i] << s)
-		prev = t >> (32 - s)
-	}
-	if isdividend {
-		n = n + 1
-		dn[n] = prev
-	}
-	return dn[:n+1]
+	return borrow
 }
 
-func divKnuth(x, y []uint32) []uint32 {
-	m, n := len(x)-1, len(y)
-	q := make([]uint32, m-n+1)
-	// Number base (2**32)
-	var b uint64 = 0x100000000
+// udivremBy1 divides u by single normalized word d and produces both quotient and remainder.
+func udivremBy1(u []uint64, d uint64) (quot []uint64, rem uint64) {
+	quot = make([]uint64, len(u)-1)
+	rem = u[len(u)-1] // Set the top word as remainder.
 
-	// Take care of the case of a single-digit.
-	if n == 1 {
-		var k uint64
-		k = uint64(x[m])
-		for i := m - 1; i >= 0; i-- {
-			q[i] = uint32((k*b + uint64(x[i])) / uint64(y[0]))
-			k = k*b + uint64(x[i]) - uint64(q[i])*uint64(y[0])
-		}
-		return q
+	for j := len(u) - 2; j >= 0; j-- {
+		quot[j], rem = bits.Div64(rem, u[j], d)
 	}
 
-	// Main Loop
-	var qhat, rhat uint64
-	for j := m - n; j >= 0; j-- {
-		qhat = (uint64(x[j+n])*b + uint64(x[j+n-1])) / uint64(y[n-1])
-		rhat = uint64(x[j+n])*b + uint64(x[j+n-1]) - qhat*uint64(y[n-1])
+	return quot, rem
+}
 
-	AGAIN:
-		if qhat >= b || (qhat*uint64(y[n-2]) > b*rhat+uint64(x[j+n-2])) {
-			qhat = qhat - 1
-			rhat = rhat + uint64(y[n-1])
-			if rhat < b {
-				goto AGAIN
+// udivremKnuth implements the division of u by normalized multiple word d from the Knuth's division algorithm.
+// Returns quotient and updates u to contain the remainder.
+func udivremKnuth(u, d []uint64) (quot []uint64) {
+	quot = make([]uint64, len(u)-len(d))
+	dh := d[len(d)-1]
+	dl := d[len(d)-2]
+
+	for j := len(u) - len(d) - 1; j >= 0; j-- {
+		u2 := u[j+len(d)]
+		u1 := u[j+len(d)-1]
+		u0 := u[j+len(d)-2]
+
+		var qhat, rhat uint64
+		if u2 >= dh { // Division overflows.
+			qhat = ^uint64(0)
+			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+		} else {
+			qhat, rhat = bits.Div64(u2, u1, dh)
+			ph, pl := bits.Mul64(qhat, dl)
+			if ph > rhat || (ph == rhat && pl > u0) {
+				qhat--
+				// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
 			}
 		}
 
 		// Multiply and subtract.
-		var p uint64
-		var t, k int64
-		for i := 0; i < n; i++ {
-			p = qhat * uint64(y[i])
-			t = int64(x[i+j]) - k - int64(p&0xffffffff)
-			x[i+j] = uint32(t)
-			k = int64(p>>32) - (t >> 32)
+		borrow := subMulTo(u[j:], d, qhat)
+		u[j+len(d)] = u2 - borrow
+		if u2 < borrow { // Too much subtracted, add back.
+			qhat--
+			u[j+len(d)] += addTo(u[j:], d)
 		}
-		t = int64(x[j+n]) - k
-		x[j+n] = uint32(t)
 
-		q[j] = uint32(qhat)
-		if t < 0 {
-			// If we subtracted too much, add back.
-			q[j] = q[j] - 1
-			var k, t uint64
-			for i := 0; i < n; i++ {
-				t = uint64(x[i+j]) + uint64(y[i]) + k
-				x[i+j] = uint32(t)
-				k = t >> 32
-			}
-			x[j+n] = x[j+n] + uint32(k)
+		quot[j] = qhat // Store quotient digit.
+	}
+	return quot
+}
+
+// udivrem divides u by d and produces both quotient and remainder.
+// It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
+// See Knuth, Volume 2, section 4.3.1, Algorithm D.
+func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int) {
+	var dLen int
+	for i := len(d) - 1; i >= 0; i-- {
+		if d[i] != 0 {
+			dLen = i + 1
+			break
 		}
 	}
-	return q
+
+	shift := bits.LeadingZeros64(d[dLen-1])
+
+	var dnStorage Int
+	dn := dnStorage[:dLen]
+	for i := dLen - 1; i > 0; i-- {
+		dn[i] = (d[i] << shift) | (d[i-1] >> (64 - shift))
+	}
+	dn[0] = d[0] << shift
+
+	var uLen int
+	for i := len(u) - 1; i >= 0; i-- {
+		if u[i] != 0 {
+			uLen = i + 1
+			break
+		}
+	}
+
+	var unStorage [9]uint64
+	un := unStorage[:uLen+1]
+	un[uLen] = u[uLen-1] >> (64 - shift)
+	for i := uLen - 1; i > 0; i-- {
+		un[i] = (u[i] << shift) | (u[i-1] >> (64 - shift))
+	}
+	un[0] = u[0] << shift
+
+	// TODO: Skip the highest word of numerator if not significant.
+
+	if dLen == 1 {
+		quot, r := udivremBy1(un, dn[0])
+		return quot, new(Int).SetUint64(r >> shift)
+	}
+
+	quot = udivremKnuth(un, dn)
+
+	rem = new(Int)
+	for i := 0; i < dLen-1; i++ {
+		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
+	}
+	rem[dLen-1] = un[dLen-1] >> shift
+
+	return quot, rem
 }
 
 // Div sets z to the quotient x/y for returns z.
@@ -481,23 +514,10 @@ func (z *Int) Div(x, y *Int) *Int {
 
 	// At this point, we know
 	// x/y ; x > y > 0
-	// See Knuth, Volume 2, section 4.3.1, Algorithm D.
 
-	// Normalize by shifting divisor left just enough so that its high-order
-	// bit is on and u left the same amount.
-	// function nlz do the caculating of the amount and shl do the left operation.
-	s := nlz(y)
-	xn := shl(x, s, true)
-	yn := shl(y, s, false)
-
-	// divKnuth do the division of normalized dividend and divisor with Knuth Algorithm D.
-	q := divKnuth(xn, yn)
-
+	quot, _ := udivrem(x[:], y)
 	z.Clear()
-	for i := 0; i < len(q); i++ {
-		z[i/2] = z[i/2] | uint64(q[i])<<(32*(uint64(i)%2))
-	}
-
+	copy(z[:len(quot)], quot)
 	return z
 }
 
@@ -527,11 +547,8 @@ func (z *Int) Mod(x, y *Int) *Int {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
 
-	q := NewInt()
-	q.Div(x, y)
-	q.Mul(q, y)
-	z.Sub(x, q)
-	return z
+	_, rem := udivrem(x[:], y)
+	return z.Copy(rem)
 }
 
 // Smod interprets x and y as signed integers sets z to
@@ -577,17 +594,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		return z
 	}
 
-	var pbytes [len(p) * 8]byte
-	for i := 0; i < len(pbytes); i++ {
-		pbytes[len(pbytes)-1-i] = byte(p[i/8] >> uint64(8*(i%8)))
-	}
-
-	// At this point, we _could_ do x=x mod m, y = y mod m, and test again
-	// if they fit within 256 bytes. But for now just wrap big.Int instead
-	bp := new(big.Int)
-	bp.SetBytes(pbytes[:])
-	z.SetFromBig(bp.Mod(bp, m.ToBig()))
-	return z
+	_, rem := udivrem(p[:], m)
+	return z.Copy(rem)
 }
 
 // Abs interprets x as a a signed number, and sets z to the Abs value
