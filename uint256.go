@@ -458,6 +458,8 @@ func divKnuth(x, y []uint32) []uint32 {
 	return q
 }
 
+// addTo computes x += y.
+// Requires len(x) >= len(y).
 func addTo(x, y []uint64) uint64 {
 	var carry uint64
 	for i := 0; i < len(y); i++ {
@@ -466,6 +468,8 @@ func addTo(x, y []uint64) uint64 {
 	return carry
 }
 
+// subMulTo computes x -= y * multiplier.
+// Requires len(x) >= len(y).
 func subMulTo(x, y []uint64, multiplier uint64) uint64 {
 
 	var borrow uint64
@@ -491,6 +495,8 @@ func udivremBy1(u []uint64, d uint64) (quot []uint64, rem uint64) {
 	return quot, rem
 }
 
+// udivremKnuth implements the division of u by normalized multiple word d from the Knuth's division algorithm.
+// Returns quotient and updates u to contain the remainder.
 func udivremKnuth(u, d []uint64) (quot []uint64) {
 	quot = make([]uint64, len(u)-len(d))
 	dh := d[len(d)-1]
@@ -527,6 +533,9 @@ func udivremKnuth(u, d []uint64) (quot []uint64) {
 	return quot
 }
 
+// udivrem divides u by d and produces both quotient and remainder.
+// It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
+// See Knuth, Volume 2, section 4.3.1, Algorithm D.
 func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int, err error) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
