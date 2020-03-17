@@ -394,21 +394,19 @@ func subMulTo(x, y []uint64, multiplier uint64) uint64 {
 }
 
 // udivremBy1 divides u by single normalized word d and produces both quotient and remainder.
-func udivremBy1(u []uint64, d uint64) (quot []uint64, rem uint64) {
-	quot = make([]uint64, len(u)-1)
+// The quotient is stored in provided quot.
+func udivremBy1(quot, u []uint64, d uint64) (rem uint64) {
 	rem = u[len(u)-1] // Set the top word as remainder.
-
 	for j := len(u) - 2; j >= 0; j-- {
 		quot[j], rem = bits.Div64(rem, u[j], d)
 	}
-
-	return quot, rem
+	return rem
 }
 
 // udivremKnuth implements the division of u by normalized multiple word d from the Knuth's division algorithm.
-// Returns quotient and updates u to contain the remainder.
-func udivremKnuth(u, d []uint64) (quot []uint64) {
-	quot = make([]uint64, len(u)-len(d))
+// The quotient is stored in provided quot - len(u)-len(d) words.
+// Updates u to contain the remainder - len(d) words.
+func udivremKnuth(quot, u, d []uint64) {
 	dh := d[len(d)-1]
 	dl := d[len(d)-2]
 
@@ -440,13 +438,13 @@ func udivremKnuth(u, d []uint64) (quot []uint64) {
 
 		quot[j] = qhat // Store quotient digit.
 	}
-	return quot
 }
 
 // udivrem divides u by d and produces both quotient and remainder.
+// The quotient is stored in provided quot - len(u)-len(d)+1 words.
 // It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
 // See Knuth, Volume 2, section 4.3.1, Algorithm D.
-func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int) {
+func udivrem(quot, u []uint64, d *Int) (rem Int) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
 		if d[i] != 0 {
@@ -483,19 +481,19 @@ func udivrem(u []uint64, d *Int) (quot []uint64, rem *Int) {
 	// TODO: Skip the highest word of numerator if not significant.
 
 	if dLen == 1 {
-		quot, r := udivremBy1(un, dn[0])
-		return quot, new(Int).SetUint64(r >> shift)
+		r := udivremBy1(quot, un, dn[0])
+		rem.SetUint64(r >> shift)
+		return rem
 	}
 
-	quot = udivremKnuth(un, dn)
+	udivremKnuth(quot, un, dn)
 
-	rem = new(Int)
 	for i := 0; i < dLen-1; i++ {
 		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
 	}
 	rem[dLen-1] = un[dLen-1] >> shift
 
-	return quot, rem
+	return rem
 }
 
 // Div sets z to the quotient x/y for returns z.
@@ -515,10 +513,9 @@ func (z *Int) Div(x, y *Int) *Int {
 	// At this point, we know
 	// x/y ; x > y > 0
 
-	quot, _ := udivrem(x[:], y)
-	z.Clear()
-	copy(z[:len(quot)], quot)
-	return z
+	var quot Int
+	udivrem(quot[:], x[:], y)
+	return z.Copy(&quot)
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
@@ -547,8 +544,9 @@ func (z *Int) Mod(x, y *Int) *Int {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
 
-	_, rem := udivrem(x[:], y)
-	return z.Copy(rem)
+	var quot Int
+	rem := udivrem(quot[:], x[:], y)
+	return z.Copy(&rem)
 }
 
 // Smod interprets x and y as signed integers sets z to
@@ -594,8 +592,9 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		return z
 	}
 
-	_, rem := udivrem(p[:], m)
-	return z.Copy(rem)
+	var quot [8]uint64
+	rem := udivrem(quot[:], p[:], m)
+	return z.Copy(&rem)
 }
 
 // Abs interprets x as a a signed number, and sets z to the Abs value
