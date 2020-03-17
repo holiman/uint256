@@ -444,7 +444,7 @@ func udivremKnuth(quot, u, d []uint64) {
 // The quotient is stored in provided quot - len(u)-len(d)+1 words.
 // It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
 // See Knuth, Volume 2, section 4.3.1, Algorithm D.
-func udivrem(quot, u []uint64, d *Int) (rem *Int) {
+func udivrem(quot, u []uint64, d *Int) (rem Int) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
 		if d[i] != 0 {
@@ -482,12 +482,12 @@ func udivrem(quot, u []uint64, d *Int) (rem *Int) {
 
 	if dLen == 1 {
 		r := udivremBy1(quot, un, dn[0])
-		return new(Int).SetUint64(r >> shift)
+		rem.SetUint64(r >> shift)
+		return rem
 	}
 
 	udivremKnuth(quot, un, dn)
 
-	rem = new(Int)
 	for i := 0; i < dLen-1; i++ {
 		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
 	}
@@ -546,7 +546,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 
 	var quot Int
 	rem := udivrem(quot[:], x[:], y)
-	return z.Copy(rem)
+	return z.Copy(&rem)
 }
 
 // Smod interprets x and y as signed integers sets z to
@@ -594,7 +594,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 
 	var quot [8]uint64
 	rem := udivrem(quot[:], p[:], m)
-	return z.Copy(rem)
+	return z.Copy(&rem)
 }
 
 // Abs interprets x as a a signed number, and sets z to the Abs value
