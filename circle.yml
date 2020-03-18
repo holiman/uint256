@@ -38,6 +38,20 @@ jobs:
       - run:
           name: "Codecov upload"
           command: bash <(curl -s https://codecov.io/bash)
+      - restore_cache:
+          keys:
+            - corpus
+      - run:
+          name: "Fuzzing"
+          command: |
+            go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
+            go-fuzz-build
+            timeout --preserve-status --signal INT 1m go-fuzz -procs=2
+            test ! "$(ls crashers)"
+      - save_cache:
+          key: corpus-{{ epoch }}
+          paths:
+            - corpus
       - run:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
