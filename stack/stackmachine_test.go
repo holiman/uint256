@@ -14,36 +14,36 @@ func toHex(h string) []byte {
 }
 
 func TestStackBasics(t *testing.T) {
-	stack := New()
-	stack.NewContext()
+	machine := New()
+	machine.NewContext(nil,nil)
 	{
-		stack.PushBytes(toHex("deadbeef"))
-		stack.NewContext()
+		machine.PushBytes(toHex("deadbeef"))
+		machine.NewContext(nil,nil)
 		{
-			stack.PushBytes(toHex("deadbeef"))
-			stack.PushBytes(toHex("deadbeef"))
-			if exp := 3 * 32; stack.head != exp {
-				t.Fatalf("stack head wrong, got %v exp %v", stack.head, exp)
+			machine.PushBytes(toHex("deadbeef"))
+			machine.PushBytes(toHex("deadbeef"))
+			if got, exp := machine.callCtx.stackHead,3 * 32; got != exp {
+				t.Fatalf("machine head wrong, got %v exp %v", got, exp)
 			}
-			stack.Pop()
-			if exp := 2 * 32; stack.head != exp {
-				t.Fatalf("stack head wrong, got %v exp %v", stack.head, exp)
+			machine.Pop()
+			if got, exp := machine.callCtx.stackHead,2 * 32; got != exp {
+				t.Fatalf("machine head wrong, got %v exp %v", got, exp)
 			}
-			stack.PushBytes(toHex("deadbeef0000000000000000"))
-			stack.PushBytes(toHex("ffaa112233deadbeef000cafebabe00000deadbeef00000cafebabe000deadbeef01020304"))
-			d := stack.PopBytes32([32]byte{})
+			machine.PushBytes(toHex("deadbeef0000000000000000"))
+			machine.PushBytes(toHex("ffaa112233deadbeef000cafebabe00000deadbeef00000cafebabe000deadbeef01020304"))
+			d := machine.PopBytes32([32]byte{})
 			if exp := toHex("deadbeef000cafebabe00000deadbeef00000cafebabe000deadbeef01020304"); !bytes.Equal(d[:],exp){
 				t.Fatalf("err, got %x exp %x", d, exp)
 			}
-			stack.DropContext()
+			machine.DropContext()
 		}
-		stack.DropContext()
+		machine.DropContext()
 	}
 }
 
 func TestStackInts(t *testing.T) {
 	stack := New()
-	stack.NewContext()
+	stack.NewContext(nil, nil)
 	{
 		stack.PushBytes(toHex("01"))
 		stack.PushBytes(toHex("02"))
@@ -81,18 +81,3 @@ func TestStackInts(t *testing.T) {
 	}
 }
 
-func BenchmarkEngine(b *testing.B) {
-	stack := New()
-	stack.NewContext()
-	op1 := toHex("01")
-	op2 := toHex("02")
-	b.ResetTimer()
-	b.ReportAllocs()
-	e := NewEngine()
-	for i := 0; i < b.N; i++ {
-		stack.PushBytes(op1)
-		stack.PushBytes(op2)
-		e.opAdd(stack)
-		stack.Pop()
-	}
-}

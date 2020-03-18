@@ -33,6 +33,8 @@ type CallContext struct {
 	Input    []byte       // Input to the call
 	Gas      uint64       // Available gas
 	value    *uint256.Int // Value provided in the call
+
+	analysis bitvec
 }
 
 type StackMachine struct {
@@ -62,18 +64,21 @@ type StackMachine struct {
 	// this should be cleared from time to time, e.g. at every transaction
 	// or every block.
 	codeDataLookup map[[32]byte]bitvec
+
+	staticGasCost [256]uint64
 }
 
 func New() *StackMachine {
 	size := 1024
 	return &StackMachine{
 		// 1024B = room for 32 stack elements by default
-		stackbuffer: make([]byte, size),
-		allocated:   size,
-		rom:         newReadonlyMem(),
-		x:           uint256.NewInt(),
-		y:           uint256.NewInt(),
-		z:           uint256.NewInt(),
+		stackbuffer:   make([]byte, size),
+		allocated:     size,
+		rom:           newReadonlyMem(),
+		x:             uint256.NewInt(),
+		y:             uint256.NewInt(),
+		z:             uint256.NewInt(),
+		staticGasCost: staticGasCosts,
 	}
 }
 
@@ -81,7 +86,7 @@ func New() *StackMachine {
 // A context is the CALL-context, meaning
 // 1) A local stack
 // 2) A local memory area
-func (machine *StackMachine) NewContext(code []byte, value uint256.Int) {
+func (machine *StackMachine) NewContext(code []byte, value *uint256.Int) {
 	newCtx := &CallContext{
 		memory:      NewMemory(),
 		stackHead:   0,
@@ -90,8 +95,8 @@ func (machine *StackMachine) NewContext(code []byte, value uint256.Int) {
 		value:       value,
 	}
 	if cur := machine.callCtx; cur != nil {
-		ctx.stackBottom = cur.stackHead
-		ctx.stackHead = cur.stackHead
+		newCtx.stackBottom = cur.stackHead
+		newCtx.stackHead = cur.stackHead
 		machine.contexts = append(machine.contexts, cur)
 	}
 	machine.callCtx = newCtx
@@ -100,7 +105,11 @@ func (machine *StackMachine) NewContext(code []byte, value uint256.Int) {
 // DropContext drops the current context, restoring the previous context
 func (machine *StackMachine) DropContext() {
 	idx := len(machine.contexts) - 1
-	machine.callCtx = machine.contexts[ixd]
+	if idx<0{
+		machine.callCtx = nil
+		return
+	}
+	machine.callCtx = machine.contexts[idx]
 	machine.contexts = machine.contexts[:idx]
 }
 
@@ -131,10 +140,10 @@ func (machine *StackMachine) InitBlock(coinbase, timestamp, number,
 	machine.codeDataLookup = make(map[[32]byte]bitvec)
 }
 
-func (machine *StackMachine) isCode(udest uint32) bool {
+func (machine *StackMachine) isCode(udest uint64) bool {
 	ctx := machine.callCtx
 	// Do we have a contract hash already?
-	if ctx.CodeHash != (common.Hash{}) {
+	if ctx.CodeHash != ([32]byte{}) {
 		// Does parent context have the analysis?
 		analysis, exist := machine.codeDataLookup[ctx.CodeHash]
 		if !exist {
@@ -157,7 +166,7 @@ func (machine *StackMachine) isCode(udest uint32) bool {
 
 // maybeGrow checks if the stack is large enough, otherwise it will grow a bit
 func (machine *StackMachine) maybeGrow() {
-	if machine.allocated < machine.head+32 {
+	if machine.allocated < machine.callCtx.stackHead+32 {
 		factor := len(machine.stackbuffer) / 2
 		machine.allocated += factor
 		newSlice := make([]byte, factor)
@@ -190,8 +199,8 @@ func (machine *StackMachine) PushBytes(data []byte) {
 func (machine *StackMachine) Dup(n int) {
 	machine.maybeGrow()
 	from := machine.callCtx.stackHead - 32 - 32*n
-	copy(machine.stackbuffer[machine.callCtx.stackHead:], stack.stackbuffer[from:from+32])
-	machine.callCtx.head += 32
+	copy(machine.stackbuffer[machine.callCtx.stackHead:], machine.stackbuffer[from:from+32])
+	machine.callCtx.stackHead += 32
 }
 
 // Swap swaps the n:th item with the head item in the stack
@@ -213,7 +222,7 @@ func (machine *StackMachine) Swap(n int) {
 // PushBytes32 pushes 32 bytes of stackbuffer onto the stack
 func (machine *StackMachine) PushBytes32(data [32]byte) {
 	machine.maybeGrow()
-	copy(machine.stackbuffer[stack.callContext.stackHead:], data[:])
+	copy(machine.stackbuffer[machine.callCtx.stackHead:], data[:])
 	machine.callCtx.stackHead += 32
 }
 
@@ -232,7 +241,7 @@ func (machine *StackMachine) PushUint64(x uint64) {
 	head := machine.callCtx.stackHead
 	copy(machine.stackbuffer[head:], zeroByte32[:24])
 	binary.BigEndian.PutUint64(machine.stackbuffer[head+24:], x)
-	machine.callCtx.stackHeadhead += 32
+	machine.callCtx.stackHead += 32
 }
 
 // PushUint pushes a uint256.Int onto the stack. It's safe to modify the
@@ -283,16 +292,16 @@ func (machine *StackMachine) PopUints(x, y *uint256.Int) {
 
 // PopBytes32 pops 32 byte of stackbuffer off the stack and copies into stackbuffer
 func (machine *StackMachine) PopBytes32(data [32]byte) [32]byte {
-	h := machine.callContext.stackHead
+	h := machine.callCtx.stackHead
 	copy(data[:], machine.stackbuffer[h-32:h])
-	machine.callContext.stackHead -= 32
+	machine.callCtx.stackHead -= 32
 	return data
 }
 
 func (machine *StackMachine) PrettyPrint() {
 	fmt.Printf("StackMachine\n")
 	fmt.Printf("  allocated: %d\n", machine.allocated)
-	fmt.Printf("  contexts: %d\n", machine.contexts)
+	fmt.Printf("  contexts: %d\n", len(machine.contexts))
 	for i := 0; i < machine.callCtx.stackHead; i += 32 {
 		s := machine.stackbuffer[i : i+32]
 		fmt.Printf("%02d  %x\n", i/32, s)

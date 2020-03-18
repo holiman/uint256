@@ -1,15 +1,19 @@
 package stack
 
 import (
+	"errors"
 	"fmt"
 	"github.com/holiman/uint256"
 )
 
 type simpleOp func(*StackMachine)
-type complexOp func(*StackMachine, uint64) (uint64, error)
+type complexOp func(*StackMachine, *uint64, uint64) (uint64, error)
 
 var simpleFuncs [256]simpleOp
 var complexFuncs [256]complexOp
+var staticGasCosts [256]uint64
+
+var ErrOutOfGas = errors.New("Out of gas")
 
 func init() {
 
@@ -36,8 +40,8 @@ func init() {
 	simpleFuncs[MSIZE] = (*StackMachine).opMsize
 	simpleFuncs[JUMPDEST] = (*StackMachine).opJumpdest
 
-	complexFuncs[MLOAD] = (*StackMachine).opMload
-	complexFuncs[MSTORE] = (*StackMachine).opMstore
+	complexFuncs[MLOAD] = (*StackMachine).opTodo
+	complexFuncs[MSTORE] = (*StackMachine).opTodo
 
 	complexFuncs[STOP] = (*StackMachine).opTodo
 	complexFuncs[ADDRESS] = (*StackMachine).opTodo
@@ -54,8 +58,8 @@ func init() {
 	complexFuncs[MSTORE8] = (*StackMachine).opTodo
 	complexFuncs[SLOAD] = (*StackMachine).opTodo
 	complexFuncs[SSTORE] = (*StackMachine).opTodo
-	complexFuncs[JUMP] = (*StackMachine).opTodo
-	complexFuncs[JUMPI] = (*StackMachine).opTodo
+	complexFuncs[JUMP] = (*StackMachine).opJump
+	complexFuncs[JUMPI] = (*StackMachine).opJumpi
 	complexFuncs[PC] = (*StackMachine).opTodo
 
 	complexFuncs[GAS] = (*StackMachine).opTodo
@@ -77,26 +81,38 @@ func init() {
 	complexFuncs[REVERT] = (*StackMachine).opTodo
 	complexFuncs[SELFDESTRUCT] = (*StackMachine).opTodo
 
+	staticGasCosts[PUSH3] = 5
+	staticGasCosts[JUMPDEST] = 0
+	staticGasCosts[PUSH1] = 5
+	staticGasCosts[SWAP1] = 5
+	staticGasCosts[SUB] = 5
+	staticGasCosts[DUP1] = 5
+	staticGasCosts[JUMPI] = 5
+	staticGasCosts[STOP] = 5
+
 }
 
-func (machine *StackMachine) DispatchSimple(op OpCode) (valid bool) {
+func (machine *StackMachine) DispatchSimple(op OpCode, pc *uint64) (valid bool) {
 	if fn := simpleFuncs[op]; fn != nil {
 		fn(machine)
 		return true
 	}
 	if op >= PUSH1 && op <= PUSH32 {
+		start := int(*pc) + 1
 		code := machine.callCtx.Code
-		l := 1 + byte(op-PUSH1)
-		if codeLen := len(code); codeLen < int(l) {
-			l = byte(codeLen)
+		l := int(1 + byte(op-PUSH1))
+		end := start + l
+		if codeLen := len(code); codeLen < end {
+			end = int(codeLen)
 		}
-		machine.PushBytes(code[:l])
+		machine.PushBytes(code[start:end])
+		*pc += uint64(l)
 		return true
 	} else if op >= DUP1 && op <= DUP16 {
 		machine.Dup(int(op - DUP1))
 		return true
 	} else if op >= SWAP1 && op <= SWAP16 {
-		machine.Swap(int(op - SWAP1))
+		machine.Swap(int(1+op - SWAP1))
 		return true
 	}
 	return false
@@ -104,9 +120,9 @@ func (machine *StackMachine) DispatchSimple(op OpCode) (valid bool) {
 
 // Call is the entry-point for execution, and is used for the initial outer call
 // as well as any internal sub-calls, such as DELEGATECALL and STATICCALL
-func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value uint256.Int, readOnly bool, gas uint64) {
+func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value *uint256.Int, readOnly bool, gas uint64) ([]byte, error) {
 	if len(code) == 0 {
-		return
+		return nil, nil
 	}
 	// New context
 	machine.NewContext(code, value)
@@ -123,10 +139,19 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 		opStaticCost uint64
 		abort        bool
 		op           OpCode
+		//steps        uint64
 	)
 
-	for !abort {
+	for ; !abort; pc++ {
+		//steps++
+		//if steps == 6 + 1000000{
+		//	break
+		//}
 		op = OpCode(code[pc])
+		//fmt.Printf("pc %d op %v\n", pc, op.String())
+		if op == 0 {
+			break
+		}
 		// An opcode with a negative static gas value is not valid
 		if cost := machine.staticGasCost[op]; cost < 0 {
 			return nil, fmt.Errorf("invalid opcode 0x%x", int(op))
@@ -157,7 +182,7 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 		}
 		gas -= opStaticCost
 
-		if machine.DispatchSimple(op) {
+		if machine.DispatchSimple(op, &pc) {
 			continue
 		}
 		// All 'simple' opcodes are done. Remaining are calls, tx-context stackbuffer,
@@ -170,15 +195,23 @@ func (machine *StackMachine) Call(code []byte, address, caller [20]byte, value u
 		var err error
 		// Complex ops remaining. Complex ops may return error
 		if fn := complexFuncs[op]; fn != nil {
-			gas, err = fn(machine, gas)
+			gas, err = fn(machine, &pc, gas)
 		}
 		if err != nil {
 			// TODO handle this?
-			return gas, err
+			return nil, err
 		}
 	}
+	return nil, nil
 }
 
+func calcMemSize64(a, b *uint256.Int) (uint64, bool) {
+	panic("implement me")
+}
+
+func memoryGasCost(a, b *uint256.Int) (uint64, bool) {
+	panic("implement me")
+}
 func (machine *StackMachine) memoryCall(inOff, inSize, retOff, retSize *uint256.Int) (uint64, bool) {
 	x, overflow := calcMemSize64(inOff, inSize)
 	if overflow {
@@ -194,95 +227,96 @@ func (machine *StackMachine) memoryCall(inOff, inSize, retOff, retSize *uint256.
 	return y, false
 }
 
-func (machine *StackMachine) dynamicGasCall(value *uint256.Int, destination [20]byte) {
-	var (
-		gasCost        uint64
-		transfersValue = !value.IsZero()
-	)
-	// Determine how much gas is needed for the memory expansion (if any)
-	memoryGas, err := memoryGasCost(mem, memorySize)
-	if err != nil {
-		return 0, 0, err
-	}
-	// Determine extra gas that needs to be paid for creating a new account
-	if isEip158 {
-		if transfersValue && machine.StateDB.Empty(destination) {
-			gasCost += params.CallNewAccountGas
-		}
-	} else if !machine.StateDB.Exist(destination) {
-		gasCost += params.CallNewAccountGas
-	}
-	// Extra fee for transferring ether
-	if transfersValue {
-		gasCost += params.CallValueTransferGas
-	}
-	// Add the two factors
-	var overflow bool
-	if gasCost, overflow = math.SafeAdd(gasCost, memoryGas); overflow {
-		return 0, 0, errGasUintOverflow
-	}
-	// Apply the 63/64:ths rule, to determine how much gas is actually
-	// passed along to the callee
-	sentGas, err = callGas(isEip150, availableGas, gasCost, desiredGas)
-	if err != nil {
-		return 0, 0, err
-	}
-	// Check if we have sufficient gas
-	if gasCost, overflow = math.SafeAdd(availableGas, sentGas); overflow {
-		return 0, 0, errGasUintOverflow
-	}
-	return gasCost, sentGas, nil
-}
+//func (machine *StackMachine) dynamicGasCall(value *uint256.Int, destination [20]byte) {
+//	var (
+//		gasCost        uint64
+//		transfersValue = !value.IsZero()
+//	)
+//
+//	// Determine how much gas is needed for the memory expansion (if any)
+//	memoryGas, err := memoryGasCost(machine.m, memorySize)
+//	if err != nil {
+//		return 0, 0, err
+//	}
+//	// Determine extra gas that needs to be paid for creating a new account
+//	if isEip158 {
+//		if transfersValue && machine.StateDB.Empty(destination) {
+//			gasCost += params.CallNewAccountGas
+//		}
+//	} else if !machine.StateDB.Exist(destination) {
+//		gasCost += params.CallNewAccountGas
+//	}
+//	// Extra fee for transferring ether
+//	if transfersValue {
+//		gasCost += params.CallValueTransferGas
+//	}
+//	// Add the two factors
+//	var overflow bool
+//	if gasCost, overflow = math.SafeAdd(gasCost, memoryGas); overflow {
+//		return 0, 0, errGasUintOverflow
+//	}
+//	// Apply the 63/64:ths rule, to determine how much gas is actually
+//	// passed along to the callee
+//	sentGas, err = callGas(isEip150, availableGas, gasCost, desiredGas)
+//	if err != nil {
+//		return 0, 0, err
+//	}
+//	// Check if we have sufficient gas
+//	if gasCost, overflow = math.SafeAdd(availableGas, sentGas); overflow {
+//		return 0, 0, errGasUintOverflow
+//	}
+//	return gasCost, sentGas, nil
+//}
+//
+//func (machine *StackMachine) opCall(availableGas uint64) (remainingGas uint64, err error) {
+//
+//	var (
+//		desiredGas  = uint256.NewInt()
+//		destination [20]byte
+//		value       = uint256.NewInt()
+//		inOffset    = uint256.NewInt()
+//		inSize      = uint256.NewInt()
+//		retOffset   = uint256.NewInt()
+//		retSize     = uint256.NewInt()
+//	)
+//	machine.PopUint(desiredGas)
+//	machine.PopBytes20(destination)
+//	machine.PopUint(value)
+//	machine.PopUints(inOffset, inSize)
+//	machine.PopUints(retOffset, retSize)
+//
+//	// We do the memory expansion calculation and dynamic gas calc here
+//	memSize, overflow := machine.memoryCall(inOffset, inSize, retOffset, retSize)
+//	if overflow {
+//		return 0, errGasUintOverflow
+//	}
+//	dynamicGasCost, calleeGas, err := machine.dynamicGasCall(value, destination, memSize)
+//	if err != nil {
+//		return 0, err
+//	}
+//	if availableGas < dynamicGasCost {
+//		return 0, ErrOutOfGas
+//	}
+//	availableGas -= dynamicGasCost
+//	// At this point, we know there is sufficient gas, so it's time to
+//	// expand the memory
+//	if memSize > 0 {
+//		machine.callCtx.memory.Resize(memorySize)
+//	}
+//	// Execute the CALL
+//	ret, returnedGas, err := machine.Call(code, address, caller, value, false, calleeGas)
+//	if err != nil {
+//		machine.PushZero()
+//	} else {
+//		machine.PushBytes(oneByte32)
+//	}
+//	if err == nil || err == errExecutionReverted {
+//		machine.callCtx.memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
+//		machine.returnData = ret
+//	}
+//	return availableGas + returnedGas, nil
+//}
 
-func (machine *StackMachine) opCall(availableGas uint64) (remainingGas uint64, err error) {
-
-	var (
-		desiredGas  = uint256.NewInt()
-		destination [20]byte
-		value       = uint256.NewInt()
-		inOffset    = uint256.NewInt()
-		inSize      = uint256.NewInt()
-		retOffset   = uint256.NewInt()
-		retSize     = uint256.NewInt()
-	)
-	machine.PopUint(desiredGas)
-	machine.PopBytes20(destination)
-	machine.PopUint(value)
-	machine.PopUints(inOffset, inSize)
-	machine.PopUints(retOffset, retSize)
-
-	// We do the memory expansion calculation and dynamic gas calc here
-	memSize, overflow := machine.memoryCall(inOffset, inSize, retOffset, retSize)
-	if overflow {
-		return 0, errGasUintOverflow
-	}
-	dynamicGasCost, calleeGas, err := machine.dynamicGasCall(value, destination, memSize)
-	if err != nil {
-		return 0, err
-	}
-	if availableGas < dynamicGasCost {
-		return 0, ErrOutOfGas
-	}
-	availableGas -= dynamicGasCost
-	// At this point, we know there is sufficient gas, so it's time to
-	// expand the memory
-	if memSize > 0 {
-		machine.callCtx.memory.Resize(memorySize)
-	}
-	// Execute the CALL
-	ret, returnedGas, err := machine.Call(code, address, caller, value, false, calleeGas)
-	if err != nil {
-		machine.PushZero()
-	} else {
-		machine.PushBytes(oneByte32)
-	}
-	if err == nil || err == errExecutionReverted {
-		machine.callCtx.memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
-		machine.returnData = ret
-	}
-	return availableGas + returnedGas, nil
-}
-
-func (machine *StackMachine) opTodo(gas uint64) (uint64, error) {
+func (machine *StackMachine) opTodo(pc *uint64, gas uint64) (uint64, error) {
 	panic("not implemented")
 }

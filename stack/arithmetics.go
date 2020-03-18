@@ -1,5 +1,6 @@
 package stack
 
+
 func (machine *StackMachine) opAdd() {
 	machine.PopUints(machine.x, machine.y)
 	machine.z.Add(machine.x, machine.y)
@@ -7,6 +8,7 @@ func (machine *StackMachine) opAdd() {
 }
 
 func (machine *StackMachine) opSub() {
+
 	machine.PopUints(machine.x, machine.y)
 	machine.z.Sub(machine.x, machine.y)
 	machine.PushUint(machine.z)
@@ -155,4 +157,3 @@ func (machine *StackMachine) opSAR() {
 	machine.y.Srsh(machine.y, n)
 	machine.PushUint(machine.y)
 }
-

@@ -17,6 +17,7 @@
 package stack
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/holiman/uint256"
@@ -27,7 +28,7 @@ type Memory struct {
 	store       []byte
 	lastGasCost uint64
 }
-
+var ErrInvalidJump = errors.New("invalid jump")
 // NewMemory returns a new memory model.
 func NewMemory() *Memory {
 	return &Memory{}
@@ -117,14 +118,15 @@ func (m *Memory) Print() {
 }
 
 func (machine *StackMachine) opMsize() {
-	machine.PushUint64(len(machine.callCtx.memory.Len()))
+	machine.PushUint64(machine.callCtx.memory.Len())
 }
+/*
 
 func (machine *StackMachine) opMstore(availableGas uint64) (uint64, error) {
 	// pop value of the stack
 	machine.PopUints(machine.x, machine.y)
 	var (
-		mStart, val = x, y
+		mStart, val = machine.x, machine.y
 		mem         = machine.callCtx.memory
 	)
 	// For Mstore, we might need to expand memory
@@ -147,12 +149,11 @@ func (machine *StackMachine) opMstore(availableGas uint64) (uint64, error) {
 	mem.Set32(mStart.Uint64(), val)
 	return availableGas, nil
 }
-
 func (machine *StackMachine) opMload(availableGas uint64) (uint64, error) {
 	machine.PopUint(machine.x)
 	offset, overflow := machine.x.Uint64WithOverflow()
 	if overflow {
-		return 0, errOutOfGas
+		return 0, ErrOutOfGas
 	}
 	// TODO: Do we need to expand memory if user load outside of current
 	// memory region? Probably
@@ -167,15 +168,17 @@ func (machine *StackMachine) opMload(availableGas uint64) (uint64, error) {
 	return availableGas, nil
 }
 
-//
-//
-//func (machine *StackMachine) opMstore8() {
-//	// memStart , value
-//	machine.PopUints(machine.x, machine.y)
-//	offset := machine.x.Int64()
-//	// This will panic if memory is not already expanded
-//	machine.callCtx.memory[offset] = byte(machine.y.Int64() & 0xFF)
-//}
+
+
+func (machine *StackMachine) opMstore8() {
+	// memStart , value
+	machine.PopUints(machine.x, machine.y)
+	offset := machine.x.Int64()
+	// This will panic if memory is not already expanded
+	machine.callCtx.memory[offset] = byte(machine.y.Int64() & 0xFF)
+}
+
+*/
 
 func (machine *StackMachine) opJumpdest() {}
 
@@ -189,14 +192,44 @@ func (machine *StackMachine) opJump(pc *uint64, availableGas uint64) (uint64, er
 	// - and must land on a JUMPDEST
 	udest, overflow := pos.Uint64WithOverflow()
 	if overflow ||
-		udest > len(machine.callCtx.Code) ||
-		OpCode(machine.callCtx.Code.Code[udest]) != JUMPDEST {
-		return 0, errInvalidJump
+		udest > uint64(len(machine.callCtx.Code)) ||
+		OpCode(machine.callCtx.Code[udest]) != JUMPDEST {
+		return 0, ErrInvalidJump
 	}
 	// Last thing to check is that it's a valid code segment, and not the
 	// data-segment following a PUSHX
 	if !machine.isCode(udest) {
-		return 0, errInvalidJump
+		return 0, ErrInvalidJump
+	}
+	*pc = pos.Uint64()
+	return availableGas, nil
+}
+
+func (machine *StackMachine) opJumpi(pc *uint64, availableGas uint64) (uint64, error) {
+
+	machine.PopUints(machine.x, machine.y)
+	var (
+		pos = machine.x
+		cond = machine.y
+	)
+	if cond.IsZero(){
+		return availableGas, nil
+	}
+	//fmt.Printf("Cond: %v\n", cond.Uint64())
+	// PC cannot
+	// - go beyond uint64
+	// - len(code)
+	// - and must land on a JUMPDEST
+	udest, overflow := pos.Uint64WithOverflow()
+	if overflow ||
+		udest > uint64(len(machine.callCtx.Code)) ||
+		OpCode(machine.callCtx.Code[udest]) != JUMPDEST {
+		return 0, ErrInvalidJump
+	}
+	// Last thing to check is that it's a valid code segment, and not the
+	// data-segment following a PUSHX
+	if !machine.isCode(udest) {
+		return 0, ErrInvalidJump
 	}
 	*pc = pos.Uint64()
 	return availableGas, nil

@@ -1,6 +1,8 @@
 package stack
 
-import "math/big"
+import (
+	"github.com/holiman/uint256"
+)
 
 // The ROM implements a read-only memory, meant to be used for block-constants
 // and tx-constants
@@ -59,7 +61,7 @@ func newReadonlyMem() readonlyMem {
 }
 
 func (rom readonlyMem) setBlockConstants(coinbase, timestamp, number,
-	difficulty, chainid *big.Int) {
+	difficulty, chainid *uint256.Int) {
 	copy(rom[romCoinbase:romCoinbase+32], coinbase.Bytes())
 	copy(rom[romTimestamp:romTimestamp+32], timestamp.Bytes())
 	copy(rom[romNumber:romNumber+32], number.Bytes())
