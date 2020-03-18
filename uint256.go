@@ -398,9 +398,10 @@ func subMulTo(x, y []uint64, multiplier uint64) uint64 {
 // udivremBy1 divides u by single normalized word d and produces both quotient and remainder.
 // The quotient is stored in provided quot.
 func udivremBy1(quot, u []uint64, d uint64) (rem uint64) {
+	reciprocal := reciprocal2by1(d)
 	rem = u[len(u)-1] // Set the top word as remainder.
 	for j := len(u) - 2; j >= 0; j-- {
-		quot[j], rem = bits.Div64(rem, u[j], d)
+		quot[j], rem = udivrem2by1(rem, u[j], d, reciprocal)
 	}
 	return rem
 }
@@ -411,6 +412,7 @@ func udivremBy1(quot, u []uint64, d uint64) (rem uint64) {
 func udivremKnuth(quot, u, d []uint64) {
 	dh := d[len(d)-1]
 	dl := d[len(d)-2]
+	reciprocal := reciprocal2by1(dh)
 
 	for j := len(u) - len(d) - 1; j >= 0; j-- {
 		u2 := u[j+len(d)]
@@ -422,7 +424,7 @@ func udivremKnuth(quot, u, d []uint64) {
 			qhat = ^uint64(0)
 			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
 		} else {
-			qhat, rhat = bits.Div64(u2, u1, dh)
+			qhat, rhat = udivrem2by1(u2, u1, dh, reciprocal)
 			ph, pl := bits.Mul64(qhat, dl)
 			if ph > rhat || (ph == rhat && pl > u0) {
 				qhat--
