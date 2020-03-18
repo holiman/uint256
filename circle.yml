@@ -15,7 +15,7 @@ commands:
             export GOARCH=<<parameters.arch>>
             go version
             go env
-            go test -v
+            go test -v -coverprofile=coverage-<<parameters.arch>>.txt -covermode=count
 
 jobs:
 
@@ -35,6 +35,9 @@ jobs:
           arch: "amd64"
       - test:
           arch: "386"
+      - run:
+          name: "Codecov upload"
+          command: bash <(curl -s https://codecov.io/bash)
       - run:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
