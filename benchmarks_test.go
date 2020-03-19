@@ -8,49 +8,73 @@ package uint256
 import (
 	"math/big"
 	"math/rand"
-	"sync"
 	"testing"
 )
 
 const numSamples = 1024
 
 var (
-	mulModBy64Samples  [numSamples][3]Int
-	mulModBy128Samples [numSamples][3]Int
-	mulModBy192Samples [numSamples][3]Int
-	mulModBy256Samples [numSamples][3]Int
-	initSamplesOnce    sync.Once
+	int32Samples    [numSamples]Int
+	int32SamplesLt  [numSamples]Int
+	int64Samples    [numSamples]Int
+	int128Samples   [numSamples]Int
+	int192Samples   [numSamples]Int
+	int256Samples   [numSamples]Int
+	int256SamplesLt [numSamples]Int // int256SamplesLt[i] <= int256Samples[i]
+
+	big32Samples    [numSamples]big.Int
+	big32SamplesLt  [numSamples]big.Int
+	big64Samples    [numSamples]big.Int
+	big128Samples   [numSamples]big.Int
+	big192Samples   [numSamples]big.Int
+	big256Samples   [numSamples]big.Int
+	big256SamplesLt [numSamples]big.Int // big256SamplesLt[i] <= big256Samples[i]
+
+	_ = initSamples()
 )
 
-// newRandInt creates new Int with so many highly likely non-zero random words.
-func newRandInt(rnd *rand.Rand, numWords int) Int {
-	var z Int
-	for i := 0; i < numWords; i++ {
-		z[i] = rnd.Uint64()
-	}
-	return z
-}
-
-func initSamples() {
+func initSamples() bool {
 	rnd := rand.New(rand.NewSource(0))
 
-	for i := 0; i < numSamples; i++ {
-		mulModBy64Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy64Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy64Samples[i][2] = newRandInt(rnd, 1)
-
-		mulModBy128Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy128Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy128Samples[i][2] = newRandInt(rnd, 2)
-
-		mulModBy192Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy192Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy192Samples[i][2] = newRandInt(rnd, 3)
-
-		mulModBy256Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy256Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy256Samples[i][2] = newRandInt(rnd, 4)
+	// newRandInt creates new Int with so many highly likely non-zero random words.
+	newRandInt := func(numWords int) Int {
+		var z Int
+		for i := 0; i < numWords; i++ {
+			z[i] = rnd.Uint64()
+		}
+		return z
 	}
+
+	for i := 0; i < numSamples; i++ {
+		x32g := rnd.Uint32()
+		x32l := rnd.Uint32()
+		if x32g < x32l {
+			x32g, x32l = x32l, x32g
+		}
+		int32Samples[i].SetUint64(uint64(x32g))
+		big32Samples[i] = *int32Samples[i].ToBig()
+		int32SamplesLt[i].SetUint64(uint64(x32l))
+		big32SamplesLt[i] = *int32SamplesLt[i].ToBig()
+
+		int64Samples[i] = newRandInt(1)
+		big64Samples[i] = *int64Samples[i].ToBig()
+
+		int128Samples[i] = newRandInt(2)
+		big128Samples[i] = *int128Samples[i].ToBig()
+
+		int192Samples[i] = newRandInt(3)
+		big192Samples[i] = *int192Samples[i].ToBig()
+
+		int256Samples[i] = newRandInt(4)
+		int256SamplesLt[i] = newRandInt(4)
+		if int256Samples[i].Lt(&int256SamplesLt[i]) {
+			int256Samples[i], int256SamplesLt[i] = int256SamplesLt[i], int256Samples[i]
+		}
+		big256Samples[i] = *int256Samples[i].ToBig()
+		big256SamplesLt[i] = *int256SamplesLt[i].ToBig()
+	}
+
+	return true
 }
 
 func benchmark_Add_Bit(bench *testing.B) {
@@ -456,156 +480,136 @@ func Benchmark_Exp(bench *testing.B) {
 	bench.Run("small/uint256", benchmark_ExpSmall_Bit)
 }
 
-func Benchmark_Div(bench *testing.B) {
-	bench.Run("large/big", benchmark_DivLarge_Big)
-	bench.Run("large/uint256", benchmark_DivLarge_Bit)
-
-	bench.Run("small/big", benchmark_DivSmall_Big)
-	bench.Run("small/uint256", benchmark_DivSmall_Bit)
-}
-
-func benchMulModBigint(a, b, m string) func(*testing.B) {
-	return func(bench *testing.B) {
-		x := big.NewInt(0).SetBytes(hex2Bytes(a))
-		y := big.NewInt(0).SetBytes(hex2Bytes(b))
-		z := big.NewInt(0).SetBytes(hex2Bytes(m))
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			b1 := big.NewInt(0)
-			b1.Mul(x, y)
-			b1.Mod(b1, z)
-			U256(b1)
+func BenchmarkDiv(b *testing.B) {
+	benchmarkDivUint256 := func(b *testing.B, xSamples, modSamples *[numSamples]Int) {
+		var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.Div(&xSamples[i], &modSamples[i])
+			}
 		}
 	}
-}
-func benchMulModUint256(a, b, m string) func(*testing.B) {
-	return func(bench *testing.B) {
-		x, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(a)))
-		y, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(b)))
-		z, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(m)))
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			f := NewInt()
-			f.MulMod(x, y, z)
+	benchmarkDivBig := func(b *testing.B, xSamples, modSamples *[numSamples]big.Int) {
+		var sink big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.Div(&xSamples[i], &modSamples[i])
+			}
 		}
 	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small/big", func(b *testing.B) { benchmarkDivBig(b, &big32Samples, &big32SamplesLt) })
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big256SamplesLt) })
 }
 
-func Benchmark_MulMod(bench *testing.B) {
-	a := "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeffef"
-	b := "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeff9"
-	m := "defefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefe"
-	bench.Run("large/big", benchMulModBigint(a, b, m))
-	bench.Run("large/uint256", benchMulModUint256(a, b, m))
-	a = "00000000000000000000000000000000000000000000000000000000fefeffef"
-	b = "00000000000000000000000000000000000000000000000000000000000feff9"
-	m = "00000000000000000000000000000000000000000000000000000000000000fe"
-	bench.Run("small/big", benchMulModBigint(a, b, m))
-	bench.Run("small/uint256", benchMulModUint256(a, b, m))
-}
-
-func benchmarkMulMod(b *testing.B, samples *[numSamples][3]Int) {
-	var sink Int
-	for j := 0; j < b.N; j += numSamples {
-		for i := 0; i < len(samples); i++ {
-			sink.MulMod(&samples[i][0], &samples[i][1], &samples[i][2])
+func BenchmarkMod(b *testing.B) {
+	benchmarkModUint256 := func(b *testing.B, xSamples, modSamples *[numSamples]Int) {
+		var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.Mod(&xSamples[i], &modSamples[i])
+			}
 		}
 	}
+	benchmarkModBig := func(b *testing.B, xSamples, modSamples *[numSamples]big.Int) {
+		var sink big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.Mod(&xSamples[i], &modSamples[i])
+			}
+		}
+	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkModUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small/big", func(b *testing.B) { benchmarkModBig(b, &big32Samples, &big32SamplesLt) })
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big256SamplesLt) })
+}
+
+func BenchmarkAddMod(b *testing.B) {
+	benchmarkAddModUint256 := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
+		var sink, x Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				y := factorsSamples[i]
+				sink.AddMod(&x, &y, &modSamples[i])
+				x = y
+			}
+		}
+	}
+	benchmarkAddModBig := func(b *testing.B, factorsSamples, modSamples *[numSamples]big.Int) {
+		var sink, x big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				y := factorsSamples[i]
+				sink.Add(&x, &y)
+				sink.Mod(&sink, &modSamples[i])
+				x = y
+			}
+		}
+	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkAddModUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small/big", func(b *testing.B) { benchmarkAddModBig(b, &big32Samples, &big32SamplesLt) })
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkAddModUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64/big", func(b *testing.B) { benchmarkAddModBig(b, &big256Samples, &big64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkAddModUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128/big", func(b *testing.B) { benchmarkAddModBig(b, &big256Samples, &big128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkAddModUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192/big", func(b *testing.B) { benchmarkAddModBig(b, &big256Samples, &big192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkAddModUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256/big", func(b *testing.B) { benchmarkAddModBig(b, &big256Samples, &big256SamplesLt) })
 }
 
 func BenchmarkMulMod(b *testing.B) {
-	initSamplesOnce.Do(initSamples) // Init samples once per full run so samples are the same for repeated benchmark runs.
-
-	b.Run("mod64", func(b *testing.B) { benchmarkMulMod(b, &mulModBy64Samples) })
-	b.Run("mod128", func(b *testing.B) { benchmarkMulMod(b, &mulModBy128Samples) })
-	b.Run("mod192", func(b *testing.B) { benchmarkMulMod(b, &mulModBy192Samples) })
-	b.Run("mod256", func(b *testing.B) { benchmarkMulMod(b, &mulModBy256Samples) })
-}
-
-func benchModBigint(a, b string) func(*testing.B) {
-	return func(bench *testing.B) {
-		x := big.NewInt(0).SetBytes(hex2Bytes(a))
-		y := big.NewInt(0).SetBytes(hex2Bytes(b))
-		z := big.NewInt(0)
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			z.Mod(x, y)
+	benchmarkMulModUint256 := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
+		var sink, x Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				y := factorsSamples[i]
+				sink.MulMod(&x, &y, &modSamples[i])
+				x = y
+			}
 		}
 	}
-}
-func benchModUint256(a, b string) func(*testing.B) {
-	return func(bench *testing.B) {
-		x, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(a)))
-		y, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(b)))
-		z := NewInt()
-
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			z.Mod(x, y)
+	benchmarkMulModBig := func(b *testing.B, factorsSamples, modSamples *[numSamples]big.Int) {
+		var sink, x big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				y := factorsSamples[i]
+				sink.Mul(&x, &y)
+				sink.Mod(&sink, &modSamples[i])
+				x = y
+			}
 		}
 	}
-}
-func Benchmark_Mod(bench *testing.B) {
-	a := "fefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeffef"
-	b := "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefeff9"
-	bench.Run("large/big", benchModBigint(a, b))
-	bench.Run("large/uint256", benchModUint256(a, b))
 
-	a = "0000000000000000000000000000000000000000000000000000000000feffef"
-	b = "00000000000000000000000000000000000000000000000000000000000000f9"
-	bench.Run("small/big", benchModBigint(a, b))
-	bench.Run("small/uint256", benchModUint256(a, b))
-
-}
-
-func benchmark_DivSmall_Big(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("1fc2bad1e611"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("12bad1e611"))
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		b1 := big.NewInt(0)
-		b1.Div(a, b)
-		U256(b1)
-	}
+	b.Run("small/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small/big", func(b *testing.B) { benchmarkMulModBig(b, &big32Samples, &big32SamplesLt) })
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big256SamplesLt) })
 }
 
-func benchmark_DivSmall_Bit(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("1fc2bad1e611"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("12bad1e611"))
-	fa, _ := FromBig(a)
-	fb, _ := FromBig(b)
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		f := NewInt()
-		f.Div(fa, fb)
-	}
-}
-func benchmark_DivLarge_Big(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		b1 := big.NewInt(0)
-		b1.Div(a, b)
-		U256(b1)
-	}
-}
-
-func benchmark_DivLarge_Bit(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
-	fa, _ := FromBig(a)
-	fb, _ := FromBig(b)
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		f := NewInt()
-		f.Div(fa, fb)
-	}
-}
 func benchmark_SdivLarge_Big(bench *testing.B) {
 	a := big.NewInt(0).SetBytes(hex2Bytes("800fffffffffffffffffffffffffd1e870eec79504c60144cc7f5fc2bad1e611"))
 	b := big.NewInt(0).SetBytes(hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
@@ -640,45 +644,4 @@ func benchmark_SdivLarge_Bit(bench *testing.B) {
 func Benchmark_SDiv(bench *testing.B) {
 	bench.Run("large/big", benchmark_SdivLarge_Big)
 	bench.Run("large/uint256", benchmark_SdivLarge_Bit)
-}
-
-func benchAddModBigint(a, b, m string) func(*testing.B) {
-	return func(bench *testing.B) {
-		x := big.NewInt(0).SetBytes(hex2Bytes(a))
-		y := big.NewInt(0).SetBytes(hex2Bytes(b))
-		z := big.NewInt(0).SetBytes(hex2Bytes(m))
-		b1 := big.NewInt(0)
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-
-			b1.Add(x, y)
-			b1.Mod(b1, z)
-			U256(b1)
-		}
-	}
-}
-func benchAddModUint256(a, b, m string) func(*testing.B) {
-	return func(bench *testing.B) {
-		x, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(a)))
-		y, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(b)))
-		z, _ := FromBig(big.NewInt(0).SetBytes(hex2Bytes(m)))
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			f := NewInt()
-			f.AddMod(x, y, z)
-		}
-	}
-}
-
-func Benchmark_AddMod(bench *testing.B) {
-	a := "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0"
-	b := "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa"
-	m := "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-	bench.Run("large/big", benchAddModBigint(a, b, m))
-	bench.Run("large/uint256", benchAddModUint256(a, b, m))
-	a = "00000000000000000000000000000000000000000000000000000000fefeffef"
-	b = "00000000000000000000000000000000000000000000000000000000000feff9"
-	m = "00000000000000000000000000000000000000000000000000000000000000fe"
-	bench.Run("small/big", benchAddModBigint(a, b, m))
-	bench.Run("small/uint256", benchAddModUint256(a, b, m))
 }
