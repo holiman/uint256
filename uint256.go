@@ -147,8 +147,9 @@ func (z *Int) Clone() *Int {
 }
 
 // Add sets z to the sum x+y
-func (z *Int) Add(x, y *Int) {
+func (z *Int) Add(x, y *Int) *Int {
 	z.AddOverflow(x, y) // Inlined.
+	return z
 }
 
 // AddOverflow sets z to the sum x+y, and returns whether overflow occurred
@@ -232,8 +233,9 @@ func (z *Int) SubOverflow(x, y *Int) bool {
 }
 
 // Sub sets z to the difference x-y
-func (z *Int) Sub(x, y *Int) {
+func (z *Int) Sub(x, y *Int) *Int {
 	z.SubOverflow(x, y) // Inlined.
+	return z
 }
 
 // umulStep computes (carry, z) = z + (x * y) + carry.
@@ -261,7 +263,7 @@ func umul(x, y *Int) [8]uint64 {
 }
 
 // Mul sets z to the sum x*y
-func (z *Int) Mul(x, y *Int) {
+func (z *Int) Mul(x, y *Int) *Int {
 
 	var (
 		alfa = &Int{} // Aggregate results
@@ -320,7 +322,7 @@ func (z *Int) Mul(x, y *Int) {
 
 	beta[3], beta[2] = bits.Mul64(x[2], y[0])
 	addTo128(alfa[2:], beta[2], beta[3])
-	z.Copy(alfa)
+	return z.Copy(alfa)
 }
 
 func (z *Int) Squared() {
