@@ -514,6 +514,34 @@ func Benchmark_MulMod(bench *testing.B) {
 	bench.Run("small/uint256", benchMulModUint256(a, b, m))
 }
 
+func BenchmarkMod(b *testing.B) {
+	benchmarkModUint256 := func(b *testing.B, xSamples, modSamples *[numSamples]Int) {
+		var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.Mod(&xSamples[i], &modSamples[i])
+			}
+		}
+	}
+	benchmarkModBig := func(b *testing.B, xSamples, modSamples *[numSamples]big.Int) {
+		var sink big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.Mod(&xSamples[i], &modSamples[i])
+			}
+		}
+	}
+
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big256SamplesLt) })
+}
+
 func BenchmarkMulMod(b *testing.B) {
 	benchmarkMulModUint256 := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
 		var sink, x Int
