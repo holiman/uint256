@@ -8,49 +8,41 @@ package uint256
 import (
 	"math/big"
 	"math/rand"
-	"sync"
 	"testing"
 )
 
 const numSamples = 1024
 
 var (
-	mulModBy64Samples  [numSamples][3]Int
-	mulModBy128Samples [numSamples][3]Int
-	mulModBy192Samples [numSamples][3]Int
-	mulModBy256Samples [numSamples][3]Int
-	initSamplesOnce    sync.Once
+	int64Samples    [numSamples]Int
+	int128Samples   [numSamples]Int
+	int192Samples   [numSamples]Int
+	int256Samples   [numSamples]Int
+	int256Samples2  [numSamples]Int
+	_ = initSamples()
 )
 
-// newRandInt creates new Int with so many highly likely non-zero random words.
-func newRandInt(rnd *rand.Rand, numWords int) Int {
-	var z Int
-	for i := 0; i < numWords; i++ {
-		z[i] = rnd.Uint64()
-	}
-	return z
-}
-
-func initSamples() {
+func initSamples() bool {
 	rnd := rand.New(rand.NewSource(0))
 
-	for i := 0; i < numSamples; i++ {
-		mulModBy64Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy64Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy64Samples[i][2] = newRandInt(rnd, 1)
-
-		mulModBy128Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy128Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy128Samples[i][2] = newRandInt(rnd, 2)
-
-		mulModBy192Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy192Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy192Samples[i][2] = newRandInt(rnd, 3)
-
-		mulModBy256Samples[i][0] = newRandInt(rnd, 4)
-		mulModBy256Samples[i][1] = newRandInt(rnd, 4)
-		mulModBy256Samples[i][2] = newRandInt(rnd, 4)
+	// newRandInt creates new Int with so many highly likely non-zero random words.
+	newRandInt := func(numWords int) Int {
+		var z Int
+		for i := 0; i < numWords; i++ {
+			z[i] = rnd.Uint64()
+		}
+		return z
 	}
+
+	for i := 0; i < numSamples; i++ {
+		int64Samples[i] = newRandInt(1)
+		int128Samples[i] = newRandInt(2)
+		int192Samples[i] = newRandInt(3)
+		int256Samples[i] = newRandInt(4)
+		int256Samples2[i] = newRandInt(4)
+	}
+
+	return true
 }
 
 func benchmark_Add_Bit(bench *testing.B) {
@@ -504,22 +496,22 @@ func Benchmark_MulMod(bench *testing.B) {
 	bench.Run("small/uint256", benchMulModUint256(a, b, m))
 }
 
-func benchmarkMulMod(b *testing.B, samples *[numSamples][3]Int) {
-	var sink Int
+func benchmarkMulMod(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
+	var sink, x Int
 	for j := 0; j < b.N; j += numSamples {
-		for i := 0; i < len(samples); i++ {
-			sink.MulMod(&samples[i][0], &samples[i][1], &samples[i][2])
+		for i := 0; i < numSamples; i++ {
+			y := factorsSamples[i]
+			sink.MulMod(&x, &y, &modSamples[i])
+			x = y
 		}
 	}
 }
 
 func BenchmarkMulMod(b *testing.B) {
-	initSamplesOnce.Do(initSamples) // Init samples once per full run so samples are the same for repeated benchmark runs.
-
-	b.Run("mod64", func(b *testing.B) { benchmarkMulMod(b, &mulModBy64Samples) })
-	b.Run("mod128", func(b *testing.B) { benchmarkMulMod(b, &mulModBy128Samples) })
-	b.Run("mod192", func(b *testing.B) { benchmarkMulMod(b, &mulModBy192Samples) })
-	b.Run("mod256", func(b *testing.B) { benchmarkMulMod(b, &mulModBy256Samples) })
+	b.Run("mod64", func(b *testing.B) { benchmarkMulMod(b, &int256Samples2, &int64Samples) })
+	b.Run("mod128", func(b *testing.B) { benchmarkMulMod(b, &int256Samples2, &int128Samples) })
+	b.Run("mod192", func(b *testing.B) { benchmarkMulMod(b, &int256Samples2, &int192Samples) })
+	b.Run("mod256", func(b *testing.B) { benchmarkMulMod(b, &int256Samples2, &int256Samples) })
 }
 
 func benchModBigint(a, b string) func(*testing.B) {
