@@ -14,12 +14,16 @@ import (
 const numSamples = 1024
 
 var (
+	int32Samples    [numSamples]Int
+	int32SamplesLt  [numSamples]Int
 	int64Samples    [numSamples]Int
 	int128Samples   [numSamples]Int
 	int192Samples   [numSamples]Int
 	int256Samples   [numSamples]Int
 	int256SamplesLt [numSamples]Int // int256SamplesLt[i] <= int256Samples[i]
 
+	big32Samples    [numSamples]big.Int
+	big32SamplesLt  [numSamples]big.Int
 	big64Samples    [numSamples]big.Int
 	big128Samples   [numSamples]big.Int
 	big192Samples   [numSamples]big.Int
@@ -42,6 +46,16 @@ func initSamples() bool {
 	}
 
 	for i := 0; i < numSamples; i++ {
+		x32g := rnd.Uint32()
+		x32l := rnd.Uint32()
+		if x32g < x32l {
+			x32g, x32l = x32l, x32g
+		}
+		int32Samples[i].SetUint64(uint64(x32g))
+		big32Samples[i] = *int32Samples[i].ToBig()
+		int32SamplesLt[i].SetUint64(uint64(x32l))
+		big32SamplesLt[i] = *int32SamplesLt[i].ToBig()
+
 		int64Samples[i] = newRandInt(1)
 		big64Samples[i] = *int64Samples[i].ToBig()
 
@@ -532,6 +546,8 @@ func BenchmarkMod(b *testing.B) {
 		}
 	}
 
+	b.Run("small/uint256", func(b *testing.B) { benchmarkModUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small/big", func(b *testing.B) { benchmarkModBig(b, &big32Samples, &big32SamplesLt) })
 	b.Run("mod64/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int64Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big64Samples) })
 	b.Run("mod128/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int128Samples) })
@@ -565,6 +581,8 @@ func BenchmarkMulMod(b *testing.B) {
 		}
 	}
 
+	b.Run("small/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small/big", func(b *testing.B) { benchmarkMulModBig(b, &big32Samples, &big32SamplesLt) })
 	b.Run("mod64/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int64Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big64Samples) })
 	b.Run("mod128/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int128Samples) })
