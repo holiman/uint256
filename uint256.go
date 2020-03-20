@@ -721,25 +721,7 @@ func (z *Int) Not() *Int {
 
 // Gt returns true if z > x
 func (z *Int) Gt(x *Int) bool {
-	if z[3] > x[3] {
-		return true
-	}
-	if z[3] < x[3] {
-		return false
-	}
-	if z[2] > x[2] {
-		return true
-	}
-	if z[2] < x[2] {
-		return false
-	}
-	if z[1] > x[1] {
-		return true
-	}
-	if z[1] < x[1] {
-		return false
-	}
-	return z[0] > x[0]
+	return x.Lt(z)
 }
 
 // Slt interprets z and x as signed integers, and returns
@@ -786,25 +768,12 @@ func (z *Int) SetIfGt(x *Int) {
 
 // Lt returns true if z < x
 func (z *Int) Lt(x *Int) bool {
-	if z[3] < x[3] {
-		return true
-	}
-	if z[3] > x[3] {
-		return false
-	}
-	if z[2] < x[2] {
-		return true
-	}
-	if z[2] > x[2] {
-		return false
-	}
-	if z[1] < x[1] {
-		return true
-	}
-	if z[1] > x[1] {
-		return false
-	}
-	return z[0] < x[0]
+	// z < x <=> z - x < 0 i.e. when subtraction overflows.
+	_, carry := bits.Sub64(z[0], x[0], 0)
+	_, carry = bits.Sub64(z[1], x[1], carry)
+	_, carry = bits.Sub64(z[2], x[2], carry)
+	_, carry = bits.Sub64(z[3], x[3], carry)
+	return carry != 0
 }
 
 // SetIfLt sets z to 1 if z < x
@@ -881,7 +850,7 @@ func (z *Int) IsZero() bool {
 
 // IsOne returns true if z == 1
 func (z *Int) IsOne() bool {
-	return (z[0] == 1) && (z[1] | z[2] | z[3]) == 0
+	return (z[0] == 1) && (z[1]|z[2]|z[3]) == 0
 }
 
 // Clear sets z to 0
