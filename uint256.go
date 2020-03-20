@@ -1234,8 +1234,6 @@ func (z *Int) SignExtend(back, num *Int) {
 
 }
 
-var _ fmt.Formatter = zero
-
 func (z *Int) Format(s fmt.State, ch rune) {
 	z.ToBig().Format(s, ch)
 }
