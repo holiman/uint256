@@ -96,8 +96,8 @@ func benchmark_Add_Big(bench *testing.B) {
 	}
 }
 func Benchmark_Add(bench *testing.B) {
-	bench.Run("big", benchmark_Add_Big)
-	bench.Run("uint256", benchmark_Add_Bit)
+	bench.Run("single/big", benchmark_Add_Big)
+	bench.Run("single/uint256", benchmark_Add_Bit)
 }
 
 func benchmark_SubOverflow_Bit(bench *testing.B) {
@@ -133,9 +133,9 @@ func benchmark_Sub_Big(bench *testing.B) {
 	}
 }
 func Benchmark_Sub(bench *testing.B) {
-	bench.Run("big", benchmark_Sub_Big)
-	bench.Run("uint256", benchmark_Sub_Bit)
-	bench.Run("uint256_of", benchmark_SubOverflow_Bit)
+	bench.Run("single/big", benchmark_Sub_Big)
+	bench.Run("single/uint256", benchmark_Sub_Bit)
+	bench.Run("single/uint256_of", benchmark_SubOverflow_Bit)
 }
 
 func benchmark_Mul_Big(bench *testing.B) {
@@ -185,12 +185,12 @@ func benchmark_Squared_Big(bench *testing.B) {
 }
 
 func Benchmark_Mul(bench *testing.B) {
-	bench.Run("big", benchmark_Mul_Big)
-	bench.Run("uint256", benchmark_Mul_Bit)
+	bench.Run("single/big", benchmark_Mul_Big)
+	bench.Run("single/uint256", benchmark_Mul_Bit)
 }
 func Benchmark_Square(bench *testing.B) {
-	bench.Run("big", benchmark_Squared_Big)
-	bench.Run("uint256", benchmark_Squared_Bit)
+	bench.Run("single/big", benchmark_Squared_Big)
+	bench.Run("single/uint256", benchmark_Squared_Bit)
 }
 
 func benchmark_And_Big(bench *testing.B) {
@@ -212,8 +212,8 @@ func benchmark_And_Bit(bench *testing.B) {
 	}
 }
 func Benchmark_And(bench *testing.B) {
-	bench.Run("big", benchmark_And_Big)
-	bench.Run("uint256", benchmark_And_Bit)
+	bench.Run("single/big", benchmark_And_Big)
+	bench.Run("single/uint256", benchmark_And_Bit)
 }
 
 func benchmark_Or_Big(bench *testing.B) {
@@ -235,8 +235,8 @@ func benchmark_Or_Bit(bench *testing.B) {
 	}
 }
 func Benchmark_Or(bench *testing.B) {
-	bench.Run("big", benchmark_Or_Big)
-	bench.Run("uint256", benchmark_Or_Bit)
+	bench.Run("single/big", benchmark_Or_Big)
+	bench.Run("single/uint256", benchmark_Or_Bit)
 }
 
 func benchmark_Xor_Big(bench *testing.B) {
@@ -259,8 +259,8 @@ func benchmark_Xor_Bit(bench *testing.B) {
 }
 
 func Benchmark_Xor(bench *testing.B) {
-	bench.Run("big", benchmark_Xor_Big)
-	bench.Run("uint256", benchmark_Xor_Bit)
+	bench.Run("single/big", benchmark_Xor_Big)
+	bench.Run("single/uint256", benchmark_Xor_Bit)
 }
 
 func benchmark_Cmp_Big(bench *testing.B) {
@@ -283,8 +283,8 @@ func benchmark_Cmp_Bit(bench *testing.B) {
 	}
 }
 func Benchmark_Cmp(bench *testing.B) {
-	bench.Run("big", benchmark_Cmp_Big)
-	bench.Run("uint256", benchmark_Cmp_Bit)
+	bench.Run("single/big", benchmark_Cmp_Big)
+	bench.Run("single/uint256", benchmark_Cmp_Bit)
 }
 
 func benchmark_Lsh_Big(n uint, bench *testing.B) {
@@ -335,17 +335,17 @@ func benchmark_Lsh_Bit_N_GT_0(bench *testing.B) {
 	benchmark_Lsh_Bit(1, bench)
 }
 func Benchmark_Lsh(bench *testing.B) {
-	bench.Run("big/n_eq_0", benchmark_Lsh_Big_N_EQ_0)
-	bench.Run("big/n_gt_192", benchmark_Lsh_Big_N_GT_192)
-	bench.Run("big/n_gt_128", benchmark_Lsh_Big_N_GT_128)
-	bench.Run("big/n_gt_64", benchmark_Lsh_Big_N_GT_64)
-	bench.Run("big/n_gt_0", benchmark_Lsh_Big_N_GT_0)
+	bench.Run("n_eq_0/big", benchmark_Lsh_Big_N_EQ_0)
+	bench.Run("n_gt_192/big", benchmark_Lsh_Big_N_GT_192)
+	bench.Run("n_gt_128/big", benchmark_Lsh_Big_N_GT_128)
+	bench.Run("n_gt_64/big", benchmark_Lsh_Big_N_GT_64)
+	bench.Run("n_gt_0/big", benchmark_Lsh_Big_N_GT_0)
 
-	bench.Run("uint256/n_eq_0", benchmark_Lsh_Bit_N_EQ_0)
-	bench.Run("uint256/n_gt_192", benchmark_Lsh_Bit_N_GT_192)
-	bench.Run("uint256/n_gt_128", benchmark_Lsh_Bit_N_GT_128)
-	bench.Run("uint256/n_gt_64", benchmark_Lsh_Bit_N_GT_64)
-	bench.Run("uint256/n_gt_0", benchmark_Lsh_Bit_N_GT_0)
+	bench.Run("n_eq_0/uint256", benchmark_Lsh_Bit_N_EQ_0)
+	bench.Run("n_gt_192/uint256", benchmark_Lsh_Bit_N_GT_192)
+	bench.Run("n_gt_128/uint256", benchmark_Lsh_Bit_N_GT_128)
+	bench.Run("n_gt_64/uint256", benchmark_Lsh_Bit_N_GT_64)
+	bench.Run("n_gt_0/uint256", benchmark_Lsh_Bit_N_GT_0)
 }
 
 func benchmark_Rsh_Big(n uint, bench *testing.B) {
@@ -396,17 +396,17 @@ func benchmark_Rsh_Bit_N_GT_0(bench *testing.B) {
 	benchmark_Rsh_Bit(1, bench)
 }
 func Benchmark_Rsh(bench *testing.B) {
-	bench.Run("big/n_eq_0", benchmark_Rsh_Big_N_EQ_0)
-	bench.Run("big/n_gt_192", benchmark_Rsh_Big_N_GT_192)
-	bench.Run("big/n_gt_128", benchmark_Rsh_Big_N_GT_128)
-	bench.Run("big/n_gt_64", benchmark_Rsh_Big_N_GT_64)
-	bench.Run("big/n_gt_0", benchmark_Rsh_Big_N_GT_0)
+	bench.Run("n_eq_0/big", benchmark_Rsh_Big_N_EQ_0)
+	bench.Run("n_gt_192/big", benchmark_Rsh_Big_N_GT_192)
+	bench.Run("n_gt_128/big", benchmark_Rsh_Big_N_GT_128)
+	bench.Run("n_gt_64/big", benchmark_Rsh_Big_N_GT_64)
+	bench.Run("n_gt_0/big", benchmark_Rsh_Big_N_GT_0)
 
-	bench.Run("uint256/n_eq_0", benchmark_Rsh_Bit_N_EQ_0)
-	bench.Run("uint256/n_gt_192", benchmark_Rsh_Bit_N_GT_192)
-	bench.Run("uint256/n_gt_128", benchmark_Rsh_Bit_N_GT_128)
-	bench.Run("uint256/n_gt_64", benchmark_Rsh_Bit_N_GT_64)
-	bench.Run("uint256/n_gt_0", benchmark_Rsh_Bit_N_GT_0)
+	bench.Run("n_eq_0/uint256", benchmark_Rsh_Bit_N_EQ_0)
+	bench.Run("n_gt_192/uint256", benchmark_Rsh_Bit_N_GT_192)
+	bench.Run("n_gt_128/uint256", benchmark_Rsh_Bit_N_GT_128)
+	bench.Run("n_gt_64/uint256", benchmark_Rsh_Bit_N_GT_64)
+	bench.Run("n_gt_0/uint256", benchmark_Rsh_Bit_N_GT_0)
 }
 
 func benchmark_Exp_Big(bench *testing.B) {
