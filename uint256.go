@@ -166,29 +166,18 @@ func (z *Int) AddOverflow(x, y *Int) bool {
 	return carry != 0
 }
 
-// Add sets z to the sum ( x+y ) mod m
-func (z *Int) AddMod(x, y, m *Int) {
-
-	if z == m { //z is an alias for m
+// AddMod sets z to the sum ( x+y ) mod m, and returns z
+func (z *Int) AddMod(x, y, m *Int) *Int {
+	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
 		m = m.Clone()
 	}
 	if overflow := z.AddOverflow(x, y); overflow {
-		// It overflowed. the actual value is
-		// 0x10 00..0 + 0x???..??
-		//
-		// We can split it into
-		// 0xffff...f + 0x1 + 0x???..??
-		// And mod each item individually
-		a := NewInt().SetAllOne()
-		a.Mod(a, m)
-		z.Mod(z, m)
-		z.Add(z, a)
-		// reuse a
-		a.SetOne()
-		z.Add(z, a)
-
+		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
+		var quot [5]uint64
+		rem := udivrem(quot[:], sum[:], m)
+		return z.Copy(&rem)
 	}
-	z.Mod(z, m)
+	return z.Mod(z, m)
 }
 
 // addMiddle128 adds two uint64 integers to the upper part of z
