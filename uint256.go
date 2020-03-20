@@ -148,7 +148,11 @@ func (z *Int) Clone() *Int {
 
 // Add sets z to the sum x+y
 func (z *Int) Add(x, y *Int) *Int {
-	z.AddOverflow(x, y) // Inlined.
+	var carry uint64
+	z[0], carry = bits.Add64(x[0], y[0], 0)
+	z[1], carry = bits.Add64(x[1], y[1], carry)
+	z[2], carry = bits.Add64(x[2], y[2], carry)
+	z[3], _ = bits.Add64(x[3], y[3], carry)
 	return z
 }
 
@@ -225,7 +229,7 @@ func (z *Int) Sub64(x *Int, y uint64) {
 // Sub sets z to the difference x-y and returns true if the operation underflowed
 func (z *Int) SubOverflow(x, y *Int) bool {
 	var carry uint64
-	z[0], carry = bits.Sub64(x[0], y[0], carry)
+	z[0], carry = bits.Sub64(x[0], y[0], 0)
 	z[1], carry = bits.Sub64(x[1], y[1], carry)
 	z[2], carry = bits.Sub64(x[2], y[2], carry)
 	z[3], carry = bits.Sub64(x[3], y[3], carry)
@@ -234,7 +238,11 @@ func (z *Int) SubOverflow(x, y *Int) bool {
 
 // Sub sets z to the difference x-y
 func (z *Int) Sub(x, y *Int) *Int {
-	z.SubOverflow(x, y) // Inlined.
+	var carry uint64
+	z[0], carry = bits.Sub64(x[0], y[0], 0)
+	z[1], carry = bits.Sub64(x[1], y[1], carry)
+	z[2], carry = bits.Sub64(x[2], y[2], carry)
+	z[3], _ = bits.Sub64(x[3], y[3], carry)
 	return z
 }
 
