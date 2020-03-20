@@ -876,12 +876,12 @@ func (z *Int) IsUint128() bool {
 
 // IsZero returns true if z == 0
 func (z *Int) IsZero() bool {
-	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0) && (z[0] == 0)
+	return (z[0] | z[1] | z[2] | z[3]) == 0
 }
 
 // IsOne returns true if z == 1
 func (z *Int) IsOne() bool {
-	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0) && (z[0] == 1)
+	return (z[0] == 1) && (z[1] | z[2] | z[3]) == 0
 }
 
 // Clear sets z to 0
