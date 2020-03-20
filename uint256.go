@@ -608,11 +608,12 @@ func (z *Int) Abs() *Int {
 	if z.Lt(SignedMin) {
 		return z
 	}
-	z.Sub(zero, z)
+	z.Sub(&Int{}, z)
 	return z
 }
+
 func (z *Int) Neg() *Int {
-	z.Sub(zero, z)
+	z.Sub(&Int{}, z)
 	return z
 }
 
