@@ -183,7 +183,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 // addMiddle128 adds two uint64 integers to the upper part of z
 func addTo128(z []uint64, x0, x1 uint64) {
 	var carry uint64
-	z[0], carry = bits.Add64(z[0], x0, carry) // TODO: The order of adding x, y is confusing.
+	z[0], carry = bits.Add64(z[0], x0, carry)
 	z[1], _ = bits.Add64(z[1], x1, carry)
 }
 
