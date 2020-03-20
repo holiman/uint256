@@ -26,7 +26,6 @@ var (
 		0x0000000000000000,
 		0x8000000000000000,
 	}
-	zero = &Int{}
 )
 
 // Int is represented as an array of 4 uint64, in little-endian order,
