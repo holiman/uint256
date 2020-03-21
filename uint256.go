@@ -8,6 +8,7 @@
 package uint256
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"math/bits"
@@ -26,7 +27,6 @@ var (
 		0x0000000000000000,
 		0x8000000000000000,
 	}
-	zero = &Int{}
 )
 
 // Int is represented as an array of 4 uint64, in little-endian order,
@@ -64,30 +64,29 @@ func (z *Int) SetBytes(buf []byte) *Int {
 
 // Bytes32 returns a the a 32 byte big-endian array.
 func (z *Int) Bytes32() [32]byte {
+	// The PutUint64()s are inlined and we get 4x (load, bswap, store) instructions.
 	var b [32]byte
-	for i := 0; i < 32; i++ {
-		b[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
+	binary.BigEndian.PutUint64(b[0:8], z[3])
+	binary.BigEndian.PutUint64(b[8:16], z[2])
+	binary.BigEndian.PutUint64(b[16:24], z[1])
+	binary.BigEndian.PutUint64(b[24:32], z[0])
 	return b
 }
 
 // Bytes20 returns a the a 32 byte big-endian array.
 func (z *Int) Bytes20() [20]byte {
 	var b [20]byte
-	for i := 0; i < 20; i++ {
-		b[19-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
+	// The PutUint*()s are inlined and we get 3x (load, bswap, store) instructions.
+	binary.BigEndian.PutUint32(b[0:4], uint32(z[2]))
+	binary.BigEndian.PutUint64(b[4:12], z[1])
+	binary.BigEndian.PutUint64(b[12:20], z[0])
 	return b
 }
 
 // Bytes returns the value of z as a big-endian byte slice.
 func (z *Int) Bytes() []byte {
-	length := z.ByteLen()
-	buf := make([]byte, length)
-	for i := 0; i < length; i++ {
-		buf[length-1-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
-	return buf
+	b := z.Bytes32()
+	return b[32-z.ByteLen():]
 }
 
 // WriteToSlice writes the content of z into the given byteslice.
@@ -148,7 +147,11 @@ func (z *Int) Clone() *Int {
 
 // Add sets z to the sum x+y
 func (z *Int) Add(x, y *Int) *Int {
-	z.AddOverflow(x, y) // Inlined.
+	var carry uint64
+	z[0], carry = bits.Add64(x[0], y[0], 0)
+	z[1], carry = bits.Add64(x[1], y[1], carry)
+	z[2], carry = bits.Add64(x[2], y[2], carry)
+	z[3], _ = bits.Add64(x[3], y[3], carry)
 	return z
 }
 
@@ -162,35 +165,24 @@ func (z *Int) AddOverflow(x, y *Int) bool {
 	return carry != 0
 }
 
-// Add sets z to the sum ( x+y ) mod m
-func (z *Int) AddMod(x, y, m *Int) {
-
-	if z == m { //z is an alias for m
+// AddMod sets z to the sum ( x+y ) mod m, and returns z
+func (z *Int) AddMod(x, y, m *Int) *Int {
+	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
 		m = m.Clone()
 	}
 	if overflow := z.AddOverflow(x, y); overflow {
-		// It overflowed. the actual value is
-		// 0x10 00..0 + 0x???..??
-		//
-		// We can split it into
-		// 0xffff...f + 0x1 + 0x???..??
-		// And mod each item individually
-		a := NewInt().SetAllOne()
-		a.Mod(a, m)
-		z.Mod(z, m)
-		z.Add(z, a)
-		// reuse a
-		a.SetOne()
-		z.Add(z, a)
-
+		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
+		var quot [5]uint64
+		rem := udivrem(quot[:], sum[:], m)
+		return z.Copy(&rem)
 	}
-	z.Mod(z, m)
+	return z.Mod(z, m)
 }
 
 // addMiddle128 adds two uint64 integers to the upper part of z
 func addTo128(z []uint64, x0, x1 uint64) {
 	var carry uint64
-	z[0], carry = bits.Add64(z[0], x0, carry) // TODO: The order of adding x, y is confusing.
+	z[0], carry = bits.Add64(z[0], x0, carry)
 	z[1], _ = bits.Add64(z[1], x1, carry)
 }
 
@@ -225,7 +217,7 @@ func (z *Int) Sub64(x *Int, y uint64) {
 // Sub sets z to the difference x-y and returns true if the operation underflowed
 func (z *Int) SubOverflow(x, y *Int) bool {
 	var carry uint64
-	z[0], carry = bits.Sub64(x[0], y[0], carry)
+	z[0], carry = bits.Sub64(x[0], y[0], 0)
 	z[1], carry = bits.Sub64(x[1], y[1], carry)
 	z[2], carry = bits.Sub64(x[2], y[2], carry)
 	z[3], carry = bits.Sub64(x[3], y[3], carry)
@@ -234,7 +226,11 @@ func (z *Int) SubOverflow(x, y *Int) bool {
 
 // Sub sets z to the difference x-y
 func (z *Int) Sub(x, y *Int) *Int {
-	z.SubOverflow(x, y) // Inlined.
+	var carry uint64
+	z[0], carry = bits.Sub64(x[0], y[0], 0)
+	z[1], carry = bits.Sub64(x[1], y[1], carry)
+	z[2], carry = bits.Sub64(x[2], y[2], carry)
+	z[3], _ = bits.Sub64(x[3], y[3], carry)
 	return z
 }
 
@@ -611,11 +607,12 @@ func (z *Int) Abs() *Int {
 	if z.Lt(SignedMin) {
 		return z
 	}
-	z.Sub(zero, z)
+	z.Sub(&Int{}, z)
 	return z
 }
+
 func (z *Int) Neg() *Int {
-	z.Sub(zero, z)
+	z.Sub(&Int{}, z)
 	return z
 }
 
@@ -724,25 +721,7 @@ func (z *Int) Not() *Int {
 
 // Gt returns true if z > x
 func (z *Int) Gt(x *Int) bool {
-	if z[3] > x[3] {
-		return true
-	}
-	if z[3] < x[3] {
-		return false
-	}
-	if z[2] > x[2] {
-		return true
-	}
-	if z[2] < x[2] {
-		return false
-	}
-	if z[1] > x[1] {
-		return true
-	}
-	if z[1] < x[1] {
-		return false
-	}
-	return z[0] > x[0]
+	return x.Lt(z)
 }
 
 // Slt interprets z and x as signed integers, and returns
@@ -789,25 +768,12 @@ func (z *Int) SetIfGt(x *Int) {
 
 // Lt returns true if z < x
 func (z *Int) Lt(x *Int) bool {
-	if z[3] < x[3] {
-		return true
-	}
-	if z[3] > x[3] {
-		return false
-	}
-	if z[2] < x[2] {
-		return true
-	}
-	if z[2] > x[2] {
-		return false
-	}
-	if z[1] < x[1] {
-		return true
-	}
-	if z[1] > x[1] {
-		return false
-	}
-	return z[0] < x[0]
+	// z < x <=> z - x < 0 i.e. when subtraction overflows.
+	_, carry := bits.Sub64(z[0], x[0], 0)
+	_, carry = bits.Sub64(z[1], x[1], carry)
+	_, carry = bits.Sub64(z[2], x[2], carry)
+	_, carry = bits.Sub64(z[3], x[3], carry)
+	return carry != 0
 }
 
 // SetIfLt sets z to 1 if z < x
@@ -879,12 +845,12 @@ func (z *Int) IsUint128() bool {
 
 // IsZero returns true if z == 0
 func (z *Int) IsZero() bool {
-	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0) && (z[0] == 0)
+	return (z[0] | z[1] | z[2] | z[3]) == 0
 }
 
 // IsOne returns true if z == 1
 func (z *Int) IsOne() bool {
-	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0) && (z[0] == 1)
+	return (z[0] == 1) && (z[1]|z[2]|z[3]) == 0
 }
 
 // Clear sets z to 0
@@ -1235,8 +1201,6 @@ func (z *Int) SignExtend(back, num *Int) {
 	}
 
 }
-
-var _ fmt.Formatter = zero
 
 func (z *Int) Format(s fmt.State, ch rune) {
 	z.ToBig().Format(s, ch)

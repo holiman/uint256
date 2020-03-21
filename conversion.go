@@ -30,7 +30,7 @@ func (z *Int) ToBig() *big.Int {
 			big.Word(z[2]), big.Word(z[2] >> 32),
 			big.Word(z[3]), big.Word(z[3] >> 32),
 		}
-		return new(big.Int).SetBits(words[:])
+		b.SetBits(words[:])
 	default:
 		panic("unsupported architecture")
 	}
