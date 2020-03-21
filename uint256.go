@@ -8,6 +8,7 @@
 package uint256
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"math/bits"
@@ -63,30 +64,29 @@ func (z *Int) SetBytes(buf []byte) *Int {
 
 // Bytes32 returns a the a 32 byte big-endian array.
 func (z *Int) Bytes32() [32]byte {
+	// The PutUint64()s are inlined and we get 4x (load, bswap, store) instructions.
 	var b [32]byte
-	for i := 0; i < 32; i++ {
-		b[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
+	binary.BigEndian.PutUint64(b[0:8], z[3])
+	binary.BigEndian.PutUint64(b[8:16], z[2])
+	binary.BigEndian.PutUint64(b[16:24], z[1])
+	binary.BigEndian.PutUint64(b[24:32], z[0])
 	return b
 }
 
 // Bytes20 returns a the a 32 byte big-endian array.
 func (z *Int) Bytes20() [20]byte {
 	var b [20]byte
-	for i := 0; i < 20; i++ {
-		b[19-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
+	// The PutUint*()s are inlined and we get 3x (load, bswap, store) instructions.
+	binary.BigEndian.PutUint32(b[0:4], uint32(z[2]))
+	binary.BigEndian.PutUint64(b[4:12], z[1])
+	binary.BigEndian.PutUint64(b[12:20], z[0])
 	return b
 }
 
 // Bytes returns the value of z as a big-endian byte slice.
 func (z *Int) Bytes() []byte {
-	length := z.ByteLen()
-	buf := make([]byte, length)
-	for i := 0; i < length; i++ {
-		buf[length-1-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
-	return buf
+	b := z.Bytes32()
+	return b[32-z.ByteLen():]
 }
 
 // WriteToSlice writes the content of z into the given byteslice.

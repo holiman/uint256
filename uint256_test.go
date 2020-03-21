@@ -915,7 +915,6 @@ func TestByte20Representation(t *testing.T) {
 		if got != exp {
 			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
 		}
-		fmt.Printf("got %x \n", got)
 	}
 }
 
@@ -945,6 +944,5 @@ func TestByte32Representation(t *testing.T) {
 		if got != exp {
 			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
 		}
-		fmt.Printf("got %x \n", got)
 	}
 }
