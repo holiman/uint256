@@ -831,22 +831,6 @@ func (z *Int) SetOne() *Int {
 	return z
 }
 
-// Lsh shifts z by 1 bit.
-func (z *Int) lshOne() {
-	var (
-		a, b uint64
-	)
-	a = z[0] >> 63
-	b = z[1] >> 63
-
-	z[0] = z[0] << 1
-	z[1] = z[1]<<1 | a
-
-	a = z[2] >> 63
-	z[2] = z[2]<<1 | b
-	z[3] = z[3]<<1 | a
-}
-
 // Lsh sets z = x << n and returns z.
 func (z *Int) Lsh(x *Int, n uint) *Int {
 	// n % 64 == 0
