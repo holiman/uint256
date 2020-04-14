@@ -290,34 +290,22 @@ func (z *Int) Mul(x, y *Int) *Int {
 }
 
 func (z *Int) Squared() {
+	var res Int
+	var carry0, carry1, carry2 uint64
+	var res1, res2 uint64
 
-	var (
-		alfa = &Int{} // Aggregate results
-		beta = &Int{} // Calculate intermediate
-	)
-	// This algo is based on Mul, but since it's squaring, we know that
-	// e.g. z.b*y.c + z.c*y.c == 2 * z.b * z.c, and can save some calculations
-	// 2 * d * b
-	alfa[3], alfa[2] = bits.Mul64(z[0], z[2])
-	alfa.lshOne()
-	alfa[1], alfa[0] = bits.Mul64(z[0], z[0])
+	res[0], carry0 = umulStep(0, z[0], z[0], 0)
+	res1, carry0 = umulStep(0, z[0], z[1], carry0)
+	res2, carry0 = umulStep(0, z[0], z[2], carry0)
 
-	// 2 * a * d + 2 * b * c
-	alfa[3] += (z[0]*z[3] + z[1]*z[2]) << 1
+	res[1], carry1 = umulStep(res1, z[0], z[1], 0)
+	res2, carry1 = umulStep(res2, z[1], z[1], carry1)
 
-	// 2 * d * c
-	beta[2], beta[1] = bits.Mul64(z[0], z[1])
-	beta.lshOne()
-	alfa.Add(alfa, beta)
+	res[2], carry2 = umulStep(res2, z[0], z[2], 0)
 
-	// c * c
-	beta[3], beta[2] = bits.Mul64(z[1], z[1])
+	res[3] = 2*(z[0]*z[3]+z[1]*z[2]) + carry0 + carry1 + carry2
 
-	var carry uint64
-	alfa[2], carry = bits.Add64(alfa[2], beta[2], 0)
-	alfa[3], _ = bits.Add64(alfa[3], beta[3], carry)
-
-	z.Copy(alfa)
+	z.Copy(&res)
 }
 
 func (z *Int) setBit(n uint) *Int {
