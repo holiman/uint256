@@ -179,13 +179,6 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	return z.Mod(z, m)
 }
 
-// addMiddle128 adds two uint64 integers to the upper part of z
-func addTo128(z []uint64, x0, x1 uint64) {
-	var carry uint64
-	z[0], carry = bits.Add64(z[0], x0, carry)
-	z[1], _ = bits.Add64(z[1], x1, carry)
-}
-
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
 // of the slice is at least n bytes.
 // Example, z =1, n = 20 => [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
@@ -319,7 +312,11 @@ func (z *Int) Squared() {
 
 	// c * c
 	beta[3], beta[2] = bits.Mul64(z[1], z[1])
-	addTo128(alfa[2:], beta[2], beta[3])
+
+	var carry uint64
+	alfa[2], carry = bits.Add64(alfa[2], beta[2], 0)
+	alfa[3], _ = bits.Add64(alfa[3], beta[3], carry)
+
 	z.Copy(alfa)
 }
 
