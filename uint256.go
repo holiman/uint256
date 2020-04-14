@@ -234,7 +234,7 @@ func (z *Int) Sub(x, y *Int) *Int {
 	return z
 }
 
-// umulStep computes (carry, z) = z + (x * y) + carry.
+// umulStep computes (z, carry) = z + (x * y) + carry.
 func umulStep(z, x, y, carry uint64) (uint64, uint64) {
 	ph, p := bits.Mul64(x, y)
 	p, carry = bits.Add64(p, carry, 0)
@@ -275,65 +275,25 @@ func umul(x, y *Int) [8]uint64 {
 
 // Mul sets z to the sum x*y
 func (z *Int) Mul(x, y *Int) *Int {
+	var res Int
+	var carry uint64
+	var res1, res2, res3 uint64
 
-	var (
-		alfa = &Int{} // Aggregate results
-		beta = &Int{} // Calculate intermediate
-	)
-	// The numbers are internally represented as [ a, b, c, d ]
-	// We do the following operations
-	//
-	// d1 * d2
-	// d1 * c2 (upshift 64)
-	// d1 * b2 (upshift 128)
-	// d1 * a2 (upshift 192)
-	//
-	// c1 * d2 (upshift 64)
-	// c1 * c2 (upshift 128)
-	// c1 * b2 (upshift 192)
-	//
-	// b1 * d2 (upshift 128)
-	// b1 * c2 (upshift 192)
-	//
-	// a1 * d2 (upshift 192)
-	//
-	// And we aggregate results into 'alfa'
+	res[0], carry = umulStep(0, x[0], y[0], 0)
+	res1, carry = umulStep(0, x[1], y[0], carry)
+	res2, carry = umulStep(0, x[2], y[0], carry)
+	res3 = x[3]*y[0] + carry
 
-	// One optimization, however, is reordering.
-	// For these ones, we don't care about if they overflow, thus we can use native multiplication
-	// and set the result immediately into `a` of the result.
-	// b1 * c2 (upshift 192)
-	// a1 * d2 (upshift 192)
-	// d1 * a2 (upshift 192)
-	// c1 * b2 11(upshift 192)
+	res[1], carry = umulStep(res1, x[0], y[1], 0)
+	res2, carry = umulStep(res2, x[1], y[1], carry)
+	res3 = res3 + x[2]*y[1] + carry
 
-	// Remaining ops:
-	//
-	// d1 * d2
-	// d1 * c2 (upshift 64)
-	// d1 * b2 (upshift 128)
-	//
-	// c1 * d2 (upshift 64)
-	// c1 * c2 (upshift 128)
-	//
-	// b1 * d2 (upshift 128)
+	res[2], carry = umulStep(res2, x[0], y[2], 0)
+	res3 = res3 + x[1]*y[2] + carry
 
-	alfa[1], alfa[0] = bits.Mul64(x[0], y[0])
-	alfa[3], alfa[2] = bits.Mul64(x[0], y[2])
-	alfa[3] += x[0]*y[3] + x[1]*y[2] + x[2]*y[1] + x[3]*y[0] // Top ones, ignore overflow
+	res[3] = res3 + x[0]*y[3]
 
-	beta[2], beta[1] = bits.Mul64(x[0], y[1])
-	alfa.Add(alfa, beta)
-
-	beta[2], beta[1] = bits.Mul64(x[1], y[0])
-	alfa.Add(alfa, beta)
-
-	beta[3], beta[2] = bits.Mul64(x[1], y[1])
-	addTo128(alfa[2:], beta[2], beta[3])
-
-	beta[3], beta[2] = bits.Mul64(x[2], y[0])
-	addTo128(alfa[2:], beta[2], beta[3])
-	return z.Copy(alfa)
+	return z.Copy(&res)
 }
 
 func (z *Int) Squared() {
