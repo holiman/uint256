@@ -247,31 +247,28 @@ func umulStep(z, x, y, carry uint64) (uint64, uint64) {
 // umul computes full 256 x 256 -> 512 multiplication.
 func umul(x, y *Int) [8]uint64 {
 	var res [8]uint64
-	var carry uint64
+	var carry, carry4, carry5, carry6 uint64
+	var res1, res2, res3, res4, res5 uint64
 
 	res[0], carry = umulStep(0, x[0], y[0], 0)
-	res[1], carry = umulStep(0, x[1], y[0], carry)
-	res[2], carry = umulStep(0, x[2], y[0], carry)
-	res[3], carry = umulStep(0, x[3], y[0], carry)
-	res[4] = carry
+	res1, carry = umulStep(0, x[1], y[0], carry)
+	res2, carry = umulStep(0, x[2], y[0], carry)
+	res3, carry4 = umulStep(0, x[3], y[0], carry)
 
-	res[1], carry = umulStep(res[1], x[0], y[1], 0)
-	res[2], carry = umulStep(res[2], x[1], y[1], carry)
-	res[3], carry = umulStep(res[3], x[2], y[1], carry)
-	res[4], carry = umulStep(res[4], x[3], y[1], carry)
-	res[5] = carry
+	res[1], carry = umulStep(res1, x[0], y[1], 0)
+	res2, carry = umulStep(res2, x[1], y[1], carry)
+	res3, carry = umulStep(res3, x[2], y[1], carry)
+	res4, carry5 = umulStep(carry4, x[3], y[1], carry)
 
-	res[2], carry = umulStep(res[2], x[0], y[2], 0)
-	res[3], carry = umulStep(res[3], x[1], y[2], carry)
-	res[4], carry = umulStep(res[4], x[2], y[2], carry)
-	res[5], carry = umulStep(res[5], x[3], y[2], carry)
-	res[6] = carry
+	res[2], carry = umulStep(res2, x[0], y[2], 0)
+	res3, carry = umulStep(res3, x[1], y[2], carry)
+	res4, carry = umulStep(res4, x[2], y[2], carry)
+	res5, carry6 = umulStep(carry5, x[3], y[2], carry)
 
-	res[3], carry = umulStep(res[3], x[0], y[3], 0)
-	res[4], carry = umulStep(res[4], x[1], y[3], carry)
-	res[5], carry = umulStep(res[5], x[2], y[3], carry)
-	res[6], carry = umulStep(res[6], x[3], y[3], carry)
-	res[7] = carry
+	res[3], carry = umulStep(res3, x[0], y[3], 0)
+	res[4], carry = umulStep(res4, x[1], y[3], carry)
+	res[5], carry = umulStep(res5, x[2], y[3], carry)
+	res[6], res[7] = umulStep(carry6, x[3], y[3], carry)
 
 	return res
 }
