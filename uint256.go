@@ -239,9 +239,11 @@ func umulStep(z, x, y, carry uint64) (uint64, uint64) {
 
 // umul computes full 256 x 256 -> 512 multiplication.
 func umul(x, y *Int) [8]uint64 {
-	var res [8]uint64
-	var carry, carry4, carry5, carry6 uint64
-	var res1, res2, res3, res4, res5 uint64
+	var (
+		res                           [8]uint64
+		carry, carry4, carry5, carry6 uint64
+		res1, res2, res3, res4, res5  uint64
+	)
 
 	res[0], carry = umulStep(0, x[0], y[0], 0)
 	res1, carry = umulStep(0, x[1], y[0], carry)
@@ -268,9 +270,11 @@ func umul(x, y *Int) [8]uint64 {
 
 // Mul sets z to the sum x*y
 func (z *Int) Mul(x, y *Int) *Int {
-	var res Int
-	var carry uint64
-	var res1, res2, res3 uint64
+	var (
+		res              Int
+		carry            uint64
+		res1, res2, res3 uint64
+	)
 
 	res[0], carry = umulStep(0, x[0], y[0], 0)
 	res1, carry = umulStep(0, x[1], y[0], carry)
@@ -290,9 +294,11 @@ func (z *Int) Mul(x, y *Int) *Int {
 }
 
 func (z *Int) Squared() {
-	var res Int
-	var carry0, carry1, carry2 uint64
-	var res1, res2 uint64
+	var (
+		res                    Int
+		carry0, carry1, carry2 uint64
+		res1, res2             uint64
+	)
 
 	res[0], carry0 = umulStep(0, z[0], z[0], 0)
 	res1, carry0 = umulStep(0, z[0], z[1], carry0)
