@@ -179,13 +179,6 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	return z.Mod(z, m)
 }
 
-// addMiddle128 adds two uint64 integers to the upper part of z
-func addTo128(z []uint64, x0, x1 uint64) {
-	var carry uint64
-	z[0], carry = bits.Add64(z[0], x0, carry)
-	z[1], _ = bits.Add64(z[1], x1, carry)
-}
-
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
 // of the slice is at least n bytes.
 // Example, z =1, n = 20 => [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
@@ -234,7 +227,7 @@ func (z *Int) Sub(x, y *Int) *Int {
 	return z
 }
 
-// umulStep computes (carry, z) = z + (x * y) + carry.
+// umulStep computes (z, carry) = z + (x * y) + carry.
 func umulStep(z, x, y, carry uint64) (uint64, uint64) {
 	ph, p := bits.Mul64(x, y)
 	p, carry = bits.Add64(p, carry, 0)
@@ -246,106 +239,79 @@ func umulStep(z, x, y, carry uint64) (uint64, uint64) {
 
 // umul computes full 256 x 256 -> 512 multiplication.
 func umul(x, y *Int) [8]uint64 {
-	var res [8]uint64
-	for j := 0; j < len(y); j++ {
-		var carry uint64
-		res[j+0], carry = umulStep(res[j+0], x[0], y[j], carry)
-		res[j+1], carry = umulStep(res[j+1], x[1], y[j], carry)
-		res[j+2], carry = umulStep(res[j+2], x[2], y[j], carry)
-		res[j+3], carry = umulStep(res[j+3], x[3], y[j], carry)
-		res[j+4] = carry
-	}
+	var (
+		res                           [8]uint64
+		carry, carry4, carry5, carry6 uint64
+		res1, res2, res3, res4, res5  uint64
+	)
+
+	res[0], carry = umulStep(0, x[0], y[0], 0)
+	res1, carry = umulStep(0, x[1], y[0], carry)
+	res2, carry = umulStep(0, x[2], y[0], carry)
+	res3, carry4 = umulStep(0, x[3], y[0], carry)
+
+	res[1], carry = umulStep(res1, x[0], y[1], 0)
+	res2, carry = umulStep(res2, x[1], y[1], carry)
+	res3, carry = umulStep(res3, x[2], y[1], carry)
+	res4, carry5 = umulStep(carry4, x[3], y[1], carry)
+
+	res[2], carry = umulStep(res2, x[0], y[2], 0)
+	res3, carry = umulStep(res3, x[1], y[2], carry)
+	res4, carry = umulStep(res4, x[2], y[2], carry)
+	res5, carry6 = umulStep(carry5, x[3], y[2], carry)
+
+	res[3], carry = umulStep(res3, x[0], y[3], 0)
+	res[4], carry = umulStep(res4, x[1], y[3], carry)
+	res[5], carry = umulStep(res5, x[2], y[3], carry)
+	res[6], res[7] = umulStep(carry6, x[3], y[3], carry)
+
 	return res
 }
 
 // Mul sets z to the sum x*y
 func (z *Int) Mul(x, y *Int) *Int {
-
 	var (
-		alfa = &Int{} // Aggregate results
-		beta = &Int{} // Calculate intermediate
+		res              Int
+		carry            uint64
+		res1, res2, res3 uint64
 	)
-	// The numbers are internally represented as [ a, b, c, d ]
-	// We do the following operations
-	//
-	// d1 * d2
-	// d1 * c2 (upshift 64)
-	// d1 * b2 (upshift 128)
-	// d1 * a2 (upshift 192)
-	//
-	// c1 * d2 (upshift 64)
-	// c1 * c2 (upshift 128)
-	// c1 * b2 (upshift 192)
-	//
-	// b1 * d2 (upshift 128)
-	// b1 * c2 (upshift 192)
-	//
-	// a1 * d2 (upshift 192)
-	//
-	// And we aggregate results into 'alfa'
 
-	// One optimization, however, is reordering.
-	// For these ones, we don't care about if they overflow, thus we can use native multiplication
-	// and set the result immediately into `a` of the result.
-	// b1 * c2 (upshift 192)
-	// a1 * d2 (upshift 192)
-	// d1 * a2 (upshift 192)
-	// c1 * b2 11(upshift 192)
+	res[0], carry = umulStep(0, x[0], y[0], 0)
+	res1, carry = umulStep(0, x[1], y[0], carry)
+	res2, carry = umulStep(0, x[2], y[0], carry)
+	res3 = x[3]*y[0] + carry
 
-	// Remaining ops:
-	//
-	// d1 * d2
-	// d1 * c2 (upshift 64)
-	// d1 * b2 (upshift 128)
-	//
-	// c1 * d2 (upshift 64)
-	// c1 * c2 (upshift 128)
-	//
-	// b1 * d2 (upshift 128)
+	res[1], carry = umulStep(res1, x[0], y[1], 0)
+	res2, carry = umulStep(res2, x[1], y[1], carry)
+	res3 = res3 + x[2]*y[1] + carry
 
-	alfa[1], alfa[0] = bits.Mul64(x[0], y[0])
-	alfa[3], alfa[2] = bits.Mul64(x[0], y[2])
-	alfa[3] += x[0]*y[3] + x[1]*y[2] + x[2]*y[1] + x[3]*y[0] // Top ones, ignore overflow
+	res[2], carry = umulStep(res2, x[0], y[2], 0)
+	res3 = res3 + x[1]*y[2] + carry
 
-	beta[2], beta[1] = bits.Mul64(x[0], y[1])
-	alfa.Add(alfa, beta)
+	res[3] = res3 + x[0]*y[3]
 
-	beta[2], beta[1] = bits.Mul64(x[1], y[0])
-	alfa.Add(alfa, beta)
-
-	beta[3], beta[2] = bits.Mul64(x[1], y[1])
-	addTo128(alfa[2:], beta[2], beta[3])
-
-	beta[3], beta[2] = bits.Mul64(x[2], y[0])
-	addTo128(alfa[2:], beta[2], beta[3])
-	return z.Copy(alfa)
+	return z.Copy(&res)
 }
 
 func (z *Int) Squared() {
-
 	var (
-		alfa = &Int{} // Aggregate results
-		beta = &Int{} // Calculate intermediate
+		res                    Int
+		carry0, carry1, carry2 uint64
+		res1, res2             uint64
 	)
-	// This algo is based on Mul, but since it's squaring, we know that
-	// e.g. z.b*y.c + z.c*y.c == 2 * z.b * z.c, and can save some calculations
-	// 2 * d * b
-	alfa[3], alfa[2] = bits.Mul64(z[0], z[2])
-	alfa.lshOne()
-	alfa[1], alfa[0] = bits.Mul64(z[0], z[0])
 
-	// 2 * a * d + 2 * b * c
-	alfa[3] += (z[0]*z[3] + z[1]*z[2]) << 1
+	res[0], carry0 = umulStep(0, z[0], z[0], 0)
+	res1, carry0 = umulStep(0, z[0], z[1], carry0)
+	res2, carry0 = umulStep(0, z[0], z[2], carry0)
 
-	// 2 * d * c
-	beta[2], beta[1] = bits.Mul64(z[0], z[1])
-	beta.lshOne()
-	alfa.Add(alfa, beta)
+	res[1], carry1 = umulStep(res1, z[0], z[1], 0)
+	res2, carry1 = umulStep(res2, z[1], z[1], carry1)
 
-	// c * c
-	beta[3], beta[2] = bits.Mul64(z[1], z[1])
-	addTo128(alfa[2:], beta[2], beta[3])
-	z.Copy(alfa)
+	res[2], carry2 = umulStep(res2, z[0], z[2], 0)
+
+	res[3] = 2*(z[0]*z[3]+z[1]*z[2]) + carry0 + carry1 + carry2
+
+	z.Copy(&res)
 }
 
 func (z *Int) setBit(n uint) *Int {
@@ -869,22 +835,6 @@ func (z *Int) SetAllOne() *Int {
 func (z *Int) SetOne() *Int {
 	z[3], z[2], z[1], z[0] = 0, 0, 0, 1
 	return z
-}
-
-// Lsh shifts z by 1 bit.
-func (z *Int) lshOne() {
-	var (
-		a, b uint64
-	)
-	a = z[0] >> 63
-	b = z[1] >> 63
-
-	z[0] = z[0] << 1
-	z[1] = z[1]<<1 | a
-
-	a = z[2] >> 63
-	z[2] = z[2]<<1 | b
-	z[3] = z[3]<<1 | a
 }
 
 // Lsh sets z = x << n and returns z.
