@@ -19,6 +19,12 @@ var (
 	bigtt255 = new(big.Int).Lsh(big.NewInt(1), 255)
 
 	_ fmt.Formatter = &Int{} // Test if Int supports Formatter interface.
+
+	// A collection of interesting input values for binary operators (especially for division).
+	// No expected results as big.Int can be used as the source of truth.
+	testCases = [][2]string{
+		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0x00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
+	}
 )
 
 func hex2Bytes(str string) []byte {
@@ -629,19 +635,38 @@ func TestFixed256bit_Mul(t *testing.T) {
 }
 
 func TestDiv(t *testing.T) {
+	for i := 0; i < len(testCases); i++ {
+		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
+		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+		f1, _ := FromBig(b1)
+		f2, _ := FromBig(b2)
 
-	b1 := new(big.Int).SetBytes(hex2Bytes("12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5"))
-	b2 := new(big.Int).SetBytes(hex2Bytes("00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"))
+		expected, _ := FromBig(b1.Div(b1, b2))
+		result := new(Int).Div(f1, f2)
+		if !result.Eq(expected) {
+			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
+			t.Logf("exp   : %x\n", expected)
+			t.Logf("got   : %x\n", result)
+			t.Fail()
+		}
+	}
+}
 
-	f1, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
+func TestMod(t *testing.T) {
+	for i := 0; i < len(testCases); i++ {
+		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
+		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+		f1, _ := FromBig(b1)
+		f2, _ := FromBig(b2)
 
-	expected, _ := FromBig(b1.Div(b1, b2))
-	f1.Div(f1, f2)
-	if !f1.Eq(expected) {
-		t.Logf("exp   : %x\n", expected)
-		t.Logf("got   : %x\n", f1)
-		t.Fail()
+		expected, _ := FromBig(b1.Mod(b1, b2))
+		result := new(Int).Mod(f1, f2)
+		if !result.Eq(expected) {
+			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
+			t.Logf("exp   : %x\n", expected)
+			t.Logf("got   : %x\n", result)
+			t.Fail()
+		}
 	}
 }
 
