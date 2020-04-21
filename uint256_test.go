@@ -499,17 +499,15 @@ func TestSGT(t *testing.T) {
 	x := new(Int).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
 	y := new(Int).SetBytes(hex2Bytes("00"))
 	actual := x.Sgt(y)
-	expected := false
-	if actual != expected {
-		t.Fatalf("Expected %v, got %v", expected, actual)
+	if actual {
+		t.Fatalf("Expected %v false", actual)
 	}
 
 	x = new(Int).SetBytes(hex2Bytes("00"))
 	y = new(Int).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
 	actual = x.Sgt(y)
-	expected = true
-	if actual != expected {
-		t.Fatalf("Expected %v, got %v", expected, actual)
+	if !actual {
+		t.Fatalf("Expected %v true", actual)
 	}
 }
 
