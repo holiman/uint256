@@ -55,6 +55,7 @@ var (
 		{"0x62d8fffffffffffffffffffffffffffffc18000000000000000000ca00000001", "0x2ffffffffffffffffffffffffffffffffff200000000000"},
 		{"0x7effffff8000000000000000000000000000000000000000d900000000000001", "0x7effffff8000000000000000000000000000000000008001"},
 		{"0x0000000000000006400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x00000000000000210000000000000022"},
+		{"0x00000000000000000000000000000000000000000000006d5adef08547abf7eb", "0x000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"},
 	}
 )
 
@@ -118,31 +119,6 @@ func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
 	return true
 }
 
-func TestBasicStuff(t *testing.T) {
-	i, _ := FromBig(big.NewInt(1))
-	fmt.Printf("1 %v\n", i.Hex())
-	i, _ = FromBig(big.NewInt(-1))
-	fmt.Printf("-1 %v\n", i.Hex())
-	b := big.NewInt(0)
-	b.SetBytes(hex2Bytes("39d81aff56a841bea668f4c67599a0e1467b49e2e66674cbe36f2d"))
-	i, _ = FromBig(b)
-	fmt.Printf("%x \n%s\n", b, i.Hex())
-
-	b.SetBytes(hex2Bytes("dead432298f4ab7ff3fbdbe642972dbbb78835f8ecbea7d3a39dc183d1edbee39787336d1136"))
-	i, _ = FromBig(b)
-	fmt.Printf("%x \n%s\n", b, i.Hex())
-
-	fmt.Printf("%s \n", NewInt().setBit(255).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(254).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(32).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(1).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(0).Hex())
-
-	fmt.Printf("%v \n", NewInt().setBit(0).isBitSet(0))
-	fmt.Printf("%v \n", NewInt().setBit(64).isBitSet(64))
-	fmt.Printf("%v \n", NewInt().setBit(254).isBitSet(254))
-
-}
 func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a, b, c *big.Int)) {
 	for i := 0; i < 10000; i++ {
 		b1, f1, err := randNums()
@@ -309,8 +285,6 @@ func S256(x *big.Int) *big.Int {
 }
 
 func TestRandomAbs(t *testing.T) {
-	fmt.Printf("SignedMin %x\n", bigtt255)
-	fmt.Printf("tt256 %x\n", bigtt256)
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randHighNums()
 		if err != nil {
@@ -526,12 +500,9 @@ func U256(x *big.Int) *big.Int {
 }
 
 // Exp implements exponentiation by squaring.
-// Exp returns a newly-allocated big integer and does not change
-// base or exponent. The result is truncated to 256 bits.
-//
-// Courtesy @karalabe and @chfast
-func Exp(base, exponent *big.Int) *big.Int {
-	result := big.NewInt(1)
+// The result is truncated to 256 bits.
+func Exp(result, base, exponent *big.Int) *big.Int {
+	result.SetUint64(1)
 
 	for _, word := range exponent.Bits() {
 		for i := 0; i < wordBits; i++ {
@@ -600,7 +571,7 @@ func TestRandomExp(t *testing.T) {
 			t.Fatal("FromBig(exp) overflow")
 		}
 
-		b_res := Exp(b_base, b_exp)
+		b_res := Exp(new(big.Int), b_base, b_exp)
 		if eq := checkEq(b_res, f_res); !eq {
 			bf, _ := FromBig(b_res)
 			t.Fatalf("Expected equality:\nbase= %v\nexp = %v\n[ ^ ]==\nf = %v\nbf= %v\nb = %x\n", basecopy.Hex(), expcopy.Hex(), f_res.Hex(), bf.Hex(), b_res)
@@ -608,63 +579,8 @@ func TestRandomExp(t *testing.T) {
 	}
 }
 
-func TestFixed256bit_Add(t *testing.T) {
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("000282209f633a3ca040e862bb69d92573449d21bce09ea3a74348fbf1ced62e"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000003afd56300e26f61922"))
-
-	f, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-	fmt.Printf("B1: %x\n", b1)
-	fmt.Printf("B2: %x\n", b2)
-	fmt.Printf("F1: %s\n", f.Hex())
-	fmt.Printf("F2: %s\n", f2.Hex())
-	fmt.Println("--")
-	b1.Add(b1, b2)
-	f.Add(f, f2)
-	fmt.Printf("B: %x\n", b1)
-	fmt.Printf("F: %s\n", f.Hex())
-
-}
-
-func TestFixed256bit_Sub(t *testing.T) {
-
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000002a3f8ba829e365f479526"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("000000000000000000000000000000004ffab28fa389b141ce4876fa1965c937"))
-
-	f, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-
-	fmt.Printf("B1   : %x\n", b1)
-	fmt.Printf("B2   : %x\n", b2)
-	fmt.Printf("F1   : %s\n", f.Hex())
-	fmt.Printf("F2   : %s\n", f2.Hex())
-	fmt.Println("--")
-	b1.Sub(b1, b2)
-	f.Sub(f, f2)
-	fmt.Printf("B   : %x\n", b1)
-	fmt.Printf("F   : %s\n", f.Hex())
-
-	res, _ := FromBig(b1)
-	fmt.Printf("b->f: %s\n", res.Hex())
-	fmt.Printf("EQ  : %v\n", f.Eq(res))
-
-}
-
-func TestFixed256bit_Mul(t *testing.T) {
-
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000002a3f8ba829e365f479526"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"))
-
-	f1, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-
-	b1.Mul(b1, b2)
-	f1.Mul(f1, f2)
-	requireEq(t, b1, f1, "")
-}
-
 func TestBinOp(t *testing.T) {
-	proc := func(t *testing.T, op func(*Int, *Int, *Int) *Int, bigOp func(*big.Int, *big.Int, *big.Int) *big.Int) {
+	proc := func(t *testing.T, op func(a, b, c *Int) *Int, bigOp func(a, b, c *big.Int) *big.Int) {
 		for i := 0; i < len(testCases); i++ {
 			b1, _ := new(big.Int).SetString(testCases[i][0], 0)
 			b2, _ := new(big.Int).SetString(testCases[i][1], 0)
@@ -686,18 +602,18 @@ func TestBinOp(t *testing.T) {
 			// Check if arguments are unmodified.
 			if !f1.Eq(f1orig) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("first argument had been modified: %x\n", f1);
+				t.Errorf("first argument had been modified: %x\n", f1)
 			}
 			if !f2.Eq(f2orig) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("second argument had been modified: %x\n", f2);
+				t.Errorf("second argument had been modified: %x\n", f2)
 			}
 
 			// Check if reusing args as result works correctly.
 			result = op(f1, f1, f2orig)
 			if result != f1 {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1);
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
 			}
 			if !result.Eq(expected) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
@@ -708,7 +624,7 @@ func TestBinOp(t *testing.T) {
 			result = op(f2, f1orig, f2)
 			if result != f2 {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2);
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2)
 			}
 			if !result.Eq(expected) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
@@ -719,37 +635,16 @@ func TestBinOp(t *testing.T) {
 		}
 	}
 
+	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
+	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
+	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
-}
+	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
-func TestFixedExp(t *testing.T) {
-
-	b_base := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000006d5adef08547abf7eb"))
-	b_exp := big.NewInt(0).SetBytes(hex2Bytes("000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"))
-
-	base, _ := FromBig(b_base)
-	exp, _ := FromBig(b_exp)
-
-	fmt.Printf("B1   : %x\n", b_base)
-	fmt.Printf("B2   : %x\n", b_exp)
-	fmt.Printf("F1   : %s\n", base.Hex())
-	fmt.Printf("F2   : %s\n", exp.Hex())
-	fmt.Println("--")
-
-	//	base.d = 2
-	//	exp.d = 255
-	res := new(Int).Exp(base, exp)
-
-	b_res := Exp(b_base, b_exp)
-
-	want, _ := FromBig(b_res)
-	fmt.Printf("B: %x\n", b_res)
-	fmt.Printf("want : %s\n", want.Hex())
-	fmt.Printf("got  : %s\n", res.Hex())
-
-	fb_res, _ := FromBig(b_res)
-	fmt.Printf("EQ  : %v\n", res.Eq(fb_res))
+	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
+	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
+	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
@@ -758,11 +653,13 @@ func TestFixedExpReusedArgs(t *testing.T) {
 	f2.Exp(&f2, &f2)
 	requireEq(t, big.NewInt(2*2), &f2, "")
 
+	// TODO: This is tested in TestBinOp().
 	f3 := Int{3, 0, 0, 0}
 	f4 := Int{4, 0, 0, 0}
 	f3.Exp(&f4, &f3)
 	requireEq(t, big.NewInt(4*4*4), &f3, "")
 
+	// TODO: This is tested in TestBinOp().
 	f5 := Int{5, 0, 0, 0}
 	f6 := Int{6, 0, 0, 0}
 	f6.Exp(&f6, &f5)
@@ -826,33 +723,34 @@ func TestAddmod(t *testing.T) {
 }
 
 func TestByteRepresentation(t *testing.T) {
-
-	//0e320219838e859b2f9f18b72e3d4073ca50b37d
 	a := big.NewInt(0xFF0AFcafe)
-	aa := NewInt().SetUint64(0xFF0afcafe)
-	bb := NewInt().SetBytes(a.Bytes())
-	x := a.Bytes()
-	y := aa.Bytes()
-	z := bb.Bytes()
-	fmt.Printf("x %x  y %x z %x \n", x, y, z)
-	fmt.Printf("padded %x\n", bb.PaddedBytes(32))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(20))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(40))
-}
+	aa := new(Int).SetUint64(0xFF0afcafe)
+	bb := new(Int).SetBytes(a.Bytes())
+	if !aa.Eq(bb) {
+		t.Fatal("aa != bb")
+	}
 
-func TestByteRepresentation2(t *testing.T) {
+	check := func(padded []byte, expectedHex string) {
+		if expected := hex2Bytes(expectedHex); !bytes.Equal(padded, expected) {
+			t.Errorf("incorrect padded bytes: %x, expected: %x", padded, expected)
+		}
+	}
+
+	check(aa.PaddedBytes(32), "0000000000000000000000000000000000000000000000000000000ff0afcafe")
+	check(aa.PaddedBytes(20), "0000000000000000000000000000000ff0afcafe")
+	check(aa.PaddedBytes(40), "00000000000000000000000000000000000000000000000000000000000000000000000ff0afcafe")
 
 	bytearr := hex2Bytes("0e320219838e859b2f9f18b72e3d4073ca50b37d")
-	a := big.NewInt(0).SetBytes(bytearr)
-	aa := NewInt().SetBytes(bytearr)
-	bb := NewInt().SetBytes(a.Bytes())
-	x := a.Bytes()
-	y := aa.Bytes()
-	z := bb.Bytes()
-	fmt.Printf("x %x\ny %x\nz %x\n", x, y, z)
-	fmt.Printf("padded %x\n", bb.PaddedBytes(32))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(20))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(40))
+	a = new(big.Int).SetBytes(bytearr)
+	aa = new(Int).SetBytes(bytearr)
+	bb = new(Int).SetBytes(a.Bytes())
+	if !aa.Eq(bb) {
+		t.Fatal("aa != bb")
+	}
+
+	check(aa.PaddedBytes(32), "0000000000000000000000000e320219838e859b2f9f18b72e3d4073ca50b37d")
+	check(aa.PaddedBytes(20), "0e320219838e859b2f9f18b72e3d4073ca50b37d")
+	check(aa.PaddedBytes(40), "00000000000000000000000000000000000000000e320219838e859b2f9f18b72e3d4073ca50b37d")
 }
 
 func TestWriteToSlice(t *testing.T) {
