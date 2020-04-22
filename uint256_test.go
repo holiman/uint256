@@ -19,6 +19,43 @@ var (
 	bigtt255 = new(big.Int).Lsh(big.NewInt(1), 255)
 
 	_ fmt.Formatter = &Int{} // Test if Int supports Formatter interface.
+
+	// A collection of interesting input values for binary operators (especially for division).
+	// No expected results as big.Int can be used as the source of truth.
+	testCases = [][2]string{
+		{"2", "1"},
+		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0x00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
+		{"0x10000000000000000", "2"},
+		{"0x7000000000000000", "0x8000000000000000"},
+		{"0x8000000000000000", "0x8000000000000000"},
+		{"0x8000000000000001", "0x8000000000000000"},
+		{"0x80000000000000010000000000000000", "0x80000000000000000000000000000000"},
+		{"0x80000000000000000000000000000000", "0x80000000000000000000000000000001"},
+		{"0x478392145435897052", "0x111"},
+		{"0x767676767676767676000000767676767676", "0x2900760076761e00020076760000000076767676000000"},
+		{"0x12121212121212121212121212121212", "0x232323232323232323"},
+		{"0xfffff716b61616160b0b0b2b0b0b0becf4bef50a0df4f48b090b2b0bc60a0a00", "0xfffff716b61616160b0b0b2b0b230b000008010d0a2b00"},
+		{"0x50beb1c60141a0000dc2b0b0b0b0b0b410a0a0df4f40b090b2b0bc60a0a00", "0x2000110000000d0a300e750a000000090a0a"},
+		{"0x4b00000b41000b0b0b2b0b0b0b0b0b410a0aeff4f40b090b2b0bc60a0a1000", "0x4b00000b41000b0b0b2b0b0b0b0b0b410a0aeff4f40b0a0a"},
+		{"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "7"},
+		{"0xf6376770abd3a36b20394c5664afef1194c801c3f05e42566f085ed24d002bb0", "0xb368d219438b7f3f"},
+		{"0", "0x10900000000000000000000000000000000000000000000000000"},
+		{"0x77676767676760000000000000001002e000000000000040000000e000000000", "0xfffc000000000000767676240000000000002b0576047"},
+		{"0x767676767676000000000076000000000000005600000000000000000000", "0x767676767676000000000076000000760000"},
+		{"0x8200000000000000000000000000000000000000000000000000000000000000", "0x8200000000000000fe000004000000ffff000000fffff700"},
+		{"0xdac7fff9ffd9e1322626262626262600", "0xd021262626262626"},
+		{"0x8000000000000001800000000000000080000000000000008000000000000000", "0x800000000000000080000000000000008000000000000000"},
+		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0x00e8e8e8e2000100000009ea02000000000000ff3ffffff800000010002280ff"},
+		{"0x000000c9700000000000000000023f00c00014ff000000000000000022300805", "0x00000000c9700000000000000000023f00c00014ff002c000000000000223108"},
+		{"0x40000000fd000000db0000000000000000000000000000000000000000000001", "0x40000000fd000000db0000000000000000000040000000fd000000db000001"},
+		{"0x40000000fd000000db0000000000000000000000000000000000000000000001", "0x40000000fd000000db0000000000000000000040000000fd000000db0000d3"},
+		{"0x001f000000000000000000000000000000200000000100000000000000000000", "0x0000000000000000000100000000ffffffffffffffff0000000000002e000000"},
+		{"0x7effffff80000000000000000000000000020000440000000000000000000001", "0x7effffff800000007effffff800000008000ff0000010000"},
+		{"0x5fd8fffffffffffffffffffffffffffffc090000ce700004d0c9ffffff000001", "0x2ffffffffffffffffffffffffffffffffff000000030000"},
+		{"0x62d8fffffffffffffffffffffffffffffc18000000000000000000ca00000001", "0x2ffffffffffffffffffffffffffffffffff200000000000"},
+		{"0x7effffff8000000000000000000000000000000000000000d900000000000001", "0x7effffff8000000000000000000000000000000000008001"},
+		{"0x0000000000000006400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x00000000000000210000000000000022"},
+	}
 )
 
 func hex2Bytes(str string) []byte {
@@ -462,17 +499,15 @@ func TestSGT(t *testing.T) {
 	x := new(Int).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
 	y := new(Int).SetBytes(hex2Bytes("00"))
 	actual := x.Sgt(y)
-	expected := false
-	if actual != expected {
-		t.Fatalf("Expected %v, got %v", expected, actual)
+	if actual {
+		t.Fatalf("Expected %v false", actual)
 	}
 
 	x = new(Int).SetBytes(hex2Bytes("00"))
 	y = new(Int).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
 	actual = x.Sgt(y)
-	expected = true
-	if actual != expected {
-		t.Fatalf("Expected %v, got %v", expected, actual)
+	if !actual {
+		t.Fatalf("Expected %v true", actual)
 	}
 }
 
@@ -629,19 +664,38 @@ func TestFixed256bit_Mul(t *testing.T) {
 }
 
 func TestDiv(t *testing.T) {
+	for i := 0; i < len(testCases); i++ {
+		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
+		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+		f1, _ := FromBig(b1)
+		f2, _ := FromBig(b2)
 
-	b1 := new(big.Int).SetBytes(hex2Bytes("12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5"))
-	b2 := new(big.Int).SetBytes(hex2Bytes("00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"))
+		expected, _ := FromBig(b1.Div(b1, b2))
+		result := new(Int).Div(f1, f2)
+		if !result.Eq(expected) {
+			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
+			t.Logf("exp   : %x\n", expected)
+			t.Logf("got   : %x\n", result)
+			t.Fail()
+		}
+	}
+}
 
-	f1, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
+func TestMod(t *testing.T) {
+	for i := 0; i < len(testCases); i++ {
+		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
+		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+		f1, _ := FromBig(b1)
+		f2, _ := FromBig(b2)
 
-	expected, _ := FromBig(b1.Div(b1, b2))
-	f1.Div(f1, f2)
-	if !f1.Eq(expected) {
-		t.Logf("exp   : %x\n", expected)
-		t.Logf("got   : %x\n", f1)
-		t.Fail()
+		expected, _ := FromBig(b1.Mod(b1, b2))
+		result := new(Int).Mod(f1, f2)
+		if !result.Eq(expected) {
+			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
+			t.Logf("exp   : %x\n", expected)
+			t.Logf("got   : %x\n", result)
+			t.Fail()
+		}
 	}
 }
 
