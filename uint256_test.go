@@ -609,7 +609,7 @@ func TestRandomExp(t *testing.T) {
 }
 
 func TestBinOp(t *testing.T) {
-	proc := func(t *testing.T, op func(*Int, *Int, *Int) *Int, bigOp func(*big.Int, *big.Int, *big.Int) *big.Int) {
+	proc := func(t *testing.T, op func(a, b, c *Int) *Int, bigOp func(a, b, c *big.Int) *big.Int) {
 		for i := 0; i < len(testCases); i++ {
 			b1, _ := new(big.Int).SetString(testCases[i][0], 0)
 			b2, _ := new(big.Int).SetString(testCases[i][1], 0)
@@ -631,18 +631,18 @@ func TestBinOp(t *testing.T) {
 			// Check if arguments are unmodified.
 			if !f1.Eq(f1orig) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("first argument had been modified: %x\n", f1);
+				t.Errorf("first argument had been modified: %x\n", f1)
 			}
 			if !f2.Eq(f2orig) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("second argument had been modified: %x\n", f2);
+				t.Errorf("second argument had been modified: %x\n", f2)
 			}
 
 			// Check if reusing args as result works correctly.
 			result = op(f1, f1, f2orig)
 			if result != f1 {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1);
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
 			}
 			if !result.Eq(expected) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
@@ -653,7 +653,7 @@ func TestBinOp(t *testing.T) {
 			result = op(f2, f1orig, f2)
 			if result != f2 {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2);
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2)
 			}
 			if !result.Eq(expected) {
 				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
@@ -669,6 +669,10 @@ func TestBinOp(t *testing.T) {
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
+
+	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
+	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
+	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
 }
 
 func TestFixedExp(t *testing.T) {
