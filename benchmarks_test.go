@@ -447,9 +447,10 @@ func benchmark_Exp_Big(bench *testing.B) {
 	base := big.NewInt(0).SetBytes(hex2Bytes(x))
 	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
 
+	result := new(big.Int)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		Exp(base, exp)
+		Exp(result, base, exp)
 		base.Set(orig)
 	}
 }
@@ -479,9 +480,10 @@ func benchmark_ExpSmall_Big(bench *testing.B) {
 	base := big.NewInt(0).SetBytes(hex2Bytes(x))
 	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
 
+	result := new(big.Int)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		Exp(base, exp)
+		Exp(result, base, exp)
 		base.Set(orig)
 	}
 }

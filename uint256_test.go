@@ -526,12 +526,9 @@ func U256(x *big.Int) *big.Int {
 }
 
 // Exp implements exponentiation by squaring.
-// Exp returns a newly-allocated big integer and does not change
-// base or exponent. The result is truncated to 256 bits.
-//
-// Courtesy @karalabe and @chfast
-func Exp(base, exponent *big.Int) *big.Int {
-	result := big.NewInt(1)
+// The result is truncated to 256 bits.
+func Exp(result, base, exponent *big.Int) *big.Int {
+	result.SetUint64(1)
 
 	for _, word := range exponent.Bits() {
 		for i := 0; i < wordBits; i++ {
@@ -600,7 +597,7 @@ func TestRandomExp(t *testing.T) {
 			t.Fatal("FromBig(exp) overflow")
 		}
 
-		b_res := Exp(b_base, b_exp)
+		b_res := Exp(new(big.Int), b_base, b_exp)
 		if eq := checkEq(b_res, f_res); !eq {
 			bf, _ := FromBig(b_res)
 			t.Fatalf("Expected equality:\nbase= %v\nexp = %v\n[ ^ ]==\nf = %v\nbf= %v\nb = %x\n", basecopy.Hex(), expcopy.Hex(), f_res.Hex(), bf.Hex(), b_res)
@@ -693,7 +690,7 @@ func TestFixedExp(t *testing.T) {
 	//	exp.d = 255
 	res := new(Int).Exp(base, exp)
 
-	b_res := Exp(b_base, b_exp)
+	b_res := Exp(new(big.Int), b_base, b_exp)
 
 	want, _ := FromBig(b_res)
 	fmt.Printf("B: %x\n", b_res)
