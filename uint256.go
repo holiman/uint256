@@ -314,15 +314,6 @@ func (z *Int) Squared() {
 	z.Copy(&res)
 }
 
-func (z *Int) setBit(n uint) *Int {
-	// n == 0 -> LSB
-	// n == 255 -> MSB
-	if n < 256 {
-		z[n>>6] |= 1 << (n & 0x3f)
-	}
-	return z
-}
-
 // isBitSet returns true if bit n is set, where n = 0 eq LSB
 func (z *Int) isBitSet(n uint) bool {
 	if n > 255 {
