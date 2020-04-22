@@ -119,31 +119,6 @@ func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
 	return true
 }
 
-func TestBasicStuff(t *testing.T) {
-	i, _ := FromBig(big.NewInt(1))
-	fmt.Printf("1 %v\n", i.Hex())
-	i, _ = FromBig(big.NewInt(-1))
-	fmt.Printf("-1 %v\n", i.Hex())
-	b := big.NewInt(0)
-	b.SetBytes(hex2Bytes("39d81aff56a841bea668f4c67599a0e1467b49e2e66674cbe36f2d"))
-	i, _ = FromBig(b)
-	fmt.Printf("%x \n%s\n", b, i.Hex())
-
-	b.SetBytes(hex2Bytes("dead432298f4ab7ff3fbdbe642972dbbb78835f8ecbea7d3a39dc183d1edbee39787336d1136"))
-	i, _ = FromBig(b)
-	fmt.Printf("%x \n%s\n", b, i.Hex())
-
-	fmt.Printf("%s \n", NewInt().setBit(255).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(254).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(32).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(1).Hex())
-	fmt.Printf("%s \n", NewInt().setBit(0).Hex())
-
-	fmt.Printf("%v \n", NewInt().setBit(0).isBitSet(0))
-	fmt.Printf("%v \n", NewInt().setBit(64).isBitSet(64))
-	fmt.Printf("%v \n", NewInt().setBit(254).isBitSet(254))
-
-}
 func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a, b, c *big.Int)) {
 	for i := 0; i < 10000; i++ {
 		b1, f1, err := randNums()
@@ -310,8 +285,6 @@ func S256(x *big.Int) *big.Int {
 }
 
 func TestRandomAbs(t *testing.T) {
-	fmt.Printf("SignedMin %x\n", bigtt255)
-	fmt.Printf("tt256 %x\n", bigtt256)
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randHighNums()
 		if err != nil {
