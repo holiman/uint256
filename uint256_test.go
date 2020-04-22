@@ -663,40 +663,64 @@ func TestFixed256bit_Mul(t *testing.T) {
 	requireEq(t, b1, f1, "")
 }
 
-func TestDiv(t *testing.T) {
-	for i := 0; i < len(testCases); i++ {
-		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
-		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
-		f1, _ := FromBig(b1)
-		f2, _ := FromBig(b2)
+func TestBinOp(t *testing.T) {
+	proc := func(t *testing.T, op func(*Int, *Int, *Int) *Int, bigOp func(*big.Int, *big.Int, *big.Int) *big.Int) {
+		for i := 0; i < len(testCases); i++ {
+			b1, _ := new(big.Int).SetString(testCases[i][0], 0)
+			b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+			f1orig, _ := FromBig(b1)
+			f2orig, _ := FromBig(b2)
+			f1 := new(Int).Copy(f1orig)
+			f2 := new(Int).Copy(f2orig)
 
-		expected, _ := FromBig(b1.Div(b1, b2))
-		result := new(Int).Div(f1, f2)
-		if !result.Eq(expected) {
-			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
-			t.Logf("exp   : %x\n", expected)
-			t.Logf("got   : %x\n", result)
-			t.Fail()
+			// Compare result with big.Int.
+			expected, _ := FromBig(bigOp(new(big.Int), b1, b2))
+			result := op(new(Int), f1, f2)
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+
+			// Check if arguments are unmodified.
+			if !f1.Eq(f1orig) {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Errorf("first argument had been modified: %x\n", f1);
+			}
+			if !f2.Eq(f2orig) {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Errorf("second argument had been modified: %x\n", f2);
+			}
+
+			// Check if reusing args as result works correctly.
+			result = op(f1, f1, f2orig)
+			if result != f1 {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1);
+			}
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+			result = op(f2, f1orig, f2)
+			if result != f2 {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2);
+			}
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
 		}
 	}
-}
 
-func TestMod(t *testing.T) {
-	for i := 0; i < len(testCases); i++ {
-		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
-		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
-		f1, _ := FromBig(b1)
-		f2, _ := FromBig(b2)
-
-		expected, _ := FromBig(b1.Mod(b1, b2))
-		result := new(Int).Mod(f1, f2)
-		if !result.Eq(expected) {
-			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
-			t.Logf("exp   : %x\n", expected)
-			t.Logf("got   : %x\n", result)
-			t.Fail()
-		}
-	}
+	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
+	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
 }
 
 func TestFixedExp(t *testing.T) {
