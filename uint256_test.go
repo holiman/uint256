@@ -55,6 +55,7 @@ var (
 		{"0x62d8fffffffffffffffffffffffffffffc18000000000000000000ca00000001", "0x2ffffffffffffffffffffffffffffffffff200000000000"},
 		{"0x7effffff8000000000000000000000000000000000000000d900000000000001", "0x7effffff8000000000000000000000000000000000008001"},
 		{"0x0000000000000006400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x00000000000000210000000000000022"},
+		{"0x00000000000000000000000000000000000000000000006d5adef08547abf7eb", "0x000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"},
 	}
 )
 
@@ -666,39 +667,11 @@ func TestBinOp(t *testing.T) {
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
+	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
 	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
 	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
-}
-
-func TestFixedExp(t *testing.T) {
-
-	b_base := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000006d5adef08547abf7eb"))
-	b_exp := big.NewInt(0).SetBytes(hex2Bytes("000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"))
-
-	base, _ := FromBig(b_base)
-	exp, _ := FromBig(b_exp)
-
-	fmt.Printf("B1   : %x\n", b_base)
-	fmt.Printf("B2   : %x\n", b_exp)
-	fmt.Printf("F1   : %s\n", base.Hex())
-	fmt.Printf("F2   : %s\n", exp.Hex())
-	fmt.Println("--")
-
-	//	base.d = 2
-	//	exp.d = 255
-	res := new(Int).Exp(base, exp)
-
-	b_res := Exp(new(big.Int), b_base, b_exp)
-
-	want, _ := FromBig(b_res)
-	fmt.Printf("B: %x\n", b_res)
-	fmt.Printf("want : %s\n", want.Hex())
-	fmt.Printf("got  : %s\n", res.Hex())
-
-	fb_res, _ := FromBig(b_res)
-	fmt.Printf("EQ  : %v\n", res.Eq(fb_res))
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
@@ -707,11 +680,13 @@ func TestFixedExpReusedArgs(t *testing.T) {
 	f2.Exp(&f2, &f2)
 	requireEq(t, big.NewInt(2*2), &f2, "")
 
+	// TODO: This is tested in TestBinOp().
 	f3 := Int{3, 0, 0, 0}
 	f4 := Int{4, 0, 0, 0}
 	f3.Exp(&f4, &f3)
 	requireEq(t, big.NewInt(4*4*4), &f3, "")
 
+	// TODO: This is tested in TestBinOp().
 	f5 := Int{5, 0, 0, 0}
 	f6 := Int{6, 0, 0, 0}
 	f6.Exp(&f6, &f5)
