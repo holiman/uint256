@@ -750,33 +750,34 @@ func TestAddmod(t *testing.T) {
 }
 
 func TestByteRepresentation(t *testing.T) {
-
-	//0e320219838e859b2f9f18b72e3d4073ca50b37d
 	a := big.NewInt(0xFF0AFcafe)
-	aa := NewInt().SetUint64(0xFF0afcafe)
-	bb := NewInt().SetBytes(a.Bytes())
-	x := a.Bytes()
-	y := aa.Bytes()
-	z := bb.Bytes()
-	fmt.Printf("x %x  y %x z %x \n", x, y, z)
-	fmt.Printf("padded %x\n", bb.PaddedBytes(32))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(20))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(40))
-}
+	aa := new(Int).SetUint64(0xFF0afcafe)
+	bb := new(Int).SetBytes(a.Bytes())
+	if !aa.Eq(bb) {
+		t.Fatal("aa != bb")
+	}
 
-func TestByteRepresentation2(t *testing.T) {
+	check := func(padded []byte, expectedHex string) {
+		if expected := hex2Bytes(expectedHex); !bytes.Equal(padded, expected) {
+			t.Errorf("incorrect padded bytes: %x, expected: %x", padded, expected)
+		}
+	}
+
+	check(aa.PaddedBytes(32), "0000000000000000000000000000000000000000000000000000000ff0afcafe")
+	check(aa.PaddedBytes(20), "0000000000000000000000000000000ff0afcafe")
+	check(aa.PaddedBytes(40), "00000000000000000000000000000000000000000000000000000000000000000000000ff0afcafe")
 
 	bytearr := hex2Bytes("0e320219838e859b2f9f18b72e3d4073ca50b37d")
-	a := big.NewInt(0).SetBytes(bytearr)
-	aa := NewInt().SetBytes(bytearr)
-	bb := NewInt().SetBytes(a.Bytes())
-	x := a.Bytes()
-	y := aa.Bytes()
-	z := bb.Bytes()
-	fmt.Printf("x %x\ny %x\nz %x\n", x, y, z)
-	fmt.Printf("padded %x\n", bb.PaddedBytes(32))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(20))
-	fmt.Printf("padded %x\n", bb.PaddedBytes(40))
+	a = new(big.Int).SetBytes(bytearr)
+	aa = new(Int).SetBytes(bytearr)
+	bb = new(Int).SetBytes(a.Bytes())
+	if !aa.Eq(bb) {
+		t.Fatal("aa != bb")
+	}
+
+	check(aa.PaddedBytes(32), "0000000000000000000000000e320219838e859b2f9f18b72e3d4073ca50b37d")
+	check(aa.PaddedBytes(20), "0e320219838e859b2f9f18b72e3d4073ca50b37d")
+	check(aa.PaddedBytes(40), "00000000000000000000000000000000000000000e320219838e859b2f9f18b72e3d4073ca50b37d")
 }
 
 func TestWriteToSlice(t *testing.T) {
