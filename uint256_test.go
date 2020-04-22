@@ -663,40 +663,27 @@ func TestFixed256bit_Mul(t *testing.T) {
 	requireEq(t, b1, f1, "")
 }
 
-func TestDiv(t *testing.T) {
-	for i := 0; i < len(testCases); i++ {
-		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
-		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
-		f1, _ := FromBig(b1)
-		f2, _ := FromBig(b2)
+func TestBinOp(t *testing.T) {
+	proc := func(t *testing.T, op func(*Int, *Int, *Int) *Int, bigOp func(*big.Int, *big.Int, *big.Int) *big.Int) {
+		for i := 0; i < len(testCases); i++ {
+			b1, _ := new(big.Int).SetString(testCases[i][0], 0)
+			b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+			f1, _ := FromBig(b1)
+			f2, _ := FromBig(b2)
 
-		expected, _ := FromBig(b1.Div(b1, b2))
-		result := new(Int).Div(f1, f2)
-		if !result.Eq(expected) {
-			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
-			t.Logf("exp   : %x\n", expected)
-			t.Logf("got   : %x\n", result)
-			t.Fail()
+			expected, _ := FromBig(bigOp(new(big.Int), b1, b2))
+			result := op(new(Int), f1, f2)
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
 		}
 	}
-}
 
-func TestMod(t *testing.T) {
-	for i := 0; i < len(testCases); i++ {
-		b1, _ := new(big.Int).SetString(testCases[i][0], 0)
-		b2, _ := new(big.Int).SetString(testCases[i][1], 0)
-		f1, _ := FromBig(b1)
-		f2, _ := FromBig(b2)
-
-		expected, _ := FromBig(b1.Mod(b1, b2))
-		result := new(Int).Mod(f1, f2)
-		if !result.Eq(expected) {
-			t.Logf("%s / %s\n", testCases[i][0], testCases[i][0])
-			t.Logf("exp   : %x\n", expected)
-			t.Logf("got   : %x\n", result)
-			t.Fail()
-		}
-	}
+	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
+	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
 }
 
 func TestFixedExp(t *testing.T) {
