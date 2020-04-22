@@ -608,61 +608,6 @@ func TestRandomExp(t *testing.T) {
 	}
 }
 
-func TestFixed256bit_Add(t *testing.T) {
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("000282209f633a3ca040e862bb69d92573449d21bce09ea3a74348fbf1ced62e"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000003afd56300e26f61922"))
-
-	f, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-	fmt.Printf("B1: %x\n", b1)
-	fmt.Printf("B2: %x\n", b2)
-	fmt.Printf("F1: %s\n", f.Hex())
-	fmt.Printf("F2: %s\n", f2.Hex())
-	fmt.Println("--")
-	b1.Add(b1, b2)
-	f.Add(f, f2)
-	fmt.Printf("B: %x\n", b1)
-	fmt.Printf("F: %s\n", f.Hex())
-
-}
-
-func TestFixed256bit_Sub(t *testing.T) {
-
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000002a3f8ba829e365f479526"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("000000000000000000000000000000004ffab28fa389b141ce4876fa1965c937"))
-
-	f, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-
-	fmt.Printf("B1   : %x\n", b1)
-	fmt.Printf("B2   : %x\n", b2)
-	fmt.Printf("F1   : %s\n", f.Hex())
-	fmt.Printf("F2   : %s\n", f2.Hex())
-	fmt.Println("--")
-	b1.Sub(b1, b2)
-	f.Sub(f, f2)
-	fmt.Printf("B   : %x\n", b1)
-	fmt.Printf("F   : %s\n", f.Hex())
-
-	res, _ := FromBig(b1)
-	fmt.Printf("b->f: %s\n", res.Hex())
-	fmt.Printf("EQ  : %v\n", f.Eq(res))
-
-}
-
-func TestFixed256bit_Mul(t *testing.T) {
-
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("00000000000000000000000000000000000000000002a3f8ba829e365f479526"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002"))
-
-	f1, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-
-	b1.Mul(b1, b2)
-	f1.Mul(f1, f2)
-	requireEq(t, b1, f1, "")
-}
-
 func TestBinOp(t *testing.T) {
 	proc := func(t *testing.T, op func(*Int, *Int, *Int) *Int, bigOp func(*big.Int, *big.Int, *big.Int) *big.Int) {
 		for i := 0; i < len(testCases); i++ {
@@ -719,6 +664,9 @@ func TestBinOp(t *testing.T) {
 		}
 	}
 
+	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
+	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
+	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
 }
