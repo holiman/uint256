@@ -138,59 +138,57 @@ func Benchmark_Sub(bench *testing.B) {
 	bench.Run("single/uint256_of", benchmark_SubOverflow_Bit)
 }
 
-func benchmark_Mul_Big(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+func BenchmarkMul(bench *testing.B) {
+	benchmarkUint256 := func(bench *testing.B) {
+		a := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		b := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		fa, _ := FromBig(a)
+		fb, _ := FromBig(b)
 
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		b1 := big.NewInt(0)
-		b1.Mul(a, b)
-		U256(b1)
+		result := new(Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			result.Mul(fa, fb)
+		}
 	}
-}
+	benchmarkBig := func(bench *testing.B) {
+		a := new(big.Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		b := new(big.Int).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 
-func benchmark_Mul_Bit(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	fa, _ := FromBig(a)
-	fb, _ := FromBig(b)
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		f := NewInt()
-		f.Mul(fa, fb)
+		result := new(big.Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			U256(result.Mul(a, b))
+		}
 	}
+
+	bench.Run("single/uint256", benchmarkUint256)
+	bench.Run("single/big", benchmarkBig)
 }
 
-func benchmark_Squared_Bit(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-	fa, _ := FromBig(a)
+func BenchmarkSquare(bench *testing.B) {
 
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		f := NewInt().Copy(fa)
-		f.Squared()
+	benchmarkUint256 := func(bench *testing.B) {
+		a := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+		result := new(Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			result.Copy(a).Squared()
+		}
 	}
-}
-func benchmark_Squared_Big(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+	benchmarkBig := func(bench *testing.B) {
+		a := new(big.Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		b1 := big.NewInt(0)
-		b1.Mul(a, a)
-		U256(b1)
+		result := new(big.Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			U256(result.Mul(a, a))
+		}
 	}
-}
 
-func Benchmark_Mul(bench *testing.B) {
-	bench.Run("single/big", benchmark_Mul_Big)
-	bench.Run("single/uint256", benchmark_Mul_Bit)
-}
-func Benchmark_Square(bench *testing.B) {
-	bench.Run("single/big", benchmark_Squared_Big)
-	bench.Run("single/uint256", benchmark_Squared_Bit)
+	bench.Run("single/uint256", benchmarkUint256)
+	bench.Run("single/big", benchmarkBig)
 }
 
 func benchmark_And_Big(bench *testing.B) {
