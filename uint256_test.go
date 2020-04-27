@@ -22,7 +22,7 @@ var (
 
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
-	testCases = [][2]string{
+	binTestCases = [][2]string{
 		{"2", "1"},
 		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0x00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
 		{"0x10000000000000000", "2"},
@@ -581,9 +581,9 @@ func TestRandomExp(t *testing.T) {
 
 func TestBinOp(t *testing.T) {
 	proc := func(t *testing.T, op func(a, b, c *Int) *Int, bigOp func(a, b, c *big.Int) *big.Int) {
-		for i := 0; i < len(testCases); i++ {
-			b1, _ := new(big.Int).SetString(testCases[i][0], 0)
-			b2, _ := new(big.Int).SetString(testCases[i][1], 0)
+		for i := 0; i < len(binTestCases); i++ {
+			b1, _ := new(big.Int).SetString(binTestCases[i][0], 0)
+			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
 			f1orig, _ := FromBig(b1)
 			f2orig, _ := FromBig(b2)
 			f1 := new(Int).Copy(f1orig)
@@ -593,7 +593,7 @@ func TestBinOp(t *testing.T) {
 			expected, _ := FromBig(bigOp(new(big.Int), b1, b2))
 			result := op(new(Int), f1, f2)
 			if !result.Eq(expected) {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Logf("exp : %x\n", expected)
 				t.Logf("got : %x\n\n", result)
 				t.Fail()
@@ -601,33 +601,33 @@ func TestBinOp(t *testing.T) {
 
 			// Check if arguments are unmodified.
 			if !f1.Eq(f1orig) {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Errorf("first argument had been modified: %x\n", f1)
 			}
 			if !f2.Eq(f2orig) {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Errorf("second argument had been modified: %x\n", f2)
 			}
 
 			// Check if reusing args as result works correctly.
 			result = op(f1, f1, f2orig)
 			if result != f1 {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
 			}
 			if !result.Eq(expected) {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Logf("exp : %x\n", expected)
 				t.Logf("got : %x\n\n", result)
 				t.Fail()
 			}
 			result = op(f2, f1orig, f2)
 			if result != f2 {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2)
 			}
 			if !result.Eq(expected) {
-				t.Logf("args: %s, %s\n", testCases[i][0], testCases[i][0])
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
 				t.Logf("exp : %x\n", expected)
 				t.Logf("got : %x\n\n", result)
 				t.Fail()
