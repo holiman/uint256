@@ -57,6 +57,16 @@ var (
 		{"0x0000000000000006400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x00000000000000210000000000000022"},
 		{"0x00000000000000000000000000000000000000000000006d5adef08547abf7eb", "0x000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"},
 	}
+
+	// A collection of interesting input values for ternary operators (addmod, mulmod).
+	ternTestCases = [][3]string{
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "3", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
+		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "2"},
+		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "1"},
+	}
 )
 
 func hex2Bytes(str string) []byte {
@@ -548,6 +558,14 @@ func Smod(x, y *big.Int) *big.Int {
 
 }
 
+func addMod(result, x, y, mod *big.Int) *big.Int {
+	return result.Mod(result.Add(x, y), mod)
+}
+
+func mulMod(result, x, y, mod *big.Int) *big.Int {
+	return result.Mod(result.Mul(x, y), mod)
+}
+
 func referenceExp(base, exponent *big.Int) *big.Int {
 	// TODO: Maybe use the Exp() procedure from above?
 	res := new(big.Int)
@@ -647,6 +665,84 @@ func TestBinOp(t *testing.T) {
 	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
 }
 
+func TestTernOp(t *testing.T) {
+	proc := func(t *testing.T, op func(a, b, c, d *Int) *Int, bigOp func(a, b, c, d *big.Int) *big.Int) {
+		for i := 0; i < len(ternTestCases); i++ {
+			b1, _ := new(big.Int).SetString(ternTestCases[i][0], 0)
+			b2, _ := new(big.Int).SetString(ternTestCases[i][1], 0)
+			b3, _ := new(big.Int).SetString(ternTestCases[i][2], 0)
+			f1orig, _ := FromBig(b1)
+			f2orig, _ := FromBig(b2)
+			f3orig, _ := FromBig(b3)
+			f1 := new(Int).Copy(f1orig)
+			f2 := new(Int).Copy(f2orig)
+			f3 := new(Int).Copy(f3orig)
+
+			// Compare result with big.Int.
+			expected, _ := FromBig(bigOp(new(big.Int), b1, b2, b3))
+			result := op(new(Int), f1, f2, f3)
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+
+			// Check if arguments are unmodified.
+			if !f1.Eq(f1orig) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Errorf("first argument had been modified: %x\n", f1)
+			}
+			if !f2.Eq(f2orig) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Errorf("second argument had been modified: %x\n", f2)
+			}
+			if !f3.Eq(f3orig) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Errorf("third argument had been modified: %x\n", f3)
+			}
+
+			// Check if reusing args as result works correctly.
+			result = op(f1, f1, f2orig, f3orig)
+			if result != f1 {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
+			}
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+			result = op(f2, f1orig, f2, f3orig)
+			if result != f2 {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2)
+			}
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+			result = op(f3, f1orig, f2orig, f3)
+			if result != f3 {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f3)
+			}
+			if !result.Eq(expected) {
+				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+		}
+	}
+
+	t.Run("AddMod", func(t *testing.T) { proc(t, (*Int).AddMod, addMod) })
+	t.Run("MulMod", func(t *testing.T) { proc(t, (*Int).MulMod, mulMod) })
+}
+
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
 func TestFixedExpReusedArgs(t *testing.T) {
 	f2 := Int{2, 0, 0, 0}
@@ -668,58 +764,6 @@ func TestFixedExpReusedArgs(t *testing.T) {
 	f3 = Int{3, 0, 0, 0}
 	fr := new(Int).Exp(&f3, &f3)
 	requireEq(t, big.NewInt(3*3*3), fr, "")
-}
-
-func TestAddmod(t *testing.T) {
-	b1 := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"))
-	b2 := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
-	b3 := big.NewInt(0).SetBytes(hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
-	ex := big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc"))
-
-	f1, _ := FromBig(b1)
-	f2, _ := FromBig(b2)
-	f3, _ := FromBig(b3)
-	res := NewInt()
-	res.AddMod(f1, f2, f3)
-	requireEq(t, ex, res, "1 res wrong")
-	requireEq(t, b1, f1, "1 f1 changed")
-	requireEq(t, b2, f2, "1 f2 changed")
-	requireEq(t, b3, f3, "1 f3 changed")
-
-	f1, _ = FromBig(b1)
-	f2, _ = FromBig(b2)
-	f3, _ = FromBig(b3)
-	f1.AddMod(f1, f2, f3)
-	requireEq(t, ex, f1, "2 f1 wrong")
-	requireEq(t, b2, f2, "2 f2 changed")
-	requireEq(t, b3, f3, "2 f3 changed")
-
-	f1, _ = FromBig(b1)
-	f2, _ = FromBig(b2)
-	f3, _ = FromBig(b3)
-	f2.AddMod(f1, f2, f3)
-	requireEq(t, ex, f2, "3 f2 wrong")
-	requireEq(t, b1, f1, "3 f1 changed")
-	requireEq(t, b3, f3, "3 f3 changed")
-
-	f1, _ = FromBig(b1)
-	f2, _ = FromBig(b2)
-	f3, _ = FromBig(b3)
-	f3.AddMod(f1, f2, f3)
-	requireEq(t, ex, f3, "4 f3 wrong")
-	requireEq(t, b1, f1, "4 f1 changed")
-	requireEq(t, b2, f2, "4 f2 changed")
-
-	b1 = big.NewInt(0).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd"))
-	b2 = big.NewInt(0).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000003"))
-	b3 = big.NewInt(0).SetBytes(hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
-	ex = big.NewInt(0).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001"))
-
-	f1, _ = FromBig(b1)
-	f2, _ = FromBig(b2)
-	f3, _ = FromBig(b3)
-	f3.AddMod(f1, f2, f3)
-	requireEq(t, ex, f3, "5 f3 wrong")
 }
 
 func TestByteRepresentation(t *testing.T) {
