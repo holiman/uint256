@@ -516,15 +516,15 @@ func (z *Int) Smod(x, y *Int) *Int {
 
 	// abs x
 	if xs == -1 {
-		x.Neg()
+		x.Neg(x)
 	}
 	// abs y
 	if ys == -1 {
-		y.Neg()
+		y.Neg(y)
 	}
 	z.Mod(x, y)
 	if xs == -1 {
-		z.Neg()
+		z.Neg(z)
 	}
 	return z
 }
@@ -568,9 +568,9 @@ func (z *Int) Abs() *Int {
 	return z
 }
 
-func (z *Int) Neg() *Int {
-	z.Sub(&Int{}, z)
-	return z
+// Neg returns -x mod 2**256.
+func (z *Int) Neg(x *Int) *Int {
+	return z.Sub(new(Int), x)
 }
 
 // Sdiv interprets n and d as signed integers, does a
@@ -585,19 +585,19 @@ func (z *Int) Sdiv(n, d *Int) *Int {
 			return z
 		} else {
 			// pos / neg
-			z.Div(n, d.Neg())
-			return z.Neg()
+			z.Div(n, d.Neg(d))
+			return z.Neg(z)
 		}
 	}
 
 	if d.Sign() < 0 {
 		// neg / neg
-		z.Div(n.Neg(), d.Neg())
+		z.Div(n.Neg(n), d.Neg(d))
 		return z
 	}
 	// neg / pos
-	z.Div(n.Neg(), d)
-	return z.Neg()
+	z.Div(n.Neg(n), d)
+	return z.Neg(z)
 }
 
 // Sign returns:
