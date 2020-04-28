@@ -83,7 +83,7 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 	}
 
 	if b.Sign() == -1 {
-		z.Neg()
+		z.Neg(z)
 	}
 	return overflow
 }
