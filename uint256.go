@@ -554,18 +554,16 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	return z.Copy(&rem)
 }
 
-// Abs interprets x as a a signed number, and sets z to the Abs value
-//   S256(0)        = 0
-//   S256(1)        = 1
-//   S256(2**255)   = -2**255
-//   S256(2**256-1) = -1
-
-func (z *Int) Abs() *Int {
-	if z.Lt(SignedMin) {
-		return z
+// Abs interprets x as a a signed number, and sets z to the absolute value
+//   Abs(0)        = 0
+//   Abs(1)        = 1
+//   Abs(2**255)   = -2**255
+//   Abs(2**256-1) = -1
+func (z *Int) Abs(x *Int) *Int {
+	if x.Lt(SignedMin) {
+		return z.Copy(x)
 	}
-	z.Sub(&Int{}, z)
-	return z
+	return z.Sub(new(Int), x)
 }
 
 // Neg returns -x mod 2**256.

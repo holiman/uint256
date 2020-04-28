@@ -303,7 +303,7 @@ func TestRandomAbs(t *testing.T) {
 		U256(b)
 		b2 := S256(big.NewInt(0).Set(b))
 		b2.Abs(b2)
-		f1a := f1.Clone().Abs()
+		f1a := new(Int).Abs(f1)
 
 		if eq := checkEq(b2, f1a); !eq {
 			bf, _ := FromBig(b2)
@@ -327,7 +327,7 @@ func TestRandomSDiv(t *testing.T) {
 
 		f1a, f2a := f1.Clone(), f2.Clone()
 
-		f1aAbs, f2aAbs := f1.Clone().Abs(), f2.Clone().Abs()
+		f1aAbs, f2aAbs := new(Int).Abs(f1), new(Int).Abs(f2)
 
 		f1.Sdiv(f1, f2)
 		if b2.BitLen() == 0 {
