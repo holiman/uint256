@@ -334,10 +334,7 @@ func TestRandomSDiv(t *testing.T) {
 			// zero
 			b = big.NewInt(0)
 		} else {
-			bb1 := S256(big.NewInt(0).Set(b))
-			bb2 := S256(big.NewInt(0).Set(b2))
-
-			b = Sdiv(bb1, bb2)
+			b = SDiv(b, b, b2)
 		}
 		if eq := checkEq(b, f1); !eq {
 			bf, _ := FromBig(b)
@@ -526,22 +523,24 @@ func Exp(result, base, exponent *big.Int) *big.Int {
 	return result
 }
 
-func Sdiv(x, y *big.Int) *big.Int {
+func SDiv(result, x, y *big.Int) *big.Int {
 	if y.Sign() == 0 {
-		return new(big.Int)
-
+		return result.SetUint64(0)
 	}
+	sx := S256(x)
+	sy := S256(y)
+
 	n := new(big.Int)
-	if x.Sign() == y.Sign() {
-		//	if n.Mul(x, y).Sign() < 0 {
+	if sx.Sign() == sy.Sign() {
 		n.SetInt64(1)
 	} else {
 		n.SetInt64(-1)
 	}
-	res := x.Div(x.Abs(x), y.Abs(y))
-	res.Mul(res, n)
-	return res
+	result.Div(sx.Abs(sx), sy.Abs(sy))
+	result.Mul(result, n)
+	return result
 }
+
 func Smod(x, y *big.Int) *big.Int {
 	res := new(big.Int)
 	if y.Sign() == 0 {
@@ -658,6 +657,7 @@ func TestBinOp(t *testing.T) {
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
+	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).Sdiv, SDiv) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })

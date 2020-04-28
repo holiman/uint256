@@ -641,20 +641,13 @@ func BenchmarkMulMod(b *testing.B) {
 }
 
 func benchmark_SdivLarge_Big(bench *testing.B) {
-	a := big.NewInt(0).SetBytes(hex2Bytes("800fffffffffffffffffffffffffd1e870eec79504c60144cc7f5fc2bad1e611"))
-	b := big.NewInt(0).SetBytes(hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
+	a := new(big.Int).SetBytes(hex2Bytes("800fffffffffffffffffffffffffd1e870eec79504c60144cc7f5fc2bad1e611"))
+	b := new(big.Int).SetBytes(hex2Bytes("ff3f9014f20db29ae04af2c2d265de17"))
 
 	bench.ResetTimer()
 
-	var (
-		x = big.NewInt(0)
-		y = big.NewInt(0)
-	)
-
 	for i := 0; i < bench.N; i++ {
-		x.Set(a)
-		y.Set(b)
-		U256(Sdiv(S256(x), S256(y)))
+		U256(SDiv(new(big.Int), a, b))
 	}
 }
 
