@@ -244,7 +244,7 @@ func TestRandomMod(t *testing.T) {
 func TestRandomSMod(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.Smod(f2, f3)
+			f1.SMod(f2, f3)
 		},
 		func(b1, b2, b3 *big.Int) {
 			SMod(b1, b2, b3)
@@ -658,7 +658,7 @@ func TestBinOp(t *testing.T) {
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
-	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).Smod, SMod) })
+	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, SMod) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })

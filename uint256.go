@@ -506,10 +506,10 @@ func (z *Int) Mod(x, y *Int) *Int {
 	return z.Copy(&rem)
 }
 
-// Smod interprets x and y as two's complement signed integers,
+// SMod interprets x and y as two's complement signed integers,
 // sets z to (sign x) * { abs(x) modulus abs(y) }
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) Smod(x, y *Int) *Int {
+func (z *Int) SMod(x, y *Int) *Int {
 	ys := y.Sign()
 	xs := x.Sign()
 
