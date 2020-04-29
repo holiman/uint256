@@ -571,10 +571,9 @@ func (z *Int) Neg(x *Int) *Int {
 	return z.Sub(new(Int), x)
 }
 
-// Sdiv interprets n and d as signed integers, does a
-// signed division on the two operands and sets z to the result
+// Sdiv interprets n and d as two's complement signed integers,
+// does a signed division on the two operands and sets z to the result.
 // If d == 0, z is set to 0
-// OBS! This method (potentially) modifies both n and d
 func (z *Int) Sdiv(n, d *Int) *Int {
 	if n.Sign() > 0 {
 		if d.Sign() > 0 {
@@ -583,18 +582,18 @@ func (z *Int) Sdiv(n, d *Int) *Int {
 			return z
 		} else {
 			// pos / neg
-			z.Div(n, d.Neg(d))
+			z.Div(n, new(Int).Neg(d))
 			return z.Neg(z)
 		}
 	}
 
 	if d.Sign() < 0 {
 		// neg / neg
-		z.Div(n.Neg(n), d.Neg(d))
+		z.Div(new(Int).Neg(n), new(Int).Neg(d))
 		return z
 	}
 	// neg / pos
-	z.Div(n.Neg(n), d)
+	z.Div(new(Int).Neg(n), d)
 	return z.Neg(z)
 }
 
