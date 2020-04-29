@@ -247,7 +247,7 @@ func TestRandomSMod(t *testing.T) {
 			f1.Smod(f2, f3)
 		},
 		func(b1, b2, b3 *big.Int) {
-			b1.Set(Smod(b2, b3))
+			SMod(b1, b2, b3)
 		},
 	)
 }
@@ -541,20 +541,20 @@ func SDiv(result, x, y *big.Int) *big.Int {
 	return result
 }
 
-func Smod(x, y *big.Int) *big.Int {
-	res := new(big.Int)
+func SMod(result, x, y *big.Int) *big.Int {
 	if y.Sign() == 0 {
-		return res
+		return result.SetUint64(0)
 	}
 
-	if x.Sign() < 0 {
-		res.Mod(x.Abs(x), y.Abs(y))
-		res.Neg(res)
-	} else {
-		res.Mod(x.Abs(x), y.Abs(y))
-	}
-	return U256(res)
+	sx := S256(x)
+	sy := S256(y)
+	neg := sx.Sign() < 0
 
+	result.Mod(sx.Abs(sx), sy.Abs(sy))
+	if neg {
+		result.Neg(result)
+	}
+	return U256(result)
 }
 
 func addMod(result, x, y, mod *big.Int) *big.Int {
@@ -658,6 +658,7 @@ func TestBinOp(t *testing.T) {
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
+	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).Smod, SMod) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
