@@ -506,21 +506,20 @@ func (z *Int) Mod(x, y *Int) *Int {
 	return z.Copy(&rem)
 }
 
-// Smod interprets x and y as signed integers sets z to
-// (sign x) * { abs(x) modulus abs(y) }
+// SMod interprets x and y as two's complement signed integers,
+// sets z to (sign x) * { abs(x) modulus abs(y) }
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
-// OBS! Modifies x and y
-func (z *Int) Smod(x, y *Int) *Int {
+func (z *Int) SMod(x, y *Int) *Int {
 	ys := y.Sign()
 	xs := x.Sign()
 
 	// abs x
 	if xs == -1 {
-		x.Neg(x)
+		x = new(Int).Neg(x)
 	}
 	// abs y
 	if ys == -1 {
-		y.Neg(y)
+		y = new(Int).Neg(y)
 	}
 	z.Mod(x, y)
 	if xs == -1 {
@@ -571,11 +570,10 @@ func (z *Int) Neg(x *Int) *Int {
 	return z.Sub(new(Int), x)
 }
 
-// Sdiv interprets n and d as signed integers, does a
-// signed division on the two operands and sets z to the result
+// SDiv interprets n and d as two's complement signed integers,
+// does a signed division on the two operands and sets z to the result.
 // If d == 0, z is set to 0
-// OBS! This method (potentially) modifies both n and d
-func (z *Int) Sdiv(n, d *Int) *Int {
+func (z *Int) SDiv(n, d *Int) *Int {
 	if n.Sign() > 0 {
 		if d.Sign() > 0 {
 			// pos / pos
@@ -583,18 +581,18 @@ func (z *Int) Sdiv(n, d *Int) *Int {
 			return z
 		} else {
 			// pos / neg
-			z.Div(n, d.Neg(d))
+			z.Div(n, new(Int).Neg(d))
 			return z.Neg(z)
 		}
 	}
 
 	if d.Sign() < 0 {
 		// neg / neg
-		z.Div(n.Neg(n), d.Neg(d))
+		z.Div(new(Int).Neg(n), new(Int).Neg(d))
 		return z
 	}
 	// neg / pos
-	z.Div(n.Neg(n), d)
+	z.Div(new(Int).Neg(n), d)
 	return z.Neg(z)
 }
 
