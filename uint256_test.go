@@ -329,7 +329,7 @@ func TestRandomSDiv(t *testing.T) {
 
 		f1aAbs, f2aAbs := new(Int).Abs(f1), new(Int).Abs(f2)
 
-		f1.Sdiv(f1, f2)
+		f1.SDiv(f1, f2)
 		if b2.BitLen() == 0 {
 			// zero
 			b = big.NewInt(0)
@@ -657,7 +657,7 @@ func TestBinOp(t *testing.T) {
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
-	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).Sdiv, SDiv) })
+	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })

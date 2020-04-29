@@ -660,7 +660,7 @@ func benchmark_SdivLarge_Bit(bench *testing.B) {
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f := NewInt()
-		f.Sdiv(fa, fb)
+		f.SDiv(fa, fb)
 	}
 }
 
