@@ -32,6 +32,10 @@ var (
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
 	binTestCases = [][2]string{
+		{"0", "0"},
+		{"1", "0"},
+		{"1", "0x767676767676767676000000767676767676"},
+		{"2", "0"},
 		{"2", "1"},
 		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0x00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
 		{"0x10000000000000000", "2"},
@@ -712,8 +716,21 @@ func TestBinOp(t *testing.T) {
 	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
 	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
-	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
-	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
+	t.Run("Div", func(t *testing.T) {
+		proc(t, (*Int).Div, func(z, x, y *big.Int) *big.Int {
+			if y.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return z.Div(x, y)
+		})
+	})
+	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
+		if y.Sign() == 0 {
+			return z.SetUint64(0)
+		}
+		return z.Mod(x, y)
+	})
+	})
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
 	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, SMod) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })

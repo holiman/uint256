@@ -1057,7 +1057,7 @@ func (z *Int) Hex() string {
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	res := Int{1, 0, 0, 0}
-	// b^0 == 1
+	// b^0 == 1 or 1^e == 1
 	if exponent.IsZero() || base.IsOne() {
 		return z.Copy(&res)
 	}
