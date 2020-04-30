@@ -935,16 +935,15 @@ sh192:
 	return z
 }
 
-// Srsh (Signed/Arithmetic right shift)
+// SRsh (Signed/Arithmetic right shift)
 // considers z to be a signed integer, during right-shift
 // and sets z = x >> n and returns z.
-func (z *Int) Srsh(x *Int, n uint) *Int {
-	// If the MSB is 0, Srsh is same as Rsh.
-	if !z.isBitSet(255) {
+func (z *Int) SRsh(x *Int, n uint) *Int {
+	// If the MSB is 0, SRsh is same as Rsh.
+	if !x.isBitSet(255) {
 		return z.Rsh(x, n)
 	}
-	// n % 64 == 0
-	if n&0x3f == 0 {
+	if n%64 == 0 {
 		switch n {
 		case 0:
 			return z.Copy(x)

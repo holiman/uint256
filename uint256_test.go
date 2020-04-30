@@ -420,7 +420,7 @@ func TestRandomRsh(t *testing.T) {
 func TestSrsh(t *testing.T) {
 	var n uint = 16
 	actual := new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected := new(Int).SetBytes(hex2Bytes("FFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -428,7 +428,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 64
 	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -436,7 +436,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 96
 	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -444,7 +444,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 256
 	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -452,7 +452,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 300
 	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -460,7 +460,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 16
 	actual = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -468,7 +468,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 64
 	actual = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
@@ -476,7 +476,7 @@ func TestSrsh(t *testing.T) {
 
 	n = 256
 	actual = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
+	actual.SRsh(actual, n)
 	expected = new(Int).SetBytes(nil)
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
