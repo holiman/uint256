@@ -314,13 +314,10 @@ func (z *Int) Squared() {
 	z.Copy(&res)
 }
 
-// isBitSet returns true if bit n is set, where n = 0 eq LSB
+// isBitSet returns true if bit n-th is set, where n = 0 is LSB.
+// The n must be <= 255.
 func (z *Int) isBitSet(n uint) bool {
-	if n > 255 {
-		return false
-	}
-	// z [ n / 64] & 1 << (n % 64)
-	return (z[n>>6] & (1 << (n & 0x3f))) != 0
+	return (z[n/64] & (1 << (n % 64))) != 0
 }
 
 // addTo computes x += y.
