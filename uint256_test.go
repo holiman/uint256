@@ -801,6 +801,48 @@ func TestTernOp(t *testing.T) {
 	t.Run("MulMod", func(t *testing.T) { proc(t, (*Int).MulMod, mulMod) })
 }
 
+func TestCmpOp(t *testing.T) {
+	proc := func(t *testing.T, op func(a, b *Int) bool, bigOp func(a, b *big.Int) bool) {
+		for i := 0; i < len(binTestCases); i++ {
+			b1, _ := new(big.Int).SetString(binTestCases[i][0], 0)
+			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
+			f1orig, _ := FromBig(b1)
+			f2orig, _ := FromBig(b2)
+			f1 := new(Int).Copy(f1orig)
+			f2 := new(Int).Copy(f2orig)
+
+			// Compare result with big.Int.
+			expected := bigOp(b1, b2)
+			result := op(f1, f2)
+			if result != expected {
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
+				t.Logf("exp : %t\n", expected)
+				t.Logf("got : %t\n\n", result)
+				t.Fail()
+			}
+
+			// Check if arguments are unmodified.
+			if !f1.Eq(f1orig) {
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
+				t.Errorf("first argument had been modified: %x\n", f1)
+			}
+			if !f2.Eq(f2orig) {
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
+				t.Errorf("second argument had been modified: %x\n", f2)
+			}
+		}
+	}
+
+	t.Run("Eq", func(t *testing.T) { proc(t, (*Int).Eq, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
+	t.Run("Lt", func(t *testing.T) { proc(t, (*Int).Lt, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
+	t.Run("Gt", func(t *testing.T) { proc(t, (*Int).Gt, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
+	t.Run("SLt", func(t *testing.T) { proc(t, (*Int).Slt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) < 0 }) })
+	t.Run("SGt", func(t *testing.T) { proc(t, (*Int).Sgt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) > 0 }) })
+	t.Run("CmpEq", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
+	t.Run("CmpLt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
+	t.Run("CmpGt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
+}
+
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
 func TestFixedExpReusedArgs(t *testing.T) {
 	f2 := Int{2, 0, 0, 0}
