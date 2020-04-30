@@ -1057,24 +1057,12 @@ func (z *Int) Hex() string {
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	res := Int{1, 0, 0, 0}
-	// b^0 == 1 or 1^e == 1
-	if exponent.IsZero() || base.IsOne() {
-		return z.Copy(&res)
-	}
-	// b^1 == b
-	if exponent.IsOne() {
-		return z.Copy(base)
-	}
-	var (
-		word       uint64
-		bits       int
-		multiplier = *base
-	)
-	expBitlen := exponent.BitLen()
+	multiplier := *base
+	expBitLen := exponent.BitLen()
 
-	word = exponent[0]
-	bits = 0
-	for ; bits < expBitlen && bits < 64; bits++ {
+	curBit := 0
+	word := exponent[0]
+	for ; curBit < expBitLen && curBit < 64; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1083,7 +1071,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	}
 
 	word = exponent[1]
-	for ; bits < expBitlen && bits < 128; bits++ {
+	for ; curBit < expBitLen && curBit < 128; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1092,7 +1080,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	}
 
 	word = exponent[2]
-	for ; bits < expBitlen && bits < 192; bits++ {
+	for ; curBit < expBitLen && curBit < 192; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1101,7 +1089,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	}
 
 	word = exponent[3]
-	for ; bits < expBitlen && bits < 256; bits++ {
+	for ; curBit < expBitLen && curBit < 256; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}

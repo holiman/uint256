@@ -724,12 +724,13 @@ func TestBinOp(t *testing.T) {
 			return z.Div(x, y)
 		})
 	})
-	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
-		if y.Sign() == 0 {
-			return z.SetUint64(0)
-		}
-		return z.Mod(x, y)
-	})
+	t.Run("Mod", func(t *testing.T) {
+		proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
+			if y.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return z.Mod(x, y)
+		})
 	})
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
 	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, SMod) })
