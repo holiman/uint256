@@ -660,8 +660,8 @@ func (z *Int) srsh192(x *Int) *Int {
 }
 
 // Not sets z = ^x and returns z.
-func (z *Int) Not() *Int {
-	z[3], z[2], z[1], z[0] = ^z[3], ^z[2], ^z[1], ^z[0]
+func (z *Int) Not(x *Int) *Int {
+	z[3], z[2], z[1], z[0] = ^x[3], ^x[2], ^x[1], ^x[0]
 	return z
 }
 
@@ -1125,7 +1125,7 @@ func (z *Int) SignExtend(back, num *Int) {
 	mask := back.Lsh(back.SetOne(), bit)
 	mask.Sub64(mask, 1)
 	if num.isBitSet(bit) {
-		num.Or(num, mask.Not())
+		num.Or(num, mask.Not(mask))
 	} else {
 		num.And(num, mask)
 	}
