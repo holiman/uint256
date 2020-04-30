@@ -93,6 +93,25 @@ func hex2Bytes(str string) []byte {
 	return h
 }
 
+// toSatUint converts x to saturated uint value.
+func toSatUint(x *Int) uint {
+	maxUint := ^uint(0)
+	z, overflow := x.Uint64WithOverflow()
+	if overflow || z > uint64(maxUint) {
+		return maxUint
+	}
+	return uint(z)
+}
+
+// bigToSatUint converts x to saturated uint value.
+func bigToShiftAmount(x *big.Int) uint {
+	max := uint(256) // 256 is enough to zero the result.
+	if x.Cmp(new(big.Int).SetUint64(uint64(max))) > 0 {
+		return max
+	}
+	return uint(x.Uint64())
+}
+
 func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	max := big.NewInt(0).SetBytes(hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
 	shouldOverflow := (b.Cmp(max) > 0)
@@ -739,6 +758,21 @@ func TestBinOp(t *testing.T) {
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
 	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
 	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
+
+	t.Run("Lsh", func(t *testing.T) {
+		proc(t, func(z, x, y *Int) *Int {
+			return z.Lsh(x, toSatUint(y))
+		}, func(z, x, y *big.Int) *big.Int {
+			return z.Lsh(x, bigToShiftAmount(y))
+		})
+	})
+	t.Run("Rsh", func(t *testing.T) {
+		proc(t, func(z, x, y *Int) *Int {
+			return z.Rsh(x, toSatUint(y))
+		}, func(z, x, y *big.Int) *big.Int {
+			return z.Rsh(x, bigToShiftAmount(y))
+		})
+	})
 }
 
 func TestTernOp(t *testing.T) {
