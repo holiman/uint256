@@ -1092,23 +1092,24 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	return z.Copy(&res)
 }
 
-//Extend length of two’s complement signed integer
+// ExtendSign extends length of two’s complement signed integer,
 // sets z to
-//  - num if back  > 31
-//  - num interpreted as a signed number with sign-bit at (back*8+7), extended to the full 256 bits
-func (z *Int) SignExtend(back, num *Int) {
-	if back.GtUint64(31) {
-		z.Copy(num)
-		return
+//  - x if byteNum > 31
+//  - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
+// and returns z.
+func (z *Int) ExtendSign(x, byteNum *Int) *Int{
+	if byteNum.GtUint64(31) {
+		return z.Copy(x)
 	}
-	bit := uint(back.Uint64()*8 + 7)
+	bit := uint(byteNum.Uint64()*8 + 7)
 
-	mask := back.Lsh(back.SetOne(), bit)
+	mask := new(Int).SetOne()
+	mask.Lsh(mask, bit)
 	mask.Sub64(mask, 1)
-	if num.isBitSet(bit) {
-		num.Or(num, mask.Not(mask))
+	if x.isBitSet(bit) {
+		z.Or(x, mask.Not(mask))
 	} else {
-		num.And(num, mask)
+		z.And(x, mask)
 	}
-
+	return z
 }
