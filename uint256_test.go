@@ -20,6 +20,15 @@ var (
 
 	_ fmt.Formatter = &Int{} // Test if Int supports Formatter interface.
 
+	unTestCases = []string{
+		"0",
+		"1",
+		"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5",
+		"0x8000000000000000000000000000000000000000000000000000000000000000",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	}
+
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
 	binTestCases = [][2]string{
@@ -600,6 +609,48 @@ func TestRandomExp(t *testing.T) {
 			t.Fatalf("Expected equality:\nbase= %v\nexp = %v\n[ ^ ]==\nf = %v\nbf= %v\nb = %x\n", basecopy.Hex(), expcopy.Hex(), f_res.Hex(), bf.Hex(), b_res)
 		}
 	}
+}
+
+func TestUnOp(t *testing.T) {
+	proc := func(t *testing.T, op func(a, b *Int) *Int, bigOp func(a, b *big.Int) *big.Int) {
+		for i := 0; i < len(unTestCases); i++ {
+			b1, _ := new(big.Int).SetString(unTestCases[i], 0)
+			f1orig, _ := FromBig(b1)
+			f1 := new(Int).Copy(f1orig)
+
+			// Compare result with big.Int.
+			expected, _ := FromBig(bigOp(new(big.Int), b1))
+			result := op(new(Int), f1)
+			if !result.Eq(expected) {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+
+			// Check if arguments are unmodified.
+			if !f1.Eq(f1orig) {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Errorf("first argument had been modified: %x\n", f1)
+			}
+
+			// Check if reusing args as result works correctly.
+			result = op(f1, f1)
+			if result != f1 {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
+			}
+			if !result.Eq(expected) {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+		}
+	}
+
+	t.Run("Not", func(t *testing.T) { proc(t, (*Int).Not, (*big.Int).Not) })
+	t.Run("Neg", func(t *testing.T) { proc(t, (*Int).Neg, (*big.Int).Neg) })
 }
 
 func TestBinOp(t *testing.T) {
