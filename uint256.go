@@ -538,11 +538,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 
 	// If the multiplication is within 256 bits use Mod().
 	if ph.IsZero() {
-		if z == m { //z is an alias for m; TODO: This should not be needed.
-			m = m.Clone()
-		}
-		z.Mod(&pl, m)
-		return z
+		return z.Mod(&pl, m)
 	}
 
 	var quot [8]uint64
