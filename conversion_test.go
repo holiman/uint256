@@ -154,3 +154,24 @@ func BenchmarkToBig(bench *testing.B) {
 	param4 := new(Int).Lsh(param3, 64)
 	bench.Run("4words", func(bench *testing.B) { benchmarkToBig(bench, param4) })
 }
+
+func TestFormat(t *testing.T) {
+	testCases := []string{
+		"0",
+		"1",
+		"ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100",
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		expected := testCases[i]
+		b, _ := new(big.Int).SetString(expected, 16)
+		f, o := FromBig(b)
+		if o {
+			t.Fatalf("too big test case %s", expected)
+		}
+		s := fmt.Sprintf("%x", f)
+		if s != expected {
+			t.Errorf("Invalid format conversion to hex: %s, expected %s", s, expected)
+		}
+	}
+}
