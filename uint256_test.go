@@ -112,17 +112,17 @@ func bigToShiftAmount(x *big.Int) uint {
 
 func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	max := big.NewInt(0).SetBytes(hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
-	shouldOverflow := (b.Cmp(max) > 0)
+	shouldOverflow := b.Cmp(max) > 0
 	if overflow != shouldOverflow {
-		return fmt.Errorf("Overflow should be %v, was %v\nf= %v\nb= %x\b", shouldOverflow, overflow, f.Hex(), b)
+		return fmt.Errorf("Overflow should be %v, was %v\nf= %x\nb= %x\b", shouldOverflow, overflow, f, b)
 	}
 	return nil
 }
 
 func checkUnderflow(b *big.Int, f *Int, underflow bool) error {
-	shouldUnderflow := (b.Cmp(big.NewInt(0)) < 0)
+	shouldUnderflow := b.Cmp(big.NewInt(0)) < 0
 	if underflow != shouldUnderflow {
-		return fmt.Errorf("Undeflow should be %v, was %v\nf= %v\nb= %x\b", shouldUnderflow, underflow, f.Hex(), b)
+		return fmt.Errorf("Undeflow should be %v, was %v\nf= %x\nb= %x\b", shouldUnderflow, underflow, f, b)
 	}
 	return nil
 }
@@ -159,7 +159,7 @@ func checkEq(b *big.Int, f *Int) bool {
 func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
 	expF, _ := FromBig(exp)
 	if !expF.Eq(got) {
-		t.Errorf("got %v expected %v: %v\n", got.Hex(), expF.Hex(), txt)
+		t.Errorf("got %x expected %x: %v\n", got, expF, txt)
 		return false
 	}
 	return true
@@ -181,7 +181,7 @@ func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a
 		//checkOverflow(b, f1, overflow)
 		if eq := checkEq(b1, f1); !eq {
 			bf, _ := FromBig(b1)
-			t.Fatalf("Expected equality:\nf1= %v\nf2= %v\n[ op ]==\nf = %v\nbf= %v\nb = %x\n", f1a.Hex(), f2a.Hex(), f1.Hex(), bf.Hex(), b1)
+			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f2a, f1, bf, b1)
 		}
 	}
 }
@@ -202,7 +202,7 @@ func TestRandomSubOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		if eq := checkEq(b, f1); !eq {
-			t.Fatalf("Expected equality:\nf1= %v\nf2= %v\n[ - ]==\nf= %v\nb= %x\n", f1a.Hex(), f2a.Hex(), f1.Hex(), b)
+			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f1, b)
 		}
 	}
 }
@@ -317,7 +317,7 @@ func TestRandomMulMod(t *testing.T) {
 		b1.Mod(big.NewInt(0).Mul(b2, b3), b4)
 
 		if !checkEq(b1, f1) {
-			t.Fatalf("Expected equality:\nf2= %v\nf3= %v\nf4= %v\n[ op ]==\nf = %v\nb = %x\n", f2.Hex(), f3.Hex(), f4.Hex(), f1.Hex(), b1)
+			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
 		}
 	}
 }
@@ -343,7 +343,7 @@ func TestRandomAbs(t *testing.T) {
 
 		if eq := checkEq(b2, f1a); !eq {
 			bf, _ := FromBig(b2)
-			t.Fatalf("Expected equality:\nf1= %v\n[ abs ]==\nf = %v\nbf= %v\nb = %x\n", f1.Hex(), f1a.Hex(), bf.Hex(), b2)
+			t.Fatalf("Expected equality:\nf1= %x\n[ abs ]==\nf = %x\nbf= %x\nb = %x\n", f1, f1a, bf, b2)
 		}
 	}
 }
@@ -374,8 +374,8 @@ func TestRandomSDiv(t *testing.T) {
 		}
 		if eq := checkEq(b, f1); !eq {
 			bf, _ := FromBig(b)
-			t.Fatalf("Expected equality:\nf1  = %v\nf2  = %v\n\n\nabs1= %v\nabs2= %v\n[sdiv]==\nf   = %v\nbf  = %v\nb   = %x\n",
-				f1a.Hex(), f2a.Hex(), f1aAbs.Hex(), f2aAbs.Hex(), f1.Hex(), bf.Hex(), b)
+			t.Fatalf("Expected equality:\nf1  = %x\nf2  = %x\n\n\nabs1= %x\nabs2= %x\n[sdiv]==\nf   = %x\nbf  = %x\nb   = %x\n",
+				f1a, f2a, f1aAbs, f2aAbs, f1, bf, b)
 		}
 	}
 }
@@ -393,7 +393,7 @@ func TestRandomLsh(t *testing.T) {
 		b.Lsh(b, n)
 		if eq := checkEq(b, f1); !eq {
 			bf, _ := FromBig(b)
-			t.Fatalf("Expected equality:\nf1= %v\n n= %v\n[ << ]==\nf = %v\nbf= %v\nb = %x\n", f1a.Hex(), n, f1.Hex(), bf.Hex(), b)
+			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf = %x\nbf= %x\nb = %x\n", f1a, n, f1, bf, b)
 		}
 	}
 }
@@ -410,7 +410,7 @@ func TestRandomRsh(t *testing.T) {
 		f1.Rsh(f1, n)
 		b.Rsh(b, n)
 		if eq := checkEq(b, f1); !eq {
-			t.Fatalf("Expected equality:\nf1= %v\n n= %v\n[ << ]==\nf= %v\nb= %x\n", f1a.Hex(), n, f1.Hex(), b)
+			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf= %x\nb= %x\n", f1a, n, f1, b)
 		}
 	}
 }
@@ -463,28 +463,28 @@ func TestByte(t *testing.T) {
 	actual := z.Byte(NewInt().SetUint64(0))
 	expected := new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ab"))
 	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
 	actual = z.Byte(NewInt().SetUint64(31))
 	expected = new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ef"))
 	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
 	actual = z.Byte(NewInt().SetUint64(32))
 	expected = new(Int).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"))
 	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF0908070605040302011111111111111111111111111111111111111111"))
 	actual = z.Byte(new(Int).SetBytes(hex2Bytes("f000000000000000000000000000000000000000000000000000000000000001")))
 	expected = new(Int).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"))
 	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 }
@@ -604,7 +604,7 @@ func TestRandomExp(t *testing.T) {
 		b_res := Exp(new(big.Int), b_base, b_exp)
 		if eq := checkEq(b_res, f_res); !eq {
 			bf, _ := FromBig(b_res)
-			t.Fatalf("Expected equality:\nbase= %v\nexp = %v\n[ ^ ]==\nf = %v\nbf= %v\nb = %x\n", basecopy.Hex(), expcopy.Hex(), f_res.Hex(), bf.Hex(), b_res)
+			t.Fatalf("Expected equality:\nbase= %x\nexp = %x\n[ ^ ]==\nf = %x\nbf= %x\nb = %x\n", basecopy, expcopy, f_res, bf, b_res)
 		}
 	}
 }

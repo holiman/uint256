@@ -9,7 +9,6 @@ package uint256
 
 import (
 	"encoding/binary"
-	"fmt"
 	"math"
 	"math/bits"
 )
@@ -1046,11 +1045,6 @@ func (z *Int) Byte(n *Int) *Int {
 		}
 	}
 	return z.Clear()
-}
-
-// Hex returns a hex representation of z
-func (z *Int) Hex() string {
-	return fmt.Sprintf("%016x.%016x.%016x.%016x", z[3], z[2], z[1], z[0])
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
