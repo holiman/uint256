@@ -314,13 +314,10 @@ func (z *Int) Squared() {
 	z.Copy(&res)
 }
 
-// isBitSet returns true if bit n is set, where n = 0 eq LSB
+// isBitSet returns true if bit n-th is set, where n = 0 is LSB.
+// The n must be <= 255.
 func (z *Int) isBitSet(n uint) bool {
-	if n > 255 {
-		return false
-	}
-	// z [ n / 64] & 1 << (n % 64)
-	return (z[n>>6] & (1 << (n & 0x3f))) != 0
+	return (z[n/64] & (1 << (n % 64))) != 0
 }
 
 // addTo computes x += y.
@@ -541,11 +538,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 
 	// If the multiplication is within 256 bits use Mod().
 	if ph.IsZero() {
-		if z == m { //z is an alias for m; TODO: This should not be needed.
-			m = m.Clone()
-		}
-		z.Mod(&pl, m)
-		return z
+		return z.Mod(&pl, m)
 	}
 
 	var quot [8]uint64
@@ -667,8 +660,8 @@ func (z *Int) srsh192(x *Int) *Int {
 }
 
 // Not sets z = ^x and returns z.
-func (z *Int) Not() *Int {
-	z[3], z[2], z[1], z[0] = ^z[3], ^z[2], ^z[1], ^z[0]
+func (z *Int) Not(x *Int) *Int {
+	z[3], z[2], z[1], z[0] = ^x[3], ^x[2], ^x[1], ^x[0]
 	return z
 }
 
@@ -942,16 +935,15 @@ sh192:
 	return z
 }
 
-// Srsh (Signed/Arithmetic right shift)
+// SRsh (Signed/Arithmetic right shift)
 // considers z to be a signed integer, during right-shift
 // and sets z = x >> n and returns z.
-func (z *Int) Srsh(x *Int, n uint) *Int {
-	// If the MSB is 0, Srsh is same as Rsh.
-	if !z.isBitSet(255) {
+func (z *Int) SRsh(x *Int, n uint) *Int {
+	// If the MSB is 0, SRsh is same as Rsh.
+	if !x.isBitSet(255) {
 		return z.Rsh(x, n)
 	}
-	// n % 64 == 0
-	if n&0x3f == 0 {
+	if n%64 == 0 {
 		switch n {
 		case 0:
 			return z.Copy(x)
@@ -1064,24 +1056,12 @@ func (z *Int) Hex() string {
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	res := Int{1, 0, 0, 0}
-	// b^0 == 1
-	if exponent.IsZero() || base.IsOne() {
-		return z.Copy(&res)
-	}
-	// b^1 == b
-	if exponent.IsOne() {
-		return z.Copy(base)
-	}
-	var (
-		word       uint64
-		bits       int
-		multiplier = *base
-	)
-	expBitlen := exponent.BitLen()
+	multiplier := *base
+	expBitLen := exponent.BitLen()
 
-	word = exponent[0]
-	bits = 0
-	for ; bits < expBitlen && bits < 64; bits++ {
+	curBit := 0
+	word := exponent[0]
+	for ; curBit < expBitLen && curBit < 64; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1090,7 +1070,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	}
 
 	word = exponent[1]
-	for ; bits < expBitlen && bits < 128; bits++ {
+	for ; curBit < expBitLen && curBit < 128; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1099,7 +1079,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	}
 
 	word = exponent[2]
-	for ; bits < expBitlen && bits < 192; bits++ {
+	for ; curBit < expBitLen && curBit < 192; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1108,7 +1088,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	}
 
 	word = exponent[3]
-	for ; bits < expBitlen && bits < 256; bits++ {
+	for ; curBit < expBitLen && curBit < 256; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
@@ -1132,7 +1112,7 @@ func (z *Int) SignExtend(back, num *Int) {
 	mask := back.Lsh(back.SetOne(), bit)
 	mask.Sub64(mask, 1)
 	if num.isBitSet(bit) {
-		num.Or(num, mask.Not())
+		num.Or(num, mask.Not(mask))
 	} else {
 		num.And(num, mask)
 	}

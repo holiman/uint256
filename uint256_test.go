@@ -20,9 +20,22 @@ var (
 
 	_ fmt.Formatter = &Int{} // Test if Int supports Formatter interface.
 
+	unTestCases = []string{
+		"0",
+		"1",
+		"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5",
+		"0x8000000000000000000000000000000000000000000000000000000000000000",
+		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	}
+
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
 	binTestCases = [][2]string{
+		{"0", "0"},
+		{"1", "0"},
+		{"1", "0x767676767676767676000000767676767676"},
+		{"2", "0"},
 		{"2", "1"},
 		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0x00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
 		{"0x10000000000000000", "2"},
@@ -56,6 +69,10 @@ var (
 		{"0x7effffff8000000000000000000000000000000000000000d900000000000001", "0x7effffff8000000000000000000000000000000000008001"},
 		{"0x0000000000000006400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x00000000000000210000000000000022"},
 		{"0x00000000000000000000000000000000000000000000006d5adef08547abf7eb", "0x000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"},
+		{"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
 	}
 
 	// A collection of interesting input values for ternary operators (addmod, mulmod).
@@ -66,12 +83,33 @@ var (
 		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
 		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "2"},
 		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "1"},
+		{"0xffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000002"},
+		{"0xffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"},
 	}
 )
 
 func hex2Bytes(str string) []byte {
 	h, _ := hex.DecodeString(str)
 	return h
+}
+
+// toSatUint converts x to saturated uint value.
+func toSatUint(x *Int) uint {
+	maxUint := ^uint(0)
+	z, overflow := x.Uint64WithOverflow()
+	if overflow || z > uint64(maxUint) {
+		return maxUint
+	}
+	return uint(z)
+}
+
+// bigToSatUint converts x to saturated uint value.
+func bigToShiftAmount(x *big.Int) uint {
+	max := uint(256) // 256 is enough to zero the result.
+	if x.Cmp(new(big.Int).SetUint64(uint64(max))) > 0 {
+		return max
+	}
+	return uint(x.Uint64())
 }
 
 func checkOverflow(b *big.Int, f *Int, overflow bool) error {
@@ -379,69 +417,46 @@ func TestRandomRsh(t *testing.T) {
 	}
 }
 
-func TestSrsh(t *testing.T) {
-	var n uint = 16
-	actual := new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected := new(Int).SetBytes(hex2Bytes("FFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+func TestSRsh(t *testing.T) {
+	type testCase struct {
+		arg      string
+		n        uint
+		expected string
+	}
+	testCases := []testCase{
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 0, "FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16, "FFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 64, "FFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 96, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 127, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDDDDBBBB99997777555533331110"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 128, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA99998888"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 129, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7776EEEE6665DDDD5554CCCC444"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 192, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCC"},
+		{"8000000000000000000000000000000000000000000000000000000000000000", 254, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE"},
+		{"8000000000000000000000000000000000000000000000000000000000000000", 255, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"},
+		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 300, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"},
+		{"7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16, "7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"},
+		{"7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256, ""},
 	}
 
-	n = 64
-	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
-	}
+	for i := 0; i < len(testCases); i++ {
+		tc := &testCases[i]
+		arg := new(Int).SetBytes(hex2Bytes(tc.arg))
+		argCopy := new(Int).Copy(arg)
+		expected := new(Int).SetBytes(hex2Bytes(tc.expected))
+		result := new(Int).SRsh(arg, tc.n)
 
-	n = 96
-	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
-	}
+		if !result.Eq(expected) {
+			t.Logf("args: %s, %d\n", tc.arg, tc.n)
+			t.Logf("exp : %x\n", expected)
+			t.Logf("got : %x\n\n", result)
+			t.Fail()
+		}
 
-	n = 256
-	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
-	}
-
-	n = 300
-	actual = new(Int).SetBytes(hex2Bytes("FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(hex2Bytes("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
-	}
-
-	n = 16
-	actual = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
-	}
-
-	n = 64
-	actual = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
-	}
-
-	n = 256
-	actual = new(Int).SetBytes(hex2Bytes("7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"))
-	actual.Srsh(actual, n)
-	expected = new(Int).SetBytes(nil)
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %v, got %v", expected.Hex(), actual.Hex())
+		if !arg.Eq(argCopy) {
+			t.Errorf("Argument has been modified\n")
+		}
 	}
 }
 
@@ -596,6 +611,48 @@ func TestRandomExp(t *testing.T) {
 	}
 }
 
+func TestUnOp(t *testing.T) {
+	proc := func(t *testing.T, op func(a, b *Int) *Int, bigOp func(a, b *big.Int) *big.Int) {
+		for i := 0; i < len(unTestCases); i++ {
+			b1, _ := new(big.Int).SetString(unTestCases[i], 0)
+			f1orig, _ := FromBig(b1)
+			f1 := new(Int).Copy(f1orig)
+
+			// Compare result with big.Int.
+			expected, _ := FromBig(bigOp(new(big.Int), b1))
+			result := op(new(Int), f1)
+			if !result.Eq(expected) {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+
+			// Check if arguments are unmodified.
+			if !f1.Eq(f1orig) {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Errorf("first argument had been modified: %x\n", f1)
+			}
+
+			// Check if reusing args as result works correctly.
+			result = op(f1, f1)
+			if result != f1 {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
+			}
+			if !result.Eq(expected) {
+				t.Logf("arg : %s\n", unTestCases[i])
+				t.Logf("exp : %x\n", expected)
+				t.Logf("got : %x\n\n", result)
+				t.Fail()
+			}
+		}
+	}
+
+	t.Run("Not", func(t *testing.T) { proc(t, (*Int).Not, (*big.Int).Not) })
+	t.Run("Neg", func(t *testing.T) { proc(t, (*Int).Neg, (*big.Int).Neg) })
+}
+
 func TestBinOp(t *testing.T) {
 	proc := func(t *testing.T, op func(a, b, c *Int) *Int, bigOp func(a, b, c *big.Int) *big.Int) {
 		for i := 0; i < len(binTestCases); i++ {
@@ -655,8 +712,22 @@ func TestBinOp(t *testing.T) {
 	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
 	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
-	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, (*big.Int).Div) })
-	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, (*big.Int).Mod) })
+	t.Run("Div", func(t *testing.T) {
+		proc(t, (*Int).Div, func(z, x, y *big.Int) *big.Int {
+			if y.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return z.Div(x, y)
+		})
+	})
+	t.Run("Mod", func(t *testing.T) {
+		proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
+			if y.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return z.Mod(x, y)
+		})
+	})
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
 	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, SMod) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
@@ -664,6 +735,21 @@ func TestBinOp(t *testing.T) {
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
 	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
 	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
+
+	t.Run("Lsh", func(t *testing.T) {
+		proc(t, func(z, x, y *Int) *Int {
+			return z.Lsh(x, toSatUint(y))
+		}, func(z, x, y *big.Int) *big.Int {
+			return z.Lsh(x, bigToShiftAmount(y))
+		})
+	})
+	t.Run("Rsh", func(t *testing.T) {
+		proc(t, func(z, x, y *Int) *Int {
+			return z.Rsh(x, toSatUint(y))
+		}, func(z, x, y *big.Int) *big.Int {
+			return z.Rsh(x, bigToShiftAmount(y))
+		})
+	})
 }
 
 func TestTernOp(t *testing.T) {
@@ -742,6 +828,48 @@ func TestTernOp(t *testing.T) {
 
 	t.Run("AddMod", func(t *testing.T) { proc(t, (*Int).AddMod, addMod) })
 	t.Run("MulMod", func(t *testing.T) { proc(t, (*Int).MulMod, mulMod) })
+}
+
+func TestCmpOp(t *testing.T) {
+	proc := func(t *testing.T, op func(a, b *Int) bool, bigOp func(a, b *big.Int) bool) {
+		for i := 0; i < len(binTestCases); i++ {
+			b1, _ := new(big.Int).SetString(binTestCases[i][0], 0)
+			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
+			f1orig, _ := FromBig(b1)
+			f2orig, _ := FromBig(b2)
+			f1 := new(Int).Copy(f1orig)
+			f2 := new(Int).Copy(f2orig)
+
+			// Compare result with big.Int.
+			expected := bigOp(b1, b2)
+			result := op(f1, f2)
+			if result != expected {
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
+				t.Logf("exp : %t\n", expected)
+				t.Logf("got : %t\n\n", result)
+				t.Fail()
+			}
+
+			// Check if arguments are unmodified.
+			if !f1.Eq(f1orig) {
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
+				t.Errorf("first argument had been modified: %x\n", f1)
+			}
+			if !f2.Eq(f2orig) {
+				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
+				t.Errorf("second argument had been modified: %x\n", f2)
+			}
+		}
+	}
+
+	t.Run("Eq", func(t *testing.T) { proc(t, (*Int).Eq, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
+	t.Run("Lt", func(t *testing.T) { proc(t, (*Int).Lt, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
+	t.Run("Gt", func(t *testing.T) { proc(t, (*Int).Gt, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
+	t.Run("SLt", func(t *testing.T) { proc(t, (*Int).Slt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) < 0 }) })
+	t.Run("SGt", func(t *testing.T) { proc(t, (*Int).Sgt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) > 0 }) })
+	t.Run("CmpEq", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
+	t.Run("CmpLt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
+	t.Run("CmpGt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
