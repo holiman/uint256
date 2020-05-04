@@ -7,8 +7,13 @@ package uint256
 
 import (
 	"bytes"
+	"fmt"
 	"math/big"
 	"testing"
+)
+
+var (
+	_ fmt.Formatter = &Int{} // Test if Int supports Formatter interface.
 )
 
 func TestFromBig(t *testing.T) {

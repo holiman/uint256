@@ -18,8 +18,6 @@ var (
 	bigtt256 = new(big.Int).Lsh(big.NewInt(1), 256)
 	bigtt255 = new(big.Int).Lsh(big.NewInt(1), 255)
 
-	_ fmt.Formatter = &Int{} // Test if Int supports Formatter interface.
-
 	unTestCases = []string{
 		"0",
 		"1",

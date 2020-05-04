@@ -1118,7 +1118,3 @@ func (z *Int) SignExtend(back, num *Int) {
 	}
 
 }
-
-func (z *Int) Format(s fmt.State, ch rune) {
-	z.ToBig().Format(s, ch)
-}
