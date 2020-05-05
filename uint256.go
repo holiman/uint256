@@ -13,21 +13,6 @@ import (
 	"math/bits"
 )
 
-var (
-	SignedMax = &Int{
-		0xffffffffffffffff,
-		0xffffffffffffffff,
-		0xffffffffffffffff,
-		0x7fffffffffffffff,
-	}
-	SignedMin = &Int{
-		0x0000000000000000,
-		0x0000000000000000,
-		0x0000000000000000,
-		0x8000000000000000,
-	}
-)
-
 // Int is represented as an array of 4 uint64, in little-endian order,
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
