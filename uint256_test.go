@@ -441,7 +441,7 @@ func TestSRsh(t *testing.T) {
 	for i := 0; i < len(testCases); i++ {
 		tc := &testCases[i]
 		arg := new(Int).SetBytes(hex2Bytes(tc.arg))
-		argCopy := new(Int).Copy(arg)
+		argCopy := new(Int).Set(arg)
 		expected := new(Int).SetBytes(hex2Bytes(tc.expected))
 		result := new(Int).SRsh(arg, tc.n)
 
@@ -512,9 +512,9 @@ func TestSignExtend(t *testing.T) {
 	for i := 0; i < len(testCases); i++ {
 		tc := &testCases[i]
 		arg := new(Int).SetBytes(hex2Bytes(tc.arg))
-		argCopy := new(Int).Copy(arg)
+		argCopy := new(Int).Set(arg)
 		n := new(Int).SetUint64(tc.n)
-		nCopy := new(Int).Copy(n)
+		nCopy := new(Int).Set(n)
 		expected := new(Int).SetBytes(hex2Bytes(tc.expected))
 		result := new(Int).ExtendSign(arg, n)
 
@@ -661,7 +661,7 @@ func TestUnOp(t *testing.T) {
 		for i := 0; i < len(unTestCases); i++ {
 			b1, _ := new(big.Int).SetString(unTestCases[i], 0)
 			f1orig, _ := FromBig(b1)
-			f1 := new(Int).Copy(f1orig)
+			f1 := new(Int).Set(f1orig)
 
 			// Compare result with big.Int.
 			expected, _ := FromBig(bigOp(new(big.Int), b1))
@@ -705,8 +705,8 @@ func TestBinOp(t *testing.T) {
 			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
 			f1orig, _ := FromBig(b1)
 			f2orig, _ := FromBig(b2)
-			f1 := new(Int).Copy(f1orig)
-			f2 := new(Int).Copy(f2orig)
+			f1 := new(Int).Set(f1orig)
+			f2 := new(Int).Set(f2orig)
 
 			// Compare result with big.Int.
 			expected, _ := FromBig(bigOp(new(big.Int), b1, b2))
@@ -806,9 +806,9 @@ func TestTernOp(t *testing.T) {
 			f1orig, _ := FromBig(b1)
 			f2orig, _ := FromBig(b2)
 			f3orig, _ := FromBig(b3)
-			f1 := new(Int).Copy(f1orig)
-			f2 := new(Int).Copy(f2orig)
-			f3 := new(Int).Copy(f3orig)
+			f1 := new(Int).Set(f1orig)
+			f2 := new(Int).Set(f2orig)
+			f3 := new(Int).Set(f3orig)
 
 			// Compare result with big.Int.
 			expected, _ := FromBig(bigOp(new(big.Int), b1, b2, b3))
@@ -882,8 +882,8 @@ func TestCmpOp(t *testing.T) {
 			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
 			f1orig, _ := FromBig(b1)
 			f2orig, _ := FromBig(b2)
-			f1 := new(Int).Copy(f1orig)
-			f2 := new(Int).Copy(f2orig)
+			f1 := new(Int).Set(f1orig)
+			f2 := new(Int).Set(f2orig)
 
 			// Compare result with big.Int.
 			expected := bigOp(b1, b2)
