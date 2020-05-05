@@ -945,6 +945,21 @@ func TestCmpOp(t *testing.T) {
 	t.Run("CmpEq", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
 	t.Run("CmpLt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
 	t.Run("CmpGt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
+
+	t.Run("LtUint64", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool {
+			return a.LtUint64(b.Uint64())
+		}, func(a, b *big.Int) bool {
+			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) < 0
+		})
+	})
+	t.Run("GtUint64", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool {
+			return a.GtUint64(b.Uint64())
+		}, func(a, b *big.Int) bool {
+			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) > 0
+		})
+	})
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
