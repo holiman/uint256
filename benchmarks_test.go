@@ -519,6 +519,18 @@ func BenchmarkDiv(b *testing.B) {
 			}
 		}
 	}
+	benchmarkDivUint256NoPanic := func(b *testing.B, xSamples, modSamples *[numSamples]Int) {
+		var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				if modSamples[i].IsZero() {
+					sink.Clear()
+				} else {
+					sink.Div(&xSamples[i], &modSamples[i])
+				}
+			}
+		}
+	}
 	benchmarkDivBig := func(b *testing.B, xSamples, modSamples *[numSamples]big.Int) {
 		var sink big.Int
 		for j := 0; j < b.N; j += numSamples {
@@ -529,14 +541,19 @@ func BenchmarkDiv(b *testing.B) {
 	}
 
 	b.Run("small/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small-nopanic/uint256", func(b *testing.B) { benchmarkDivUint256NoPanic(b, &int32Samples, &int32SamplesLt) })
 	b.Run("small/big", func(b *testing.B) { benchmarkDivBig(b, &big32Samples, &big32SamplesLt) })
 	b.Run("mod64/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64-nopanic/uint256", func(b *testing.B) { benchmarkDivUint256NoPanic(b, &int256Samples, &int64Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big64Samples) })
 	b.Run("mod128/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128-nopanic/uint256", func(b *testing.B) { benchmarkDivUint256NoPanic(b, &int256Samples, &int128Samples) })
 	b.Run("mod128/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big128Samples) })
 	b.Run("mod192/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192-nopanic/uint256", func(b *testing.B) { benchmarkDivUint256NoPanic(b, &int256Samples, &int192Samples) })
 	b.Run("mod192/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big192Samples) })
 	b.Run("mod256/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256-nopanic/uint256", func(b *testing.B) { benchmarkDivUint256NoPanic(b, &int256Samples, &int256SamplesLt) })
 	b.Run("mod256/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big256SamplesLt) })
 }
 
@@ -546,6 +563,18 @@ func BenchmarkMod(b *testing.B) {
 		for j := 0; j < b.N; j += numSamples {
 			for i := 0; i < numSamples; i++ {
 				sink.Mod(&xSamples[i], &modSamples[i])
+			}
+		}
+	}
+	benchmarkModUint256NoPanic := func(b *testing.B, xSamples, modSamples *[numSamples]Int) {
+		var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				if modSamples[i].IsZero() {
+					sink.Clear()
+				} else {
+					sink.Mod(&xSamples[i], &modSamples[i])
+				}
 			}
 		}
 	}
@@ -559,14 +588,19 @@ func BenchmarkMod(b *testing.B) {
 	}
 
 	b.Run("small/uint256", func(b *testing.B) { benchmarkModUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("small-nopanic/uint256", func(b *testing.B) { benchmarkModUint256NoPanic(b, &int32Samples, &int32SamplesLt) })
 	b.Run("small/big", func(b *testing.B) { benchmarkModBig(b, &big32Samples, &big32SamplesLt) })
 	b.Run("mod64/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod64-nopanic/uint256", func(b *testing.B) { benchmarkModUint256NoPanic(b, &int256Samples, &int64Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big64Samples) })
 	b.Run("mod128/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod128-nopanic/uint256", func(b *testing.B) { benchmarkModUint256NoPanic(b, &int256Samples, &int128Samples) })
 	b.Run("mod128/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big128Samples) })
 	b.Run("mod192/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod192-nopanic/uint256", func(b *testing.B) { benchmarkModUint256NoPanic(b, &int256Samples, &int192Samples) })
 	b.Run("mod192/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big192Samples) })
 	b.Run("mod256/uint256", func(b *testing.B) { benchmarkModUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("mod256-nopanic/uint256", func(b *testing.B) { benchmarkModUint256NoPanic(b, &int256Samples, &int256SamplesLt) })
 	b.Run("mod256/big", func(b *testing.B) { benchmarkModBig(b, &big256Samples, &big256SamplesLt) })
 }
 
