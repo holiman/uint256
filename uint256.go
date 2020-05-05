@@ -430,10 +430,13 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 	return rem
 }
 
-// Div sets z to the quotient x/y for returns z.
-// If d == 0, z is set to 0
+// Div sets z to the quotient x/y for y != 0 and returns z.
+// If y == 0, a division-by-zero run-time panic occurs.
 func (z *Int) Div(x, y *Int) *Int {
-	if y.IsZero() || y.Gt(x) {
+	if y.IsZero() {
+		panic("division by zero")
+	}
+	if y.Gt(x) {
 		return z.Clear()
 	}
 	if x.Eq(y) {
@@ -453,9 +456,12 @@ func (z *Int) Div(x, y *Int) *Int {
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
-// If y == 0, z is set to 0 (OBS: differs from the big.Int)
+// If y == 0, a division-by-zero run-time panic occurs.
 func (z *Int) Mod(x, y *Int) *Int {
-	if x.IsZero() || y.IsZero() {
+	if y.IsZero() {
+		panic("division by zero")
+	}
+	if x.IsZero() {
 		return z.Clear()
 	}
 	switch x.Cmp(y) {

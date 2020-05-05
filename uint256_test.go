@@ -251,7 +251,11 @@ func TestRandomSquare(t *testing.T) {
 func TestRandomDiv(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.Div(f2, f3)
+			if f3.IsZero() {
+				f1.Clear()
+			} else {
+				f1.Div(f2, f3)
+			}
 		},
 		func(b1, b2, b3 *big.Int) {
 			if b3.Sign() == 0 {
@@ -266,7 +270,11 @@ func TestRandomDiv(t *testing.T) {
 func TestRandomMod(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.Mod(f2, f3)
+			if f3.IsZero() {
+				f1.Clear()
+			} else {
+				f1.Mod(f2, f3)
+			}
 		},
 		func(b1, b2, b3 *big.Int) {
 			if b3.Sign() == 0 {
@@ -280,7 +288,11 @@ func TestRandomMod(t *testing.T) {
 func TestRandomSMod(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.SMod(f2, f3)
+			if f3.IsZero() {
+				f1.Clear()
+			} else {
+				f1.SMod(f2, f3)
+			}
 		},
 		func(b1, b2, b3 *big.Int) {
 			SMod(b1, b2, b3)
@@ -787,8 +799,14 @@ func TestBinOp(t *testing.T) {
 	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
 	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
+
 	t.Run("Div", func(t *testing.T) {
-		proc(t, (*Int).Div, func(z, x, y *big.Int) *big.Int {
+		proc(t, func(z, x, y *Int) *Int {
+			if y.IsZero() {
+				return z.Clear()
+			}
+			return z.Div(x, y)
+		}, func(z, x, y *big.Int) *big.Int {
 			if y.Sign() == 0 {
 				return z.SetUint64(0)
 			}
@@ -796,15 +814,31 @@ func TestBinOp(t *testing.T) {
 		})
 	})
 	t.Run("Mod", func(t *testing.T) {
-		proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
+		proc(t, func(z, x, y *Int) *Int {
+			if y.IsZero() {
+				return z.Clear()
+			}
+			return z.Mod(x, y)
+		}, func(z, x, y *big.Int) *big.Int {
 			if y.Sign() == 0 {
 				return z.SetUint64(0)
 			}
 			return z.Mod(x, y)
 		})
 	})
-	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
-	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, SMod) })
+	t.Run("SDiv", func(t *testing.T) { proc(t, func(z, x, y *Int) *Int {
+		if y.IsZero() {
+			return z.Clear()
+		}
+		return z.SDiv(x, y)
+	}, SDiv) })
+	t.Run("SMod", func(t *testing.T) { proc(t, func(z, x, y *Int) *Int {
+		if y.IsZero() {
+			return z.Clear()
+		}
+		return z.SMod(x, y)
+	}, SMod) })
+
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
@@ -960,6 +994,26 @@ func TestCmpOp(t *testing.T) {
 			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) > 0
 		})
 	})
+}
+
+func assertPanic(t *testing.T, f func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("The code did not panic")
+		}
+	}()
+	f()
+}
+
+func TestDivisionByZero(t *testing.T) {
+	t.Run("Div(0,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).Div(new(Int), new(Int)) }) })
+	t.Run("Div(1,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).Div(new(Int).SetUint64(1), new(Int)) }) })
+	t.Run("Mod(0,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).Mod(new(Int), new(Int)) }) })
+	t.Run("Mod(1,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).Mod(new(Int).SetUint64(1), new(Int)) }) })
+	t.Run("SDiv(0,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).SDiv(new(Int), new(Int)) }) })
+	t.Run("SDiv(1,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).SDiv(new(Int).SetUint64(1), new(Int)) }) })
+	t.Run("SMod(0,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).SMod(new(Int), new(Int)) }) })
+	t.Run("SMod(1,0)", func(t *testing.T) { assertPanic(t, func() { new(Int).SMod(new(Int).SetUint64(1), new(Int)) }) })
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
