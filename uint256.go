@@ -134,11 +134,6 @@ func (z *Int) Uint64WithOverflow() (uint64, bool) {
 	return z[0], z[1] != 0 || z[2] != 0 || z[3] != 0
 }
 
-// Uint64 returns the lower 63-bits of z as int64
-func (z *Int) Int64() int64 {
-	return int64(z[0] & 0x7fffffffffffffff)
-}
-
 // Clone create a new Int identical to z
 func (z *Int) Clone() *Int {
 	return &Int{z[0], z[1], z[2], z[3]}
@@ -292,7 +287,7 @@ func (z *Int) Mul(x, y *Int) *Int {
 	return z.Set(&res)
 }
 
-func (z *Int) Squared() {
+func (z *Int) squared() {
 	var (
 		res                    Int
 		carry0, carry1, carry2 uint64
@@ -702,15 +697,6 @@ func (z *Int) Sgt(x *Int) bool {
 	}
 }
 
-// SetIfGt sets z to 1 if z > x
-func (z *Int) SetIfGt(x *Int) {
-	if z.Gt(x) {
-		z.SetOne()
-	} else {
-		z.Clear()
-	}
-}
-
 // Lt returns true if z < x
 func (z *Int) Lt(x *Int) bool {
 	// z < x <=> z - x < 0 i.e. when subtraction overflows.
@@ -719,15 +705,6 @@ func (z *Int) Lt(x *Int) bool {
 	_, carry = bits.Sub64(z[2], x[2], carry)
 	_, carry = bits.Sub64(z[3], x[3], carry)
 	return carry != 0
-}
-
-// SetIfLt sets z to 1 if z < x
-func (z *Int) SetIfLt(x *Int) {
-	if z.Lt(x) {
-		z.SetOne()
-	} else {
-		z.Clear()
-	}
 }
 
 // SetUint64 sets z to the value x
@@ -739,17 +716,6 @@ func (z *Int) SetUint64(x uint64) *Int {
 // Eq returns true if z == x
 func (z *Int) Eq(x *Int) bool {
 	return (z[0] == x[0]) && (z[1] == x[1]) && (z[2] == x[2]) && (z[3] == x[3])
-}
-
-// SetIfEq sets x to
-// 1 if z == x
-// 0 if Z != x
-func (z *Int) SetIfEq(x *Int) {
-	if z.Eq(x) {
-		z.SetOne()
-	} else {
-		z.Clear()
-	}
 }
 
 // Cmp compares z and x and returns:
@@ -783,19 +749,9 @@ func (z *Int) IsUint64() bool {
 	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0)
 }
 
-// IsUint128 reports whether z can be represented in 128 bits.
-func (z *Int) IsUint128() bool {
-	return (z[3] == 0) && (z[2] == 0)
-}
-
 // IsZero returns true if z == 0
 func (z *Int) IsZero() bool {
 	return (z[0] | z[1] | z[2] | z[3]) == 0
-}
-
-// IsOne returns true if z == 1
-func (z *Int) IsOne() bool {
-	return (z[0] == 1) && (z[1]|z[2]|z[3]) == 0
 }
 
 // Clear sets z to 0
@@ -1059,7 +1015,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 
@@ -1068,7 +1024,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 
@@ -1077,7 +1033,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 
@@ -1086,7 +1042,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 	return z.Set(&res)
@@ -1097,7 +1053,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 //  - x if byteNum > 31
 //  - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
 // and returns z.
-func (z *Int) ExtendSign(x, byteNum *Int) *Int{
+func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 	if byteNum.GtUint64(31) {
 		return z.Set(x)
 	}
