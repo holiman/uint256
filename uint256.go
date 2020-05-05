@@ -697,15 +697,6 @@ func (z *Int) Sgt(x *Int) bool {
 	}
 }
 
-// SetIfGt sets z to 1 if z > x
-func (z *Int) SetIfGt(x *Int) {
-	if z.Gt(x) {
-		z.SetOne()
-	} else {
-		z.Clear()
-	}
-}
-
 // Lt returns true if z < x
 func (z *Int) Lt(x *Int) bool {
 	// z < x <=> z - x < 0 i.e. when subtraction overflows.
@@ -1081,7 +1072,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 //  - x if byteNum > 31
 //  - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
 // and returns z.
-func (z *Int) ExtendSign(x, byteNum *Int) *Int{
+func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 	if byteNum.GtUint64(31) {
 		return z.Set(x)
 	}
