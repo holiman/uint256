@@ -722,12 +722,12 @@ func (z *Int) Cmp(x *Int) (r int) {
 
 // LtUint64 returns true if x is smaller than n
 func (z *Int) LtUint64(n uint64) bool {
-	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0) && z[0] < n
+	return z[0] < n && (z[1] | z[2] | z[3]) == 0
 }
 
 // LtUint64 returns true if x is larger than n
 func (z *Int) GtUint64(n uint64) bool {
-	return (z[3] != 0) || (z[2] != 0) || (z[1] != 0) || z[0] > n
+	return z[0] > n || (z[1] | z[2] | z[3]) != 0
 }
 
 // IsUint64 reports whether z can be represented as a uint64.
