@@ -736,17 +736,6 @@ func (z *Int) Eq(x *Int) bool {
 	return (z[0] == x[0]) && (z[1] == x[1]) && (z[2] == x[2]) && (z[3] == x[3])
 }
 
-// SetIfEq sets x to
-// 1 if z == x
-// 0 if Z != x
-func (z *Int) SetIfEq(x *Int) {
-	if z.Eq(x) {
-		z.SetOne()
-	} else {
-		z.Clear()
-	}
-}
-
 // Cmp compares z and x and returns:
 //
 //   -1 if z <  x
