@@ -185,20 +185,21 @@ func (z *Int) PaddedBytes(n int) []byte {
 	return b
 }
 
-// Sub64 set z to the difference x - y, where y is a 64 bit uint
-func (z *Int) Sub64(x *Int, y uint64) {
+// Sub64 set z to the difference x - y, where y is a 64 bit uint, and returns z
+func (z *Int) Sub64(x *Int, y uint64) *Int {
 	var carry uint64
 
 	if z[0], carry = bits.Sub64(x[0], y, carry); carry == 0 {
-		return
+		return z
 	}
 	if z[1], carry = bits.Sub64(x[1], 0, carry); carry == 0 {
-		return
+		return z
 	}
 	if z[2], carry = bits.Sub64(x[2], 0, carry); carry == 0 {
-		return
+		return z
 	}
 	z[3]--
+	return z
 }
 
 // Sub sets z to the difference x-y and returns true if the operation underflowed
