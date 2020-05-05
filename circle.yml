@@ -6,8 +6,7 @@ commands:
       arch:
         default: "amd64"
         description: The target architecture.
-        type: enum
-        enum: ["amd64", "386"]
+        type: string
     steps:
       - run:
           name: "Test (<<parameters.arch>>)"
@@ -35,6 +34,8 @@ jobs:
           arch: "amd64"
       - test:
           arch: "386"
+      - test:
+          arch: "ppc64"
       - run:
           name: "Codecov upload"
           command: bash <(curl -s https://codecov.io/bash)
