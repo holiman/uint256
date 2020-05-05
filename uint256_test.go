@@ -241,7 +241,7 @@ func TestRandomMul(t *testing.T) {
 func TestRandomSquare(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.Squared()
+			f1.squared()
 		},
 		func(b1, b2, b3 *big.Int) {
 			b1.Mul(b1, b1)

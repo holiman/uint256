@@ -292,7 +292,7 @@ func (z *Int) Mul(x, y *Int) *Int {
 	return z.Set(&res)
 }
 
-func (z *Int) Squared() {
+func (z *Int) squared() {
 	var (
 		res                    Int
 		carry0, carry1, carry2 uint64
@@ -1059,7 +1059,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 
@@ -1068,7 +1068,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 
@@ -1077,7 +1077,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 
@@ -1086,7 +1086,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
-		multiplier.Squared()
+		multiplier.squared()
 		word >>= 1
 	}
 	return z.Set(&res)

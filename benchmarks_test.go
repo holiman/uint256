@@ -174,7 +174,7 @@ func BenchmarkSquare(bench *testing.B) {
 		result := new(Int)
 		bench.ResetTimer()
 		for i := 0; i < bench.N; i++ {
-			result.Set(a).Squared()
+			result.Set(a).squared()
 		}
 	}
 	benchmarkBig := func(bench *testing.B) {
