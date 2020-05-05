@@ -759,11 +759,6 @@ func (z *Int) IsZero() bool {
 	return (z[0] | z[1] | z[2] | z[3]) == 0
 }
 
-// IsOne returns true if z == 1
-func (z *Int) IsOne() bool {
-	return (z[0] == 1) && (z[1]|z[2]|z[3]) == 0
-}
-
 // Clear sets z to 0
 func (z *Int) Clear() *Int {
 	z[3], z[2], z[1], z[0] = 0, 0, 0, 0
