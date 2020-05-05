@@ -134,11 +134,6 @@ func (z *Int) Uint64WithOverflow() (uint64, bool) {
 	return z[0], z[1] != 0 || z[2] != 0 || z[3] != 0
 }
 
-// Uint64 returns the lower 63-bits of z as int64
-func (z *Int) Int64() int64 {
-	return int64(z[0] & 0x7fffffffffffffff)
-}
-
 // Clone create a new Int identical to z
 func (z *Int) Clone() *Int {
 	return &Int{z[0], z[1], z[2], z[3]}
