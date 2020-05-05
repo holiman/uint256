@@ -174,7 +174,7 @@ func BenchmarkSquare(bench *testing.B) {
 		result := new(Int)
 		bench.ResetTimer()
 		for i := 0; i < bench.N; i++ {
-			result.Copy(a).Squared()
+			result.Set(a).Squared()
 		}
 	}
 	benchmarkBig := func(bench *testing.B) {
@@ -467,7 +467,7 @@ func benchmark_Exp_Bit(bench *testing.B) {
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f_res.Exp(f_base, f_exp)
-		f_base.Copy(f_orig)
+		f_base.Set(f_orig)
 	}
 }
 func benchmark_ExpSmall_Big(bench *testing.B) {
@@ -500,7 +500,7 @@ func benchmark_ExpSmall_Bit(bench *testing.B) {
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f_res.Exp(f_base, f_exp)
-		f_base.Copy(f_orig)
+		f_base.Set(f_orig)
 	}
 }
 func Benchmark_Exp(bench *testing.B) {

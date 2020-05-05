@@ -173,7 +173,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
 		rem := udivrem(quot[:], sum[:], m)
-		return z.Copy(&rem)
+		return z.Set(&rem)
 	}
 	return z.Mod(z, m)
 }
@@ -289,7 +289,7 @@ func (z *Int) Mul(x, y *Int) *Int {
 
 	res[3] = res3 + x[0]*y[3]
 
-	return z.Copy(&res)
+	return z.Set(&res)
 }
 
 func (z *Int) Squared() {
@@ -310,7 +310,7 @@ func (z *Int) Squared() {
 
 	res[3] = 2*(z[0]*z[3]+z[1]*z[2]) + carry0 + carry1 + carry2
 
-	z.Copy(&res)
+	z.Set(&res)
 }
 
 // isBitSet returns true if bit n-th is set, where n = 0 is LSB.
@@ -468,7 +468,7 @@ func (z *Int) Div(x, y *Int) *Int {
 
 	var quot Int
 	udivrem(quot[:], x[:], y)
-	return z.Copy(&quot)
+	return z.Set(&quot)
 }
 
 // Mod sets z to the modulus x%y for y != 0 and returns z.
@@ -499,7 +499,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 
 	var quot Int
 	rem := udivrem(quot[:], x[:], y)
-	return z.Copy(&rem)
+	return z.Set(&rem)
 }
 
 // SMod interprets x and y as two's complement signed integers,
@@ -542,7 +542,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 
 	var quot [8]uint64
 	rem := udivrem(quot[:], p[:], m)
-	return z.Copy(&rem)
+	return z.Set(&rem)
 }
 
 // Abs interprets x as a a signed number, and sets z to the absolute value
@@ -552,7 +552,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 //   Abs(2**256-1) = -1
 func (z *Int) Abs(x *Int) *Int {
 	if x.Lt(SignedMin) {
-		return z.Copy(x)
+		return z.Set(x)
 	}
 	return z.Sub(new(Int), x)
 }
@@ -822,7 +822,7 @@ func (z *Int) Lsh(x *Int, n uint) *Int {
 	if n&0x3f == 0 {
 		switch n {
 		case 0:
-			return z.Copy(x)
+			return z.Set(x)
 		case 64:
 			return z.lsh64(x)
 		case 128:
@@ -854,7 +854,7 @@ func (z *Int) Lsh(x *Int, n uint) *Int {
 		n -= 64
 		goto sh64
 	default:
-		z.Copy(x)
+		z.Set(x)
 	}
 
 	// remaining shifts
@@ -881,7 +881,7 @@ func (z *Int) Rsh(x *Int, n uint) *Int {
 	if n&0x3f == 0 {
 		switch n {
 		case 0:
-			return z.Copy(x)
+			return z.Set(x)
 		case 64:
 			return z.rsh64(x)
 		case 128:
@@ -913,7 +913,7 @@ func (z *Int) Rsh(x *Int, n uint) *Int {
 		n -= 64
 		goto sh64
 	default:
-		z.Copy(x)
+		z.Set(x)
 	}
 
 	// remaining shifts
@@ -945,7 +945,7 @@ func (z *Int) SRsh(x *Int, n uint) *Int {
 	if n%64 == 0 {
 		switch n {
 		case 0:
-			return z.Copy(x)
+			return z.Set(x)
 		case 64:
 			return z.srsh64(x)
 		case 128:
@@ -977,7 +977,7 @@ func (z *Int) SRsh(x *Int, n uint) *Int {
 		n -= 64
 		goto sh64
 	default:
-		z.Copy(x)
+		z.Set(x)
 	}
 
 	// remaining shifts
@@ -995,8 +995,8 @@ sh192:
 	return z
 }
 
-// Copy copies the value x into z, and returns z
-func (z *Int) Copy(x *Int) *Int {
+// Set sets z to x and returns z.
+func (z *Int) Set(x *Int) *Int {
 	*z = *x
 	return z
 }
@@ -1089,7 +1089,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		multiplier.Squared()
 		word >>= 1
 	}
-	return z.Copy(&res)
+	return z.Set(&res)
 }
 
 // ExtendSign extends length of two’s complement signed integer,
@@ -1099,7 +1099,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 // and returns z.
 func (z *Int) ExtendSign(x, byteNum *Int) *Int{
 	if byteNum.GtUint64(31) {
-		return z.Copy(x)
+		return z.Set(x)
 	}
 	bit := uint(byteNum.Uint64()*8 + 7)
 
