@@ -15,6 +15,13 @@ import (
 
 const (
 	maxWords = 256 / bits.UintSize // number of big.Words in 256-bit
+
+	// The constants below work as compile-time checks: in case evaluated to
+	// negative value it cannot be assigned to uint type and compilation fails.
+	// These particular expressions check if maxWords either 4 or 8 matching
+	// 32-bit and 64-bit architectures.
+	_ uint = -(maxWords & (maxWords - 1)) // maxWords is power of two.
+	_ uint = -(maxWords & ^(4 | 8))       // maxWords is 4 or 8.
 )
 
 // ToBig returns a big.Int version of z.
@@ -32,8 +39,6 @@ func (z *Int) ToBig() *big.Int {
 			big.Word(z[3]), big.Word(z[3] >> 32),
 		}
 		b.SetBits(words[:])
-	default:
-		panic("unsupported architecture")
 	}
 	return b
 }
@@ -79,8 +84,6 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 				z[i/2] |= uint64(words[i]) << 32
 			}
 		}
-	default:
-		panic("unsupported architecture")
 	}
 
 	if b.Sign() == -1 {
