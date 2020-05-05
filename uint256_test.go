@@ -535,6 +535,36 @@ func TestSignExtend(t *testing.T) {
 	}
 }
 
+func TestSub64(t *testing.T) {
+	type testCase struct {
+		arg string
+		n   uint64
+	}
+	testCases := []testCase{
+		{"0", 1},
+		{"1", 0},
+		{"1", 1},
+		{"1", 3},
+		{"0x10000000000000000", 1},
+		{"0x100000000000000000000000000000000", 1},
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		tc := &testCases[i]
+		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
+		arg, _ := FromBig(bigArg)
+		expected, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+		result := new(Int).Sub64(arg, tc.n)
+
+		if !result.Eq(expected) {
+			t.Logf("args: %s, %d\n", tc.arg, tc.n)
+			t.Logf("exp : %x\n", expected)
+			t.Logf("got : %x\n\n", result)
+			t.Fail()
+		}
+	}
+}
+
 func TestSGT(t *testing.T) {
 
 	x := new(Int).SetBytes(hex2Bytes("fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"))
@@ -915,6 +945,21 @@ func TestCmpOp(t *testing.T) {
 	t.Run("CmpEq", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
 	t.Run("CmpLt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
 	t.Run("CmpGt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
+
+	t.Run("LtUint64", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool {
+			return a.LtUint64(b.Uint64())
+		}, func(a, b *big.Int) bool {
+			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) < 0
+		})
+	})
+	t.Run("GtUint64", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool {
+			return a.GtUint64(b.Uint64())
+		}, func(a, b *big.Int) bool {
+			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) > 0
+		})
+	})
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
