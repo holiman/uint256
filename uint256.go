@@ -749,11 +749,6 @@ func (z *Int) IsUint64() bool {
 	return (z[3] == 0) && (z[2] == 0) && (z[1] == 0)
 }
 
-// IsUint128 reports whether z can be represented in 128 bits.
-func (z *Int) IsUint128() bool {
-	return (z[3] == 0) && (z[2] == 0)
-}
-
 // IsZero returns true if z == 0
 func (z *Int) IsZero() bool {
 	return (z[0] | z[1] | z[2] | z[3]) == 0
