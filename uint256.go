@@ -707,15 +707,6 @@ func (z *Int) Lt(x *Int) bool {
 	return carry != 0
 }
 
-// SetIfLt sets z to 1 if z < x
-func (z *Int) SetIfLt(x *Int) {
-	if z.Lt(x) {
-		z.SetOne()
-	} else {
-		z.Clear()
-	}
-}
-
 // SetUint64 sets z to the value x
 func (z *Int) SetUint64(x uint64) *Int {
 	z[3], z[2], z[1], z[0] = 0, 0, 0, x
