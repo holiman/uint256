@@ -430,9 +430,9 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 	return rem
 }
 
-// Div sets z to the quotient x/y for returns z.
-// If d == 0, z is set to 0
-func (z *Int) Div(x, y *Int) *Int {
+// DivNoPanic sets z to the quotient x/y for returns z.
+// If y == 0, z is set to 0.
+func (z *Int) DivNoPanic(x, y *Int) *Int {
 	if y.IsZero() || y.Gt(x) {
 		return z.Clear()
 	}
@@ -551,22 +551,22 @@ func (z *Int) SDiv(n, d *Int) *Int {
 	if n.Sign() > 0 {
 		if d.Sign() > 0 {
 			// pos / pos
-			z.Div(n, d)
+			z.DivNoPanic(n, d)
 			return z
 		} else {
 			// pos / neg
-			z.Div(n, new(Int).Neg(d))
+			z.DivNoPanic(n, new(Int).Neg(d))
 			return z.Neg(z)
 		}
 	}
 
 	if d.Sign() < 0 {
 		// neg / neg
-		z.Div(new(Int).Neg(n), new(Int).Neg(d))
+		z.DivNoPanic(new(Int).Neg(n), new(Int).Neg(d))
 		return z
 	}
 	// neg / pos
-	z.Div(new(Int).Neg(n), d)
+	z.DivNoPanic(new(Int).Neg(n), d)
 	return z.Neg(z)
 }
 
@@ -722,12 +722,12 @@ func (z *Int) Cmp(x *Int) (r int) {
 
 // LtUint64 returns true if x is smaller than n
 func (z *Int) LtUint64(n uint64) bool {
-	return z[0] < n && (z[1] | z[2] | z[3]) == 0
+	return z[0] < n && (z[1]|z[2]|z[3]) == 0
 }
 
 // LtUint64 returns true if x is larger than n
 func (z *Int) GtUint64(n uint64) bool {
-	return z[0] > n || (z[1] | z[2] | z[3]) != 0
+	return z[0] > n || (z[1]|z[2]|z[3]) != 0
 }
 
 // IsUint64 reports whether z can be represented as a uint64.

@@ -251,7 +251,7 @@ func TestRandomSquare(t *testing.T) {
 func TestRandomDiv(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.Div(f2, f3)
+			f1.DivNoPanic(f2, f3)
 		},
 		func(b1, b2, b3 *big.Int) {
 			if b3.Sign() == 0 {
@@ -788,7 +788,7 @@ func TestBinOp(t *testing.T) {
 	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
 	t.Run("Div", func(t *testing.T) {
-		proc(t, (*Int).Div, func(z, x, y *big.Int) *big.Int {
+		proc(t, (*Int).DivNoPanic, func(z, x, y *big.Int) *big.Int {
 			if y.Sign() == 0 {
 				return z.SetUint64(0)
 			}

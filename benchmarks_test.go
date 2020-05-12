@@ -515,7 +515,7 @@ func BenchmarkDiv(b *testing.B) {
 		var sink Int
 		for j := 0; j < b.N; j += numSamples {
 			for i := 0; i < numSamples; i++ {
-				sink.Div(&xSamples[i], &modSamples[i])
+				sink.DivNoPanic(&xSamples[i], &modSamples[i])
 			}
 		}
 	}
