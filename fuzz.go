@@ -100,7 +100,7 @@ func Fuzz(data []byte) int {
 			return 0
 		}
 		checkOp((*Int).DivNoPanic, (*big.Int).Div, x, y)
-		checkOp((*Int).Mod, (*big.Int).Mod, x, y)
+		checkOp((*Int).ModNoPanic, (*big.Int).Mod, x, y)
 
 	case opMul:
 		checkOp((*Int).Mul, (*big.Int).Mul, x, y)

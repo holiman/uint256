@@ -155,7 +155,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		rem := udivrem(quot[:], sum[:], m)
 		return z.Set(&rem)
 	}
-	return z.Mod(z, m)
+	return z.ModNoPanic(z, m)
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
@@ -452,9 +452,9 @@ func (z *Int) DivNoPanic(x, y *Int) *Int {
 	return z.Set(&quot)
 }
 
-// Mod sets z to the modulus x%y for y != 0 and returns z.
-// If y == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) Mod(x, y *Int) *Int {
+// ModNoPanic sets z to the modulus x%y for y != 0 and returns z.
+// If y == 0, z is set to 0.
+func (z *Int) ModNoPanic(x, y *Int) *Int {
 	if x.IsZero() || y.IsZero() {
 		return z.Clear()
 	}
@@ -498,7 +498,7 @@ func (z *Int) SMod(x, y *Int) *Int {
 	if ys == -1 {
 		y = new(Int).Neg(y)
 	}
-	z.Mod(x, y)
+	z.ModNoPanic(x, y)
 	if xs == -1 {
 		z.Neg(z)
 	}
@@ -516,9 +516,9 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	copy(pl[:], p[:4])
 	copy(ph[:], p[4:])
 
-	// If the multiplication is within 256 bits use Mod().
+	// If the multiplication is within 256 bits use ModNoPanic().
 	if ph.IsZero() {
-		return z.Mod(&pl, m)
+		return z.ModNoPanic(&pl, m)
 	}
 
 	var quot [8]uint64

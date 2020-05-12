@@ -266,7 +266,7 @@ func TestRandomDiv(t *testing.T) {
 func TestRandomMod(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
-			f1.Mod(f2, f3)
+			f1.ModNoPanic(f2, f3)
 		},
 		func(b1, b2, b3 *big.Int) {
 			if b3.Sign() == 0 {
@@ -796,7 +796,7 @@ func TestBinOp(t *testing.T) {
 		})
 	})
 	t.Run("Mod", func(t *testing.T) {
-		proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
+		proc(t, (*Int).ModNoPanic, func(z, x, y *big.Int) *big.Int {
 			if y.Sign() == 0 {
 				return z.SetUint64(0)
 			}

@@ -545,7 +545,7 @@ func BenchmarkMod(b *testing.B) {
 		var sink Int
 		for j := 0; j < b.N; j += numSamples {
 			for i := 0; i < numSamples; i++ {
-				sink.Mod(&xSamples[i], &modSamples[i])
+				sink.ModNoPanic(&xSamples[i], &modSamples[i])
 			}
 		}
 	}
