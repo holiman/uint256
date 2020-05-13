@@ -170,8 +170,8 @@ func (z *Int) PaddedBytes(n int) []byte {
 	return b
 }
 
-// Sub64 set z to the difference x - y, where y is a 64 bit uint, and returns z
-func (z *Int) Sub64(x *Int, y uint64) *Int {
+// SubUint64 set z to the difference x - y, where y is a uint64, and returns z
+func (z *Int) SubUint64(x *Int, y uint64) *Int {
 	var carry uint64
 
 	if z[0], carry = bits.Sub64(x[0], y, carry); carry == 0 {
@@ -1047,7 +1047,7 @@ func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 
 	mask := new(Int).SetOne()
 	mask.Lsh(mask, bit)
-	mask.Sub64(mask, 1)
+	mask.SubUint64(mask, 1)
 	if x.isBitSet(bit) {
 		z.Or(x, mask.Not(mask))
 	} else {

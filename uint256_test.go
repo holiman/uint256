@@ -535,7 +535,7 @@ func TestSignExtend(t *testing.T) {
 	}
 }
 
-func TestSub64(t *testing.T) {
+func TestSubUint64(t *testing.T) {
 	type testCase struct {
 		arg string
 		n   uint64
@@ -554,7 +554,7 @@ func TestSub64(t *testing.T) {
 		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
 		arg, _ := FromBig(bigArg)
 		expected, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
-		result := new(Int).Sub64(arg, tc.n)
+		result := new(Int).SubUint64(arg, tc.n)
 
 		if !result.Eq(expected) {
 			t.Logf("args: %s, %d\n", tc.arg, tc.n)
