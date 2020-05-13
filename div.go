@@ -1,3 +1,7 @@
+// uint256: Fixed size 256-bit math library
+// Copyright 2020 uint256 Authors
+// SPDX-License-Identifier: BSD-3-Clause
+
 package uint256
 
 import "math/bits"
