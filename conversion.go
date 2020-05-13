@@ -1,9 +1,6 @@
-// Copyright 2020 Martin Holst Swende. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be found
-// in the COPYING file.
-//
-
-// Package math provides integer math utilities.
+// uint256: Fixed size 256-bit math library
+// Copyright 2020 uint256 Authors
+// SPDX-License-Identifier: BSD-3-Clause
 
 package uint256
 
