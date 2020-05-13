@@ -1,4 +1,4 @@
-# Fixed size math
+# Fixed size 256-bit math library
 
 This is a library specialized at replacing the big.Int library for math based on 256-bit types. This is meant for use in [go-ethereum](https://github.com/ethereum/go-ethereum) eventually, once it's deemed fast, stable and secure enough. 
 
