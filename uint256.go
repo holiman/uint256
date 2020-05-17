@@ -717,12 +717,12 @@ func (z *Int) Cmp(x *Int) (r int) {
 	return 0
 }
 
-// LtUint64 returns true if x is smaller than n
+// LtUint64 returns true if z is smaller than n
 func (z *Int) LtUint64(n uint64) bool {
 	return z[0] < n && (z[1] | z[2] | z[3]) == 0
 }
 
-// GtUint64 returns true if x is larger than n
+// GtUint64 returns true if z is larger than n
 func (z *Int) GtUint64(n uint64) bool {
 	return z[0] > n || (z[1] | z[2] | z[3]) != 0
 }
