@@ -16,6 +16,7 @@ import (
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
+// NewInt returns a new zero-initialized Int.
 func NewInt() *Int {
 	return &Int{}
 }
@@ -45,7 +46,7 @@ func (z *Int) SetBytes(buf []byte) *Int {
 	return z
 }
 
-// Bytes32 returns a the a 32 byte big-endian array.
+// Bytes32 returns the value of z as a 32-byte big-endian array.
 func (z *Int) Bytes32() [32]byte {
 	// The PutUint64()s are inlined and we get 4x (load, bswap, store) instructions.
 	var b [32]byte
@@ -56,7 +57,7 @@ func (z *Int) Bytes32() [32]byte {
 	return b
 }
 
-// Bytes20 returns a the a 32 byte big-endian array.
+// Bytes20 returns the value of z as a 20-byte big-endian array.
 func (z *Int) Bytes20() [20]byte {
 	var b [20]byte
 	// The PutUint*()s are inlined and we get 3x (load, bswap, store) instructions.
@@ -103,22 +104,17 @@ func (z *Int) WriteToArray20(dest *[20]byte) {
 	}
 }
 
-//func (z *Int) WriteToArr32(dest [32]bytes){
-//	for i := 0; i < 32; i++ {
-//		dest[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
-//	}
-//}
 // Uint64 returns the lower 64-bits of z
 func (z *Int) Uint64() uint64 {
 	return z[0]
 }
 
-// Uint64 returns the lower 64-bits of z and bool whether overflow occurred
+// Uint64WithOverflow returns the lower 64-bits of z and bool whether overflow occurred
 func (z *Int) Uint64WithOverflow() (uint64, bool) {
 	return z[0], z[1] != 0 || z[2] != 0 || z[3] != 0
 }
 
-// Clone create a new Int identical to z
+// Clone creates a new Int identical to z
 func (z *Int) Clone() *Int {
 	return &Int{z[0], z[1], z[2], z[3]}
 }
@@ -186,7 +182,7 @@ func (z *Int) SubUint64(x *Int, y uint64) *Int {
 	return z
 }
 
-// Sub sets z to the difference x-y and returns true if the operation underflowed
+// SubOverflow sets z to the difference x-y and returns true if the operation underflowed
 func (z *Int) SubOverflow(x, y *Int) bool {
 	var carry uint64
 	z[0], carry = bits.Sub64(x[0], y[0], 0)
@@ -247,7 +243,7 @@ func umul(x, y *Int) [8]uint64 {
 	return res
 }
 
-// Mul sets z to the sum x*y
+// Mul sets z to the product x*y
 func (z *Int) Mul(x, y *Int) *Int {
 	var (
 		res              Int
@@ -504,7 +500,7 @@ func (z *Int) SMod(x, y *Int) *Int {
 	return z
 }
 
-// MulMod calculates the modulo-n multiplication of x and y and
+// MulMod calculates the modulo-m multiplication of x and y and
 // returns z
 func (z *Int) MulMod(x, y, m *Int) *Int {
 	p := umul(x, y)
@@ -584,7 +580,7 @@ func (z *Int) Sign() int {
 	return -1
 }
 
-// BitLen returns the number of bits required to represent x
+// BitLen returns the number of bits required to represent z
 func (z *Int) BitLen() int {
 	switch {
 	case z[3] != 0:
@@ -597,6 +593,8 @@ func (z *Int) BitLen() int {
 		return bits.Len64(z[0])
 	}
 }
+
+// ByteLen returns the number of bytes required to represent z
 func (z *Int) ByteLen() int {
 	return (z.BitLen() + 7) / 8
 }
@@ -724,7 +722,7 @@ func (z *Int) LtUint64(n uint64) bool {
 	return z[0] < n && (z[1] | z[2] | z[3]) == 0
 }
 
-// LtUint64 returns true if x is larger than n
+// GtUint64 returns true if x is larger than n
 func (z *Int) GtUint64(n uint64) bool {
 	return z[0] > n || (z[1] | z[2] | z[3]) != 0
 }
