@@ -5,6 +5,7 @@
 package uint256
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"math/bits"
@@ -103,4 +104,274 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 //
 func (z *Int) Format(s fmt.State, ch rune) {
 	z.ToBig().Format(s, ch)
+}
+
+// SetBytes8 is identical to SetBytes(in[:8]), but panics is input is too short
+func (z *Int) SetBytes8(in []byte) *Int {
+	_ = in[7] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetUint64(binary.BigEndian.Uint64(in[0:8]))
+	return z
+}
+
+// SetBytes16 is identical to SetBytes(in[:16]), but panics is input is too short
+func (z *Int) SetBytes16(in []byte) *Int {
+	_ = in[15] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z[3], z[2] = 0, 0
+	z[1] = binary.BigEndian.Uint64(in[0:8])
+	z[0] = binary.BigEndian.Uint64(in[8:16])
+	return z
+}
+
+// SetBytes16 is identical to SetBytes(in[:24]), but panics is input is too short
+func (z *Int) SetBytes24(in []byte) *Int {
+	_ = in[23] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z[3] = 0
+	z[2] = binary.BigEndian.Uint64(in[0:8])
+	z[1] = binary.BigEndian.Uint64(in[8:16])
+	z[0] = binary.BigEndian.Uint64(in[16:24])
+	return z
+}
+
+func (z *Int) SetBytes32(in []byte) *Int {
+	_ = in[31] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z[3] = binary.BigEndian.Uint64(in[0:8])
+	z[2] = binary.BigEndian.Uint64(in[8:16])
+	z[1] = binary.BigEndian.Uint64(in[16:24])
+	z[0] = binary.BigEndian.Uint64(in[24:32])
+	return z
+}
+
+func (z *Int) SetBytes1(in []byte) *Int {
+	z.SetUint64(uint64(in[0]))
+	return z
+}
+
+func (z *Int) SetBytes9(in []byte) *Int {
+	_ = in[8] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes8(in[1:])
+	z[1] = uint64(in[0])
+	return z
+}
+
+func (z *Int) SetBytes17(in []byte) *Int {
+	_ = in[16] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[1:])
+	z[2] = uint64(in[0])
+	return z
+}
+
+func (z *Int) SetBytes25(in []byte) *Int {
+	_ = in[24] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[1:])
+	z[3] = uint64(in[0])
+	return z
+}
+
+func (z *Int) SetBytes2(in []byte) *Int {
+	_ = in[1] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetUint64(uint64(binary.BigEndian.Uint16(in[0:2])))
+	return z
+}
+
+func (z *Int) SetBytes10(in []byte) *Int {
+	_ = in[9] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes8(in[2:])
+	z[1] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	return z
+}
+
+func (z *Int) SetBytes18(in []byte) *Int {
+	_ = in[17] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[2:])
+	z[2] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	return z
+}
+
+func (z *Int) SetBytes26(in []byte) *Int {
+	_ = in[25] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[2:])
+	z[3] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	return z
+}
+
+func (z *Int) SetBytes3(in []byte) *Int {
+	_ = in[2] // bounds check hint to compiler; see golang.org/issue/14808
+	z.SetUint64(uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16)
+	return z
+}
+
+func (z *Int) SetBytes11(in []byte) *Int {
+	_ = in[10] // bounds check hint to compiler; see golang.org/issue/14808
+	z.SetBytes8(in[3:])
+	z[1] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	return z
+}
+
+func (z *Int) SetBytes19(in []byte) *Int {
+	_ = in[18] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[3:])
+	z[2] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	return z
+}
+
+func (z *Int) SetBytes27(in []byte) *Int {
+	_ = in[26] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[3:])
+	z[3] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	return z
+}
+
+func (z *Int) SetBytes4(in []byte) *Int {
+	_ = in[3] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetUint64(uint64(binary.BigEndian.Uint32(in[0:4])))
+	return z
+}
+
+func (z *Int) SetBytes12(in []byte) *Int {
+	_ = in[11] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes8(in[4:])
+	z[1] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	return z
+}
+
+func (z *Int) SetBytes20(in []byte) *Int {
+	_ = in[19] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[4:])
+	z[2] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	return z
+}
+
+func (z *Int) SetBytes28(in []byte) *Int {
+	_ = in[27] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[4:])
+	z[3] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	return z
+}
+
+func (z *Int) SetBytes5(in []byte) *Int {
+	_ = in[4] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetUint64(bigEndianUint40(in[0:5]))
+	return z
+}
+
+func (z *Int) SetBytes13(in []byte) *Int {
+	z.SetBytes8(in[5:])
+	z[1] = bigEndianUint40(in[0:5])
+	return z
+}
+
+func (z *Int) SetBytes21(in []byte) *Int {
+	_ = in[20] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[5:])
+	z[2] = bigEndianUint40(in[0:5])
+	return z
+}
+
+func (z *Int) SetBytes29(in []byte) *Int {
+	_ = in[23] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[5:])
+	z[3] = bigEndianUint40(in[0:5])
+	return z
+}
+
+func (z *Int) SetBytes6(in []byte) *Int {
+	_ = in[5] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetUint64(bigEndianUint48(in[0:6]))
+	return z
+}
+
+func (z *Int) SetBytes14(in []byte) *Int {
+	_ = in[13] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes8(in[6:])
+	z[1] = bigEndianUint48(in[0:6])
+	return z
+}
+
+func (z *Int) SetBytes22(in []byte) *Int {
+	_ = in[21] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[6:])
+	z[2] = bigEndianUint48(in[0:6])
+	return z
+}
+
+func (z *Int) SetBytes30(in []byte) *Int {
+	_ = in[29] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[6:])
+	z[3] = bigEndianUint48(in[0:6])
+	return z
+}
+
+func (z *Int) SetBytes7(in []byte) *Int {
+	_ = in[6] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetUint64(bigEndianUint56(in[0:7]))
+	return z
+}
+
+func (z *Int) SetBytes15(in []byte) *Int {
+	_ = in[14] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes8(in[7:])
+	z[1] = bigEndianUint56(in[0:7])
+	return z
+}
+
+func (z *Int) SetBytes23(in []byte) *Int {
+	_ = in[22] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes16(in[7:])
+	z[2] = bigEndianUint56(in[0:7])
+	return z
+}
+
+func (z *Int) SetBytes31(in []byte) *Int {
+	_ = in[30] // bounds check hint to compiler; see golang.org/issue/14808
+
+	z.SetBytes24(in[7:])
+	z[3] = bigEndianUint56(in[0:7])
+	return z
+}
+
+// Utility methods that are "missing" among the bigEndian.UintXX methods.
+
+func bigEndianUint40(b []byte) uint64 {
+	_ = b[4] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint64(b[4]) | uint64(b[3])<<8 | uint64(b[2])<<16 | uint64(b[1])<<24 |
+		uint64(b[0])<<32
+}
+
+func bigEndianUint48(b []byte) uint64 {
+	_ = b[5] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint64(b[5]) | uint64(b[4])<<8 | uint64(b[3])<<16 | uint64(b[2])<<24 |
+		uint64(b[1])<<32 | uint64(b[0])<<40
+}
+
+func bigEndianUint56(b []byte) uint64 {
+	_ = b[6] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint64(b[6]) | uint64(b[5])<<8 | uint64(b[4])<<16 | uint64(b[3])<<24 |
+		uint64(b[2])<<32 | uint64(b[1])<<40 | uint64(b[0])<<48
 }
