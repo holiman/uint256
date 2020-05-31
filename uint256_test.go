@@ -941,9 +941,15 @@ func TestCmpOp(t *testing.T) {
 	t.Run("Gt", func(t *testing.T) { proc(t, (*Int).Gt, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
 	t.Run("SLt", func(t *testing.T) { proc(t, (*Int).Slt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) < 0 }) })
 	t.Run("SGt", func(t *testing.T) { proc(t, (*Int).Sgt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) > 0 }) })
-	t.Run("CmpEq", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
-	t.Run("CmpLt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
-	t.Run("CmpGt", func(t *testing.T) { proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
+	t.Run("CmpEq", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 })
+	})
+	t.Run("CmpLt", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 })
+	})
+	t.Run("CmpGt", func(t *testing.T) {
+		proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 })
+	})
 
 	t.Run("LtUint64", func(t *testing.T) {
 		proc(t, func(a, b *Int) bool {
@@ -1183,4 +1189,176 @@ func TestByte32Representation(t *testing.T) {
 			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
 		}
 	}
+}
+
+func TestSetBytes(t *testing.T) {
+	for i := 0; i < 33; i++ {
+		bytearr := hex2Bytes("12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031")
+		a := big.NewInt(0).SetBytes(bytearr[0:i])
+		exp := bytesToHash(a.Bytes())
+
+		b := NewInt().SetAllOne().SetBytes(bytearr[0:i])
+
+		got := gethHash(b.Bytes32())
+		// uint256.Int -> address
+		if got != exp {
+			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		}
+		b.SetAllOne()
+		switch i {
+		case 1:
+			b.SetBytes1(bytearr)
+		case 2:
+			b.SetBytes2(bytearr)
+		case 3:
+			b.SetBytes3(bytearr)
+		case 4:
+			b.SetBytes4(bytearr)
+		case 5:
+			b.SetBytes5(bytearr)
+		case 6:
+			b.SetBytes6(bytearr)
+		case 7:
+			b.SetBytes7(bytearr)
+		case 8:
+			b.SetBytes8(bytearr)
+		case 9:
+			b.SetBytes9(bytearr)
+		case 10:
+			b.SetBytes10(bytearr)
+		case 11:
+			b.SetBytes11(bytearr)
+		case 12:
+			b.SetBytes12(bytearr)
+		case 13:
+			b.SetBytes13(bytearr)
+		case 14:
+			b.SetBytes14(bytearr)
+		case 15:
+			b.SetBytes15(bytearr)
+		case 16:
+			b.SetBytes16(bytearr)
+		case 17:
+			b.SetBytes17(bytearr)
+		case 18:
+			b.SetBytes18(bytearr)
+		case 19:
+			b.SetBytes19(bytearr)
+		case 20:
+			b.SetBytes20(bytearr)
+		case 21:
+			b.SetBytes21(bytearr)
+		case 22:
+			b.SetBytes22(bytearr)
+		case 23:
+			b.SetBytes23(bytearr)
+		case 24:
+			b.SetBytes24(bytearr)
+		case 25:
+			b.SetBytes25(bytearr)
+		case 26:
+			b.SetBytes26(bytearr)
+		case 27:
+			b.SetBytes27(bytearr)
+		case 28:
+			b.SetBytes28(bytearr)
+		case 29:
+			b.SetBytes29(bytearr)
+		case 30:
+			b.SetBytes30(bytearr)
+		case 31:
+			b.SetBytes31(bytearr)
+		case 32:
+			b.SetBytes32(bytearr)
+		default:
+			continue
+		}
+		got = gethHash(b.Bytes32())
+		// uint256.Int -> address
+		if got != exp {
+			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		}
+	}
+}
+
+func BenchmarkSetBytes(b *testing.B) {
+
+	val := NewInt()
+	bytearr := hex2Bytes("12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031")
+	b.Run("SetBytes-generic", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			val.SetBytes(bytearr[:1])
+			val.SetBytes(bytearr[:2])
+			val.SetBytes(bytearr[:3])
+			val.SetBytes(bytearr[:4])
+			val.SetBytes(bytearr[:5])
+			val.SetBytes(bytearr[:6])
+			val.SetBytes(bytearr[:7])
+			val.SetBytes(bytearr[:8])
+			val.SetBytes(bytearr[:9])
+			val.SetBytes(bytearr[:10])
+			val.SetBytes(bytearr[:11])
+			val.SetBytes(bytearr[:12])
+			val.SetBytes(bytearr[:13])
+			val.SetBytes(bytearr[:14])
+			val.SetBytes(bytearr[:15])
+			val.SetBytes(bytearr[:16])
+			val.SetBytes(bytearr[:17])
+			val.SetBytes(bytearr[:18])
+			val.SetBytes(bytearr[:19])
+			val.SetBytes(bytearr[:20])
+			val.SetBytes(bytearr[:21])
+			val.SetBytes(bytearr[:22])
+			val.SetBytes(bytearr[:23])
+			val.SetBytes(bytearr[:24])
+			val.SetBytes(bytearr[:25])
+			val.SetBytes(bytearr[:26])
+			val.SetBytes(bytearr[:27])
+			val.SetBytes(bytearr[:28])
+			val.SetBytes(bytearr[:29])
+			val.SetBytes(bytearr[:20])
+			val.SetBytes(bytearr[:31])
+			val.SetBytes(bytearr[:32])
+		}
+	})
+	b.Run("SetBytes-specific", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			val.SetBytes1(bytearr)
+			val.SetBytes2(bytearr)
+			val.SetBytes3(bytearr)
+			val.SetBytes4(bytearr)
+			val.SetBytes5(bytearr)
+			val.SetBytes6(bytearr)
+			val.SetBytes7(bytearr)
+			val.SetBytes8(bytearr)
+			val.SetBytes9(bytearr)
+			val.SetBytes10(bytearr)
+			val.SetBytes11(bytearr)
+			val.SetBytes12(bytearr)
+			val.SetBytes13(bytearr)
+			val.SetBytes14(bytearr)
+			val.SetBytes15(bytearr)
+			val.SetBytes16(bytearr)
+			val.SetBytes17(bytearr)
+			val.SetBytes18(bytearr)
+			val.SetBytes19(bytearr)
+			val.SetBytes20(bytearr)
+			val.SetBytes21(bytearr)
+			val.SetBytes22(bytearr)
+			val.SetBytes23(bytearr)
+			val.SetBytes24(bytearr)
+			val.SetBytes25(bytearr)
+			val.SetBytes26(bytearr)
+			val.SetBytes27(bytearr)
+			val.SetBytes28(bytearr)
+			val.SetBytes29(bytearr)
+			val.SetBytes30(bytearr)
+			val.SetBytes31(bytearr)
+			val.SetBytes32(bytearr)
+		}
+	})
 }
