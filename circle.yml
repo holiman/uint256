@@ -19,7 +19,7 @@ commands:
 
 jobs:
 
-  linux:
+  go114:
     docker:
       - image: cimg/go:1.14
     steps:
@@ -56,9 +56,18 @@ jobs:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
 
+  go113:
+    docker:
+      - image: cimg/go:1.13
+    steps:
+      - checkout
+      - test
+
+
 
 workflows:
   version: 2
   uint256:
     jobs:
-      - linux
+      - go114
+      - go113
