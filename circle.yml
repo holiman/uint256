@@ -55,6 +55,29 @@ jobs:
       - run:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
+      - run:
+          name: "Build tests for PPC64"
+          command: |
+            GOARCH=ppc64 go test -c
+            mv uint256.test uint256.test.ppc64
+      - persist_to_workspace:
+          root: .
+          paths:
+            - uint256.test.*
+
+  bigendian:
+    docker:
+      - image: circleci/buildpack-deps:bullseye
+    steps:
+      - run:
+          name: "Install QEMU"
+          command: sudo apt-get -q update && sudo apt-get -qy install qemu-user-static --no-install-recommends
+      - attach_workspace:
+          at: .
+      - run:
+          name: "Test (PPC64 emulation)"
+          command: qemu-ppc64-static uint256.test.ppc64 -test.v
+
 
   go113:
     docker:
@@ -79,3 +102,6 @@ workflows:
       - go114
       - go113
       - go112
+      - bigendian:
+          requires:
+            - go114
