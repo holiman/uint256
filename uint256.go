@@ -23,25 +23,76 @@ func NewInt() *Int {
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
 // integer, sets z to that value, and returns z.
+// If buf is larger than 32 bytes, the last 32 bytes is used. This operation
+// is semantically equivalent to `FromBig(new(big.Int).SetBytes(buf))`
 func (z *Int) SetBytes(buf []byte) *Int {
-	var d uint64
-	k := 0
-	s := uint64(0)
-	i := len(buf)
-	z[0], z[1], z[2], z[3] = 0, 0, 0, 0
-	for ; i > 0; i-- {
-		d |= uint64(buf[i-1]) << s
-		if s += 8; s == 64 {
-			z[k] = d
-			k++
-			s, d = 0, 0
-			if k >= len(z) {
-				break
-			}
-		}
-	}
-	if k < len(z) {
-		z[k] = d
+	switch l := len(buf); l {
+	case 0:
+		z.Clear()
+	case 1:
+		z.SetBytes1(buf)
+	case 2:
+		z.SetBytes2(buf)
+	case 3:
+		z.SetBytes3(buf)
+	case 4:
+		z.SetBytes4(buf)
+	case 5:
+		z.SetBytes5(buf)
+	case 6:
+		z.SetBytes6(buf)
+	case 7:
+		z.SetBytes7(buf)
+	case 8:
+		z.SetBytes8(buf)
+	case 9:
+		z.SetBytes9(buf)
+	case 10:
+		z.SetBytes10(buf)
+	case 11:
+		z.SetBytes11(buf)
+	case 12:
+		z.SetBytes12(buf)
+	case 13:
+		z.SetBytes13(buf)
+	case 14:
+		z.SetBytes14(buf)
+	case 15:
+		z.SetBytes15(buf)
+	case 16:
+		z.SetBytes16(buf)
+	case 17:
+		z.SetBytes17(buf)
+	case 18:
+		z.SetBytes18(buf)
+	case 19:
+		z.SetBytes19(buf)
+	case 20:
+		z.SetBytes20(buf)
+	case 21:
+		z.SetBytes21(buf)
+	case 22:
+		z.SetBytes22(buf)
+	case 23:
+		z.SetBytes23(buf)
+	case 24:
+		z.SetBytes24(buf)
+	case 25:
+		z.SetBytes25(buf)
+	case 26:
+		z.SetBytes26(buf)
+	case 27:
+		z.SetBytes27(buf)
+	case 28:
+		z.SetBytes28(buf)
+	case 29:
+		z.SetBytes29(buf)
+	case 30:
+		z.SetBytes30(buf)
+	case 31:
+		z.SetBytes31(buf)
+	default:
+		z.SetBytes32(buf[l-32:])
 	}
 	return z
 }
