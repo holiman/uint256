@@ -63,6 +63,13 @@ jobs:
       - checkout
       - test
 
+  go112:
+    docker:
+      - image: cimg/go:1.12
+    steps:
+      - checkout
+      - test
+
 
 
 workflows:
@@ -71,3 +78,4 @@ workflows:
     jobs:
       - go114
       - go113
+      - go112
