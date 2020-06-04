@@ -382,7 +382,7 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 		}
 	}
 
-	shift := bits.LeadingZeros64(d[dLen-1])
+	shift := uint(bits.LeadingZeros64(d[dLen-1]))
 
 	var dnStorage Int
 	dn := dnStorage[:dLen]
