@@ -228,22 +228,22 @@ func umul(x, y *Int) [8]uint64 {
 		res1, res2, res3, res4, res5  uint64
 	)
 
-	carry, res[0] = umulStep(0, x[0], y[0], 0)
-	carry, res1 = umulStep(0, x[1], y[0], carry)
-	carry, res2 = umulStep(0, x[2], y[0], carry)
-	carry4, res3 = umulStep(0, x[3], y[0], carry)
+	carry, res[0] = bits.Mul64(x[0], y[0])
+	carry, res1 = umulHop(carry, x[1], y[0])
+	carry, res2 = umulHop(carry, x[2], y[0])
+	carry4, res3 = umulHop(carry, x[3], y[0])
 
-	carry, res[1] = umulStep(res1, x[0], y[1], 0)
+	carry, res[1] = umulHop(res1, x[0], y[1])
 	carry, res2 = umulStep(res2, x[1], y[1], carry)
 	carry, res3 = umulStep(res3, x[2], y[1], carry)
 	carry5, res4 = umulStep(carry4, x[3], y[1], carry)
 
-	carry, res[2] = umulStep(res2, x[0], y[2], 0)
+	carry, res[2] = umulHop(res2, x[0], y[2])
 	carry, res3 = umulStep(res3, x[1], y[2], carry)
 	carry, res4 = umulStep(res4, x[2], y[2], carry)
 	carry6, res5 = umulStep(carry5, x[3], y[2], carry)
 
-	carry, res[3] = umulStep(res3, x[0], y[3], 0)
+	carry, res[3] = umulHop(res3, x[0], y[3])
 	carry, res[4] = umulStep(res4, x[1], y[3], carry)
 	carry, res[5] = umulStep(res5, x[2], y[3], carry)
 	res[7], res[6] = umulStep(carry6, x[3], y[3], carry)
