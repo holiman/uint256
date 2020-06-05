@@ -237,6 +237,27 @@ func TestRandomMul(t *testing.T) {
 		},
 	)
 }
+func TestRandomMulOverflow(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		b, f1, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b2, f2, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		f1a, f2a := f1.Clone(), f2.Clone()
+		overflow := f1.MulOverflow(f1, f2)
+		b.Mul(b, b2)
+		if err := checkOverflow(b, f1, overflow); err != nil {
+			t.Fatal(err)
+		}
+		if eq := checkEq(b, f1); !eq {
+			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f1, b)
+		}
+	}
+}
 func TestRandomSquare(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
