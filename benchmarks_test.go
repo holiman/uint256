@@ -165,6 +165,34 @@ func BenchmarkMul(bench *testing.B) {
 	bench.Run("single/big", benchmarkBig)
 }
 
+func BenchmarkMulOverflow(bench *testing.B) {
+	benchmarkUint256 := func(bench *testing.B) {
+		a := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		b := big.NewInt(0).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		fa, _ := FromBig(a)
+		fb, _ := FromBig(b)
+
+		result := new(Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			result.MulOverflow(fa, fb)
+		}
+	}
+	benchmarkBig := func(bench *testing.B) {
+		a := new(big.Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		b := new(big.Int).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+		result := new(big.Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			U256(result.Mul(a, b))
+		}
+	}
+
+	bench.Run("single/uint256", benchmarkUint256)
+	bench.Run("single/big", benchmarkBig)
+}
+
 func BenchmarkSquare(bench *testing.B) {
 
 	benchmarkUint256 := func(bench *testing.B) {

@@ -330,15 +330,8 @@ func (z *Int) Mul(x, y *Int) *Int {
 // MulOverflow sets z to the product x*y, and returns whether overflow occurred
 func (z *Int) MulOverflow(x, y *Int) bool {
 	p := umul(x, y)
-	var (
-		pl Int
-		ph Int
-	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
-
-	z.Set(&pl)
-	return !ph.IsZero()
+	copy(z[:], p[:4])
+	return (p[4] | p[5] | p[6] | p[7]) != 0
 }
 
 func (z *Int) squared() {
