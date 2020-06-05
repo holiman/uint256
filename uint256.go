@@ -202,14 +202,22 @@ func (z *Int) Sub(x, y *Int) *Int {
 	return z
 }
 
-// umulStep computes (z, carry) = z + (x * y) + carry.
-func umulStep(z, x, y, carry uint64) (uint64, uint64) {
-	ph, p := bits.Mul64(x, y)
-	p, carry = bits.Add64(p, carry, 0)
-	carry, _ = bits.Add64(ph, 0, carry)
-	p, carry1 := bits.Add64(p, z, 0)
-	carry, _ = bits.Add64(carry, 0, carry1)
-	return p, carry
+// umulStep computes (hi * 2^64 + lo) = z + (x * y) + carry.
+func umulStep(z, x, y, carry uint64) (hi, lo uint64) {
+	hi, lo = bits.Mul64(x, y)
+	lo, carry = bits.Add64(lo, carry, 0)
+	hi, _ = bits.Add64(hi, 0, carry)
+	lo, carry = bits.Add64(lo, z, 0)
+	hi, _ = bits.Add64(hi, 0, carry)
+	return hi, lo
+}
+
+// umulHop computes (hi * 2^64 + lo) = z + (x * y)
+func umulHop(z, x, y uint64) (hi, lo uint64) {
+	hi, lo = bits.Mul64(x, y)
+	lo, carry := bits.Add64(lo, z, 0)
+	hi, _ = bits.Add64(hi, 0, carry)
+	return hi, lo
 }
 
 // umul computes full 256 x 256 -> 512 multiplication.
@@ -220,25 +228,25 @@ func umul(x, y *Int) [8]uint64 {
 		res1, res2, res3, res4, res5  uint64
 	)
 
-	res[0], carry = umulStep(0, x[0], y[0], 0)
-	res1, carry = umulStep(0, x[1], y[0], carry)
-	res2, carry = umulStep(0, x[2], y[0], carry)
-	res3, carry4 = umulStep(0, x[3], y[0], carry)
+	carry, res[0] = bits.Mul64(x[0], y[0])
+	carry, res1 = umulHop(carry, x[1], y[0])
+	carry, res2 = umulHop(carry, x[2], y[0])
+	carry4, res3 = umulHop(carry, x[3], y[0])
 
-	res[1], carry = umulStep(res1, x[0], y[1], 0)
-	res2, carry = umulStep(res2, x[1], y[1], carry)
-	res3, carry = umulStep(res3, x[2], y[1], carry)
-	res4, carry5 = umulStep(carry4, x[3], y[1], carry)
+	carry, res[1] = umulHop(res1, x[0], y[1])
+	carry, res2 = umulStep(res2, x[1], y[1], carry)
+	carry, res3 = umulStep(res3, x[2], y[1], carry)
+	carry5, res4 = umulStep(carry4, x[3], y[1], carry)
 
-	res[2], carry = umulStep(res2, x[0], y[2], 0)
-	res3, carry = umulStep(res3, x[1], y[2], carry)
-	res4, carry = umulStep(res4, x[2], y[2], carry)
-	res5, carry6 = umulStep(carry5, x[3], y[2], carry)
+	carry, res[2] = umulHop(res2, x[0], y[2])
+	carry, res3 = umulStep(res3, x[1], y[2], carry)
+	carry, res4 = umulStep(res4, x[2], y[2], carry)
+	carry6, res5 = umulStep(carry5, x[3], y[2], carry)
 
-	res[3], carry = umulStep(res3, x[0], y[3], 0)
-	res[4], carry = umulStep(res4, x[1], y[3], carry)
-	res[5], carry = umulStep(res5, x[2], y[3], carry)
-	res[6], res[7] = umulStep(carry6, x[3], y[3], carry)
+	carry, res[3] = umulHop(res3, x[0], y[3])
+	carry, res[4] = umulStep(res4, x[1], y[3], carry)
+	carry, res[5] = umulStep(res5, x[2], y[3], carry)
+	res[7], res[6] = umulStep(carry6, x[3], y[3], carry)
 
 	return res
 }
@@ -251,16 +259,16 @@ func (z *Int) Mul(x, y *Int) *Int {
 		res1, res2, res3 uint64
 	)
 
-	res[0], carry = umulStep(0, x[0], y[0], 0)
-	res1, carry = umulStep(0, x[1], y[0], carry)
-	res2, carry = umulStep(0, x[2], y[0], carry)
+	carry, res[0] = bits.Mul64(x[0], y[0])
+	carry, res1 = umulHop(carry, x[1], y[0])
+	carry, res2 = umulHop(carry, x[2], y[0])
 	res3 = x[3]*y[0] + carry
 
-	res[1], carry = umulStep(res1, x[0], y[1], 0)
-	res2, carry = umulStep(res2, x[1], y[1], carry)
+	carry, res[1] = umulHop(res1, x[0], y[1])
+	carry, res2 = umulStep(res2, x[1], y[1], carry)
 	res3 = res3 + x[2]*y[1] + carry
 
-	res[2], carry = umulStep(res2, x[0], y[2], 0)
+	carry, res[2] = umulHop(res2, x[0], y[2])
 	res3 = res3 + x[1]*y[2] + carry
 
 	res[3] = res3 + x[0]*y[3]
@@ -275,14 +283,14 @@ func (z *Int) squared() {
 		res1, res2             uint64
 	)
 
-	res[0], carry0 = umulStep(0, z[0], z[0], 0)
-	res1, carry0 = umulStep(0, z[0], z[1], carry0)
-	res2, carry0 = umulStep(0, z[0], z[2], carry0)
+	carry0, res[0] = bits.Mul64(z[0], z[0])
+	carry0, res1 = umulHop(carry0, z[0], z[1])
+	carry0, res2 = umulHop(carry0, z[0], z[2])
 
-	res[1], carry1 = umulStep(res1, z[0], z[1], 0)
-	res2, carry1 = umulStep(res2, z[1], z[1], carry1)
+	carry1, res[1] = umulHop(res1, z[0], z[1])
+	carry1, res2 = umulStep(res2, z[1], z[1], carry1)
 
-	res[2], carry2 = umulStep(res2, z[0], z[2], 0)
+	carry2, res[2] = umulHop(res2, z[0], z[2])
 
 	res[3] = 2*(z[0]*z[3]+z[1]*z[2]) + carry0 + carry1 + carry2
 
@@ -426,7 +434,7 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 }
 
 // Div sets z to the quotient x/y for returns z.
-// If d == 0, z is set to 0
+// If y == 0, z is set to 0
 func (z *Int) Div(x, y *Int) *Int {
 	if y.IsZero() || y.Gt(x) {
 		return z.Clear()
@@ -719,12 +727,12 @@ func (z *Int) Cmp(x *Int) (r int) {
 
 // LtUint64 returns true if z is smaller than n
 func (z *Int) LtUint64(n uint64) bool {
-	return z[0] < n && (z[1] | z[2] | z[3]) == 0
+	return z[0] < n && (z[1]|z[2]|z[3]) == 0
 }
 
 // GtUint64 returns true if z is larger than n
 func (z *Int) GtUint64(n uint64) bool {
-	return z[0] > n || (z[1] | z[2] | z[3]) != 0
+	return z[0] > n || (z[1]|z[2]|z[3]) != 0
 }
 
 // IsUint64 reports whether z can be represented as a uint64.
