@@ -7,6 +7,7 @@ package uint256
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"math/big"
 	"math/bits"
 )
@@ -390,4 +391,27 @@ func bigEndianUint56(b []byte) uint64 {
 	_ = b[6] // bounds check hint to compiler; see golang.org/issue/14808
 	return uint64(b[6]) | uint64(b[5])<<8 | uint64(b[4])<<16 | uint64(b[3])<<24 |
 		uint64(b[2])<<32 | uint64(b[1])<<40 | uint64(b[0])<<48
+}
+
+// EncodeRLP implements the rlp.Encoder interface from go-ethereum
+// and writes the RLP encoding of z to w.
+func (z *Int) EncodeRLP(w io.Writer) error {
+	nBits := z.BitLen()
+	if nBits == 0 {
+		_, err := w.Write([]byte{0x80})
+		return err
+	}
+	if nBits <= 7 {
+		_, err := w.Write([]byte{byte(z[0])})
+		return err
+	}
+	nBytes := byte((nBits + 7) / 8)
+	var b [33]byte
+	binary.BigEndian.PutUint64(b[1:9], z[3])
+	binary.BigEndian.PutUint64(b[9:17], z[2])
+	binary.BigEndian.PutUint64(b[17:25], z[1])
+	binary.BigEndian.PutUint64(b[25:33], z[0])
+	b[32-nBytes] = 0x80 + nBytes
+	_, err := w.Write(b[32-nBytes:])
+	return err
 }
