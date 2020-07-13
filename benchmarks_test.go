@@ -695,3 +695,56 @@ func Benchmark_SDiv(bench *testing.B) {
 	bench.Run("large/big", benchmark_SdivLarge_Big)
 	bench.Run("large/uint256", benchmark_SdivLarge_Bit)
 }
+
+func Benchmark_EncodeHex(b *testing.B) {
+	hexEncodeU256 := func(b *testing.B, samples *[numSamples]Int) {
+		b.ReportAllocs()
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				samples[i].Hex()
+			}
+		}
+	}
+	hexEncodeBig := func(b *testing.B, samples *[numSamples]big.Int) {
+		b.ReportAllocs()
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				// We're being nice to big.Int here, because this method
+				// does not add the 0x-prefix -- so an extra alloc is needed to get
+				// the same result. We still win the benchmark though...
+				samples[i].Text(16)
+			}
+		}
+	}
+	b.Run("large/uint256", func(b *testing.B) { hexEncodeU256(b, &int256Samples) })
+	b.Run("large/big", func(b *testing.B) { hexEncodeBig(b, &big256Samples) })
+}
+
+func Benchmark_DecodeHex(b *testing.B) {
+
+	var hexStrings []string
+	for _, z := range int256Samples {
+		hexStrings = append(hexStrings, (&z).Hex())
+	}
+
+	hexDecodeU256 := func(b *testing.B, samples *[numSamples]Int) {
+		b.ReportAllocs()
+		//var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				_, _ = FromHex(hexStrings[i])
+			}
+		}
+	}
+	hexDecodeBig := func(b *testing.B, samples *[numSamples]big.Int) {
+		b.ReportAllocs()
+		//var sink big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				big.NewInt(0).SetString(hexStrings[i], 16)
+			}
+		}
+	}
+	b.Run("large/uint256", func(b *testing.B) { hexDecodeU256(b, &int256Samples) })
+	b.Run("large/big", func(b *testing.B) { hexDecodeBig(b, &big256Samples) })
+}

@@ -7,6 +7,7 @@ package uint256
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"testing"
@@ -574,5 +575,169 @@ func BenchmarkRLPEncoding(b *testing.B) {
 			_ = z.EncodeRLP(devnull)
 			z.Lsh(z, 1)
 		}
+	}
+}
+
+func referenceBig(s string) *big.Int {
+	b, ok := new(big.Int).SetString(s, 16)
+	if !ok {
+		panic("invalid")
+	}
+	return b
+}
+
+type marshalTest struct {
+	input interface{}
+	want  string
+}
+
+type unmarshalTest struct {
+	input        string
+	want         interface{}
+	wantErr      error // if set, decoding must fail on any platform
+	wantErr32bit error // if set, decoding must fail on 32bit platforms (used for Uint tests)
+}
+
+var (
+	encodeBigTests = []marshalTest{
+		{referenceBig("0"), "0x0"},
+		{referenceBig("1"), "0x1"},
+		{referenceBig("ff"), "0xff"},
+		{referenceBig("112233445566778899aabbccddeeff"), "0x112233445566778899aabbccddeeff"},
+		{referenceBig("80a7f2c1bcc396c00"), "0x80a7f2c1bcc396c00"},
+	}
+
+	decodeBigTests = []unmarshalTest{
+		// invalid
+		{input: ``, wantErr: ErrEmptyString},
+		{input: `0`, wantErr: ErrMissingPrefix},
+		{input: `0x`, wantErr: ErrEmptyNumber},
+		{input: `0x01`, wantErr: ErrLeadingZero},
+		{input: `0xx`, wantErr: ErrSyntax},
+		{input: `0x1zz01`, wantErr: ErrSyntax},
+		{
+			input:   `0x10000000000000000000000000000000000000000000000000000000000000000`,
+			wantErr: ErrBig256Range,
+		},
+		// valid
+		{input: `0x0`, want: big.NewInt(0)},
+		{input: `0x2`, want: big.NewInt(0x2)},
+		{input: `0x2F2`, want: big.NewInt(0x2f2)},
+		{input: `0X2F2`, want: big.NewInt(0x2f2)},
+		{input: `0x1122aaff`, want: big.NewInt(0x1122aaff)},
+		{input: `0xbBb`, want: big.NewInt(0xbbb)},
+		{input: `0xfffffffff`, want: big.NewInt(0xfffffffff)},
+		{
+			input: `0x112233445566778899aabbccddeeff`,
+			want:  referenceBig("112233445566778899aabbccddeeff"),
+		},
+		{
+			input: `0xffffffffffffffffffffffffffffffffffff`,
+			want:  referenceBig("ffffffffffffffffffffffffffffffffffff"),
+		},
+		{
+			input: `0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff`,
+			want:  referenceBig("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
+		},
+	}
+)
+
+func checkError(t *testing.T, input string, got, want error) bool {
+	if got == nil {
+		if want != nil {
+			t.Errorf("input %s: got no error, want %q", input, want)
+			return false
+		}
+		return true
+	}
+	if want == nil {
+		t.Errorf("input %s: unexpected error %q", input, got)
+	} else if got.Error() != want.Error() {
+		t.Errorf("input %s: got error %q, want %q", input, got, want)
+	}
+	return false
+}
+
+func TestEncode(t *testing.T) {
+	for _, test := range encodeBigTests {
+		z, _ := FromBig(test.input.(*big.Int))
+		enc := z.Hex()
+		if enc != test.want {
+			t.Errorf("input %x: wrong encoding %s (exp %s)", test.input, enc, test.want)
+		}
+	}
+
+}
+
+func TestDecode(t *testing.T) {
+	for _, test := range decodeBigTests {
+		dec, err := FromHex(test.input)
+		if !checkError(t, test.input, err, test.wantErr) {
+			continue
+		}
+		b := dec.ToBig()
+		if b.Cmp(test.want.(*big.Int)) != 0 {
+			t.Errorf("input %s: value mismatch: got %x, want %x", test.input, dec, test.want)
+			continue
+		}
+	}
+}
+
+func TestEnDecode(t *testing.T) {
+	type jsonStruct struct {
+		Foo *Int
+	}
+	var testSample = func(i int, bigSample big.Int, intSample Int) {
+		// Encoding
+		exp := fmt.Sprintf("0x%s", bigSample.Text(16))
+
+		if got := intSample.Hex(); exp != got {
+			t.Fatalf("test %d #1, got %v, exp %v", i, got, exp)
+		}
+		if got := intSample.String(); exp != got {
+			t.Fatalf("test %d #2, got %v, exp %v", i, got, exp)
+		}
+		if got, _ := intSample.MarshalText(); exp != string(got) {
+			t.Fatalf("test %d #3, got %v, exp %v", i, got, exp)
+		}
+		{ // Json
+			jsonEncoded, err := json.Marshal(&jsonStruct{&intSample})
+			if err != nil {
+				t.Fatalf("test %d #4, err: %v", i, err)
+			}
+			var jsonDecoded jsonStruct
+			err = json.Unmarshal(jsonEncoded, &jsonDecoded)
+			if err != nil {
+				t.Fatalf("test %d #5, err: %v", i, err)
+			}
+			if jsonDecoded.Foo.Cmp(&intSample) != 0 {
+				t.Fatalf("test %d #6, got %v, exp %v", i, jsonDecoded.Foo, intSample)
+			}
+		}
+		// Decoding
+		dec, err := FromHex(exp)
+		if err != nil {
+			t.Fatalf("test %d #5, err: %v", i, err)
+		}
+		if dec.Cmp(&intSample) != 0 {
+			t.Fatalf("test %d #6, got %v, exp %v", i, dec, intSample)
+		}
+		dec = NewInt()
+		if err := dec.UnmarshalText([]byte(exp)); err != nil {
+			t.Fatalf("test %d #7, err: %v", i, err)
+		}
+		if dec.Cmp(&intSample) != 0 {
+			t.Fatalf("test %d #8, got %v, exp %v", i, dec, intSample)
+		}
+
+	}
+	for i, bigSample := range big256Samples {
+		intSample := int256Samples[i]
+		testSample(i, bigSample, intSample)
+	}
+
+	for i, bigSample := range big256SamplesLt {
+		intSample := int256SamplesLt[i]
+		testSample(i, bigSample, intSample)
 	}
 }
