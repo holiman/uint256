@@ -370,7 +370,7 @@ func benchmark_Lsh_Bit(n uint, bench *testing.B) {
 	f2, _ := FromBig(original)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		f1 := NewInt()
+		f1 := new(Int)
 		f1.Lsh(f2, n)
 	}
 }
@@ -431,7 +431,7 @@ func benchmark_Rsh_Bit(n uint, bench *testing.B) {
 	f2, _ := FromBig(original)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		f1 := NewInt()
+		f1 := new(Int)
 		f1.Rsh(f2, n)
 	}
 }
@@ -686,7 +686,7 @@ func benchmark_SdivLarge_Bit(bench *testing.B) {
 
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		f := NewInt()
+		f := new(Int)
 		f.SDiv(fa, fb)
 	}
 }

@@ -16,9 +16,11 @@ import (
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
-// NewInt returns a new zero-initialized Int.
-func NewInt() *Int {
-	return &Int{}
+// NewInt returns a new initialized Int.
+func NewInt(val uint64) *Int {
+	z := &Int{}
+	z.SetUint64(val)
+	return z
 }
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned

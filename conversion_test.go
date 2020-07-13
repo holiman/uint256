@@ -184,14 +184,14 @@ func TestSetBytes(t *testing.T) {
 	for i := 0; i < 35; i++ {
 		buf := hex2Bytes("aaaa12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031bbbb")
 		exp, _ := FromBig(new(big.Int).SetBytes(buf[0:i]))
-		z := NewInt().SetAllOne().SetBytes(buf[0:i])
+		z := new(Int).SetAllOne().SetBytes(buf[0:i])
 		if !z.Eq(exp) {
 			t.Errorf("testcase %d: exp %x, got %x", i, exp, z)
 		}
 	}
 	// nil check
 	exp, _ := FromBig(new(big.Int).SetBytes(nil))
-	z := NewInt().SetAllOne().SetBytes(nil)
+	z := new(Int).SetAllOne().SetBytes(nil)
 	if !z.Eq(exp) {
 		t.Errorf("nil-test : exp %x, got %x", exp, z)
 	}
@@ -199,7 +199,7 @@ func TestSetBytes(t *testing.T) {
 
 func BenchmarkSetBytes(b *testing.B) {
 
-	val := NewInt()
+	val := new(Int)
 	bytearr := hex2Bytes("12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031")
 	b.Run("generic", func(b *testing.B) {
 		b.ReportAllocs()
@@ -544,7 +544,7 @@ func TestRlpEncode(t *testing.T) {
 		{"4000000000000000000000000000000000000000000000000000000000000000", "a04000000000000000000000000000000000000000000000000000000000000000"},
 		{"8000000000000000000000000000000000000000000000000000000000000000", "a08000000000000000000000000000000000000000000000000000000000000000"},
 	} {
-		z := NewInt().SetBytes(hex2Bytes(tt.val))
+		z := new(Int).SetBytes(hex2Bytes(tt.val))
 		var b bytes.Buffer
 		w := bufio.NewWriter(&b)
 		if err := z.EncodeRLP(w); err != nil {
@@ -565,7 +565,7 @@ func (n2 *nilWriter) Write(p []byte) (n int, err error) {
 
 // BenchmarkRLPEncoding writes 255 Ints ranging in bitsize from 0-255 in each op
 func BenchmarkRLPEncoding(b *testing.B) {
-	z := NewInt()
+	z := new(Int)
 	devnull := &nilWriter{}
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -742,7 +742,7 @@ func TestEnDecode(t *testing.T) {
 		if dec.Cmp(&intSample) != 0 {
 			t.Fatalf("test %d #6, got %v, exp %v", i, dec, intSample)
 		}
-		dec = NewInt()
+		dec = new(Int)
 		if err := dec.UnmarshalText([]byte(exp)); err != nil {
 			t.Fatalf("test %d #7, err: %v", i, err)
 		}

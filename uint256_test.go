@@ -484,21 +484,21 @@ func TestSRsh(t *testing.T) {
 
 func TestByte(t *testing.T) {
 	z := new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual := z.Byte(NewInt().SetUint64(0))
+	actual := z.Byte(NewInt(0))
 	expected := new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ab"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual = z.Byte(NewInt().SetUint64(31))
+	actual = z.Byte(NewInt(31))
 	expected = new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ef"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual = z.Byte(NewInt().SetUint64(32))
+	actual = z.Byte(NewInt(32))
 	expected = new(Int).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %x, got %x", expected, actual)
@@ -1071,7 +1071,7 @@ func TestWriteToSlice(t *testing.T) {
 		t.Errorf("got %x, expected %x", dest, x1)
 	}
 
-	fb := NewInt()
+	fb := new(Int)
 	exp := make([]byte, 32)
 	fb.WriteToSlice(dest)
 	if !bytes.Equal(dest, exp) {
@@ -1191,7 +1191,7 @@ func TestByte20Representation(t *testing.T) {
 		exp := bytesToAddress(a.Bytes())
 
 		// uint256.Int -> address
-		b := NewInt().SetBytes(bytearr)
+		b := new(Int).SetBytes(bytearr)
 		got := gethAddress(b.Bytes20())
 
 		if got != exp {
@@ -1220,7 +1220,7 @@ func TestByte32Representation(t *testing.T) {
 		exp := bytesToHash(a.Bytes())
 
 		// uint256.Int -> address
-		b := NewInt().SetBytes(bytearr)
+		b := new(Int).SetBytes(bytearr)
 		got := gethHash(b.Bytes32())
 
 		if got != exp {
