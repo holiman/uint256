@@ -680,6 +680,27 @@ func TestDecode(t *testing.T) {
 			continue
 		}
 	}
+	// Some remaining json-tests
+	type jsonStruct struct {
+		Foo *Int
+	}
+	var jsonDecoded jsonStruct
+	if err := json.Unmarshal([]byte(`{"Foo":0x1}`), &jsonDecoded); err == nil {
+		t.Fatal("Expected error")
+	}
+	if err := json.Unmarshal([]byte(`{"Foo":1}`), &jsonDecoded); err == nil {
+		t.Fatal("Expected error")
+	}
+	if err := json.Unmarshal([]byte(`{"Foo":""}`), &jsonDecoded); err == nil {
+		t.Fatal("Expected error")
+	}
+	if err := json.Unmarshal([]byte(`{"Foo":"0x1"}`), &jsonDecoded); err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	} else {
+		if jsonDecoded.Foo.Uint64() != 1 {
+			t.Fatal("Expected 1")
+		}
+	}
 }
 
 func TestEnDecode(t *testing.T) {
