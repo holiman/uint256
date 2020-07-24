@@ -6,6 +6,7 @@ package uint256
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -48,6 +49,50 @@ func FromBig(b *big.Int) (*Int, bool) {
 	z := &Int{}
 	overflow := z.SetFromBig(b)
 	return z, overflow
+}
+
+// fromHex is the internal implementation of parsing a hex-string.
+func (z *Int) fromHex(hex string) error {
+	if err := checkNumberS(hex); err != nil {
+		return err
+	}
+
+	if len(hex) > 66 {
+		return ErrBig256Range
+	}
+	end := len(hex)
+	for i := 0; i < 4; i++ {
+		start := end - 16
+		if start < 2 {
+			start = 2
+		}
+		for ri := start; ri < end; ri++ {
+			nib := bintable[hex[ri]]
+			if nib == badNibble {
+				return ErrSyntax
+			}
+			z[i] = z[i] << 4
+			z[i] += uint64(nib)
+		}
+		end = start
+	}
+	return nil
+}
+
+// FromHex is a convenience-constructor to create an Int from
+// a hexadecimal string. The string is required to be '0x'-prefixed
+// Numbers larger than 256 bits are not accepted.
+func FromHex(hex string) (*Int, error) {
+	var z Int
+	if err := z.fromHex(hex); err != nil {
+		return nil, err
+	}
+	return &z, nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler
+func (z *Int) UnmarshalText(input []byte) error {
+	return z.fromHex(string(input))
 }
 
 // SetFromBig converts a big.Int to Int and sets the value to z.
@@ -414,4 +459,92 @@ func (z *Int) EncodeRLP(w io.Writer) error {
 	b[32-nBytes] = 0x80 + nBytes
 	_, err := w.Write(b[32-nBytes:])
 	return err
+}
+
+// MarshalText implements encoding.TextMarshaler
+func (z *Int) MarshalText() ([]byte, error) {
+	return []byte(z.Hex()), nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (z *Int) UnmarshalJSON(input []byte) error {
+	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
+		return ErrNonString
+	}
+	return z.UnmarshalText(input[1 : len(input)-1])
+}
+
+// String returns the hex encoding of b.
+func (z *Int) String() string {
+	return z.Hex()
+}
+
+const (
+	hextable  = "0123456789abcdef"
+	bintable  = "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x00\x01\x02\x03\x04\x05\x06\a\b\t\xff\xff\xff\xff\xff\xff\xff\n\v\f\r\x0e\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\n\v\f\r\x0e\x0f\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff"
+	badNibble = 0xff
+)
+
+// Hex encodes z in 0x-prefixed hexadecimal form.
+func (z *Int) Hex() string {
+	// This implementation is not optimal, it allocates a full
+	// 66-byte output buffer which it fills. It could instead allocate a smaller
+	// buffer, and omit the final crop-stage.
+	output := make([]byte, 66)
+	nibbles := (z.BitLen() + 3) / 4 // nibbles [0,64]
+	if nibbles == 0 {
+		nibbles = 1
+	}
+	// Start with the most significant
+	zWord := (nibbles - 1) / 16
+	for i := zWord; i >= 0; i-- {
+		off := (3 - i) * 16
+		output[off+2] = hextable[byte(z[i]>>60)&0xf]
+		output[off+3] = hextable[byte(z[i]>>56)&0xf]
+		output[off+4] = hextable[byte(z[i]>>52)&0xf]
+		output[off+5] = hextable[byte(z[i]>>48)&0xf]
+		output[off+6] = hextable[byte(z[i]>>44)&0xf]
+		output[off+7] = hextable[byte(z[i]>>40)&0xf]
+		output[off+8] = hextable[byte(z[i]>>36)&0xf]
+		output[off+9] = hextable[byte(z[i]>>32)&0xf]
+		output[off+10] = hextable[byte(z[i]>>28)&0xf]
+		output[off+11] = hextable[byte(z[i]>>24)&0xf]
+		output[off+12] = hextable[byte(z[i]>>20)&0xf]
+		output[off+13] = hextable[byte(z[i]>>16)&0xf]
+		output[off+14] = hextable[byte(z[i]>>12)&0xf]
+		output[off+15] = hextable[byte(z[i]>>8)&0xf]
+		output[off+16] = hextable[byte(z[i]>>4)&0xf]
+		output[off+17] = hextable[byte(z[i]&0xF)&0xf]
+	}
+	output[64-nibbles] = '0'
+	output[65-nibbles] = 'x'
+	return string(output[64-nibbles:])
+}
+
+var (
+	ErrEmptyString   = errors.New("empty hex string")
+	ErrSyntax        = errors.New("invalid hex string")
+	ErrMissingPrefix = errors.New("hex string without 0x prefix")
+	ErrEmptyNumber   = errors.New("hex string \"0x\"")
+	ErrLeadingZero   = errors.New("hex number with leading zero digits")
+	ErrBig256Range   = errors.New("hex number > 256 bits")
+	ErrNonString     = errors.New("non-string")
+)
+
+func checkNumberS(input string) error {
+	l := len(input)
+	if l == 0 {
+		return ErrEmptyString
+	}
+	if l < 2 || input[0] != '0' ||
+		(input[1] != 'x' && input[1] != 'X') {
+		return ErrMissingPrefix
+	}
+	if l == 2 {
+		return ErrEmptyNumber
+	}
+	if len(input) > 3 && input[2] == '0' {
+		return ErrLeadingZero
+	}
+	return nil
 }
