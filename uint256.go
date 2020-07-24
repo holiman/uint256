@@ -190,8 +190,12 @@ func (z *Int) AddOverflow(x, y *Int) bool {
 	return carry != 0
 }
 
-// AddMod sets z to the sum ( x+y ) mod m, and returns z
+// AddMod sets z to the sum ( x+y ) mod m, and returns z.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
+	if m.IsZero() {
+		return z.Clear()
+	}
 	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
 		m = m.Clone()
 	}
@@ -567,8 +571,12 @@ func (z *Int) SMod(x, y *Int) *Int {
 }
 
 // MulMod calculates the modulo-m multiplication of x and y and
-// returns z
+// returns z.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) MulMod(x, y, m *Int) *Int {
+	if x.IsZero() || y.IsZero() || m.IsZero() {
+		return z.Clear()
+	}
 	p := umul(x, y)
 	var (
 		pl Int
