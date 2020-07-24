@@ -74,6 +74,10 @@ var (
 
 	// A collection of interesting input values for ternary operators (addmod, mulmod).
 	ternTestCases = [][3]string{
+		{"0", "0", "0"},
+		{"1", "0", "0"},
+		{"1", "1", "0"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "3", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
@@ -920,9 +924,22 @@ func TestTernOp(t *testing.T) {
 			}
 		}
 	}
-
-	t.Run("AddMod", func(t *testing.T) { proc(t, (*Int).AddMod, addMod) })
-	t.Run("MulMod", func(t *testing.T) { proc(t, (*Int).MulMod, mulMod) })
+	t.Run("AddMod", func(t *testing.T) {
+		proc(t, (*Int).AddMod, func(z, x, y, m *big.Int) *big.Int {
+			if m.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return addMod(z, x, y, m)
+		})
+	})
+	t.Run("MulMod", func(t *testing.T) {
+		proc(t, (*Int).MulMod, func(z, x, y, m *big.Int) *big.Int {
+			if m.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return mulMod(z, x, y, m)
+		})
+	})
 }
 
 func TestCmpOp(t *testing.T) {
