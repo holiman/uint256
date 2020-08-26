@@ -10,6 +10,7 @@ import (
 	"encoding/binary"
 	"math"
 	"math/bits"
+	"fmt"
 )
 
 // Int is represented as an array of 4 uint64, in little-endian order,
@@ -408,6 +409,8 @@ func udivremKnuth(quot, u, d []uint64) {
 	dh := d[len(d)-1]
 	dl := d[len(d)-2]
 	reciprocal := reciprocal2by1(dh)
+	fmt.Println("udivremKnuth got result from reciprocal2by1:", reciprocal)
+	fmt.Printf("udivremKnuth received u: %v\n", u)
 
 	for j := len(u) - len(d) - 1; j >= 0; j-- {
 		u2 := u[j+len(d)]
@@ -416,10 +419,12 @@ func udivremKnuth(quot, u, d []uint64) {
 
 		var qhat, rhat uint64
 		if u2 >= dh { // Division overflows.
+			fmt.Println("udivremKnuth division overflows.")
 			qhat = ^uint64(0)
 			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
 		} else {
 			qhat, rhat = udivrem2by1(u2, u1, dh, reciprocal)
+			fmt.Printf("udivremKnuth called udivrem2by1 and got qhat: %v    rhat: %v\n", qhat, rhat)
 			ph, pl := bits.Mul64(qhat, dl)
 			if ph > rhat || (ph == rhat && pl > u0) {
 				qhat--
@@ -438,6 +443,84 @@ func udivremKnuth(quot, u, d []uint64) {
 		quot[j] = qhat // Store quotient digit.
 	}
 }
+
+
+func udivremKnuthFast(quot, u, d []uint64) {
+	dh := d[len(d)-1]
+	dl := d[len(d)-2]
+	//var divisor [2]uint64
+	//divisor[0] = dl
+	//divisor[1] = dh
+	reciprocal := reciprocal3by2(dh, dl)
+	fmt.Println("udivremKnuthFast got result from reciprocal3by2:", reciprocal)
+	fmt.Printf("udivremKnuthFast received u: %v\n", u)
+
+
+	for j := len(u) - len(d) - 1; j >= 0; j-- {
+		u2 := u[j+len(d)]
+		u1 := u[j+len(d)-1]
+		u0 := u[j+len(d)-2]
+
+		var qhat uint64
+		var rhat [2]uint64
+		//if u2 >= dh { // Division overflows.
+		if u2 >= dh {
+		//if u2 > divisor[1] && u1 >= divisor[0] {
+			fmt.Println("udivremKnuthFast division overflows.")
+			qhat = ^uint64(0)
+			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+			u[j+len(d)] = u2 - subMulTo(u[j:], d, qhat)
+			//u[j+len(d)] += addTo(u[j:], d)
+		} else {
+			qhat, rhat = udivrem3by2(u2, u1, u0, dh, dl, reciprocal)
+			fmt.Printf("udivremKnuthFast called udivrem3by2 and got qhat: %v    rhat: %v\n", qhat, rhat)
+
+			overflow := subMulTo(u[j:], d, qhat)
+			// s, carry1 := bits.Sub64(x[i], borrow, 0)
+			var carry uint64
+			u[j+len(d)-2], carry = bits.Sub64(rhat[0], overflow, 0)
+			u[j+len(d)-1], carry = bits.Sub64(rhat[1], carry, 0)
+
+			if carry > 0 {
+				fmt.Println("carry > 0. doing qhat--")
+				qhat--
+				// add(&u[j], &u[j], d, dlen - 1), u[j] = u[j] + d
+				//uplusd := addTo()
+				u[j+len(d) - 1] += dh + addTo(u[j:], d)
+				
+				//u[j+len(d)-1] += dh + ()
+			}
+
+			/*
+			ph, pl := bits.Mul64(qhat, dl)
+			//if ph > rhat || (ph == rhat && pl > u0) {
+			if ph > rhat[0] || (ph == rhat[0] && pl > u0) {
+				fmt.Println("first check.. doing qhat--")
+				qhat--
+				// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+			}
+			*/
+		}
+
+		/*
+		// Multiply and subtract.
+		borrow := subMulTo(u[j:], d, qhat)
+		u[j+len(d)] = u2 - borrow
+		if u2 < borrow { // Too much subtracted, add back.
+			fmt.Println("u2 < borrow. doing qhat--")
+			qhat--
+			u[j+len(d)] += addTo(u[j:], d)
+		}
+		*/
+
+		quot[j] = qhat // Store quotient digit.
+	}
+}
+
+
+
+
+
 
 // udivrem divides u by d and produces both quotient and remainder.
 // The quotient is stored in provided quot - len(u)-len(d)+1 words.
@@ -485,7 +568,27 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 		return rem
 	}
 
-	udivremKnuth(quot, un, dn)
+	//quotCopy := quot
+	quotCopy := make([]uint64, len(quot))
+	copy(quotCopy, quot)
+	//unCopy := un
+	unCopy := make([]uint64, len(un))
+	copy(unCopy, un)
+	//dnCopy := dn
+	dnCopy := make([]uint64, len(dn))
+	copy(dnCopy, dn)
+	//fmt.Println("calling udivremKnuth with un: %v", unCopy)
+	//udivremKnuth(quot, un, dn)
+	udivremKnuth(quotCopy, unCopy, dnCopy)
+	fmt.Println("quotCorrect: %v", quotCopy)
+	fmt.Println("---------")
+	//fmt.Println("calling udivremKnuthFast, un is: %v", un)
+	//fmt.Println("calling udivremKnuthFast with unCopy: %v", un)
+	//udivremKnuthFast(quotCopy, unCopy, dnCopy)
+	udivremKnuthFast(quot, un, dn)
+	//udivremKnuthFast(quotCopy, unCopy, dnCopy)
+	fmt.Println("quotCopy: %v", quot)
+	fmt.Println("---------")
 
 	for i := 0; i < dLen-1; i++ {
 		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
