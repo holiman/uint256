@@ -1256,3 +1256,28 @@ func TestReciprocal3by2(t *testing.T) {
 		}
 	}
 }
+
+func TestUdivrem3by2(t *testing.T) {
+	type testCase struct {
+		u    [3]uint64
+		d    [2]uint64
+		quot uint64
+		rem  [2]uint64
+	}
+	testCases := []testCase{
+		{[3]uint64{0, 0x8000000000000000, 1}, [2]uint64{0x8000000000000000, 1}, 1, [2]uint64{0, 0}},
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		tc := testCases[i]
+		reciprocal := reciprocal3by2(tc.d[0], tc.d[1])
+		q, r := udivrem3by2(tc.u[0], tc.u[1], tc.u[2], tc.d[0], tc.d[1], reciprocal)
+
+		if q != tc.quot {
+			t.Errorf("testcase %d: quot %x exp %x", i, q, tc.quot)
+		}
+		if r != tc.rem {
+			t.Errorf("testcase %d: rem %x exp %x", i, r, tc.rem)
+		}
+	}
+}
