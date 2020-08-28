@@ -1228,3 +1228,31 @@ func TestByte32Representation(t *testing.T) {
 		}
 	}
 }
+
+// TestReciprocal3by2 tests reciprocal3by2 procedure with some elementary test
+// cases taken directly from intx "reciprocal_3by2" unit test.
+func TestReciprocal3by2(t *testing.T) {
+	testCases := [][3]uint64{
+		{0x8000000000000000, 0x0000000000000000, 0xffffffffffffffff},
+		{0x8000000000000000, 0x8000000000000000, 0xfffffffffffffffe},
+		{0x8000000000000001, 0x0000000000000000, 0xfffffffffffffffc},
+		{0x8000000000000000, 0xffffffffffffffff, 0xfffffffffffffffc},
+		{0xc000000000000000, 0x0000000000000000, 0x5555555555555555},
+		{0xc000000000000000, 0x0000000000000001, 0x5555555555555555},
+		{0xc000000000000000, 0xffffffffffffffff, 0x5555555555555553},
+		{0xfffffffffffffffe, 0x0000000000000000, 2},
+		{0xfffffffffffffffe, 0x0000000000000001, 2},
+		{0xfffffffffffffffe, 0xffffffffffffffff, 1},
+		{0xffffffffffffffff, 0x0000000000000000, 1},
+		{0xffffffffffffffff, 0x0000000000000001, 0},
+		{0xffffffffffffffff, 0xffffffffffffffff, 0},
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		testCase := testCases[i]
+		r := reciprocal3by2(testCase[0], testCase[1])
+		if r != testCase[2] {
+			t.Errorf("testcase %d: got %x exp %x", i, r, testCase[2])
+		}
+	}
+}
