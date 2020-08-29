@@ -1234,6 +1234,7 @@ func TestByte32Representation(t *testing.T) {
 func TestReciprocal3by2(t *testing.T) {
 	testCases := [][3]uint64{
 		{0x8000000000000000, 0x0000000000000000, 0xffffffffffffffff},
+		{0x8000000000000000, 0x0000000000000001, 0xffffffffffffffff},
 		{0x8000000000000000, 0x8000000000000000, 0xfffffffffffffffe},
 		{0x8000000000000001, 0x0000000000000000, 0xfffffffffffffffc},
 		{0x8000000000000000, 0xffffffffffffffff, 0xfffffffffffffffc},
@@ -1258,26 +1259,49 @@ func TestReciprocal3by2(t *testing.T) {
 }
 
 func TestUdivrem3by2(t *testing.T) {
-	type testCase struct {
-		u    [3]uint64
-		d    [2]uint64
-		quot uint64
-		rem  [2]uint64
-	}
+	type testCase [2]string
 	testCases := []testCase{
-		{[3]uint64{0, 0x8000000000000000, 1}, [2]uint64{0x8000000000000000, 1}, 1, [2]uint64{0, 0}},
+		{"0x80000000000000000000000000000000", "0x80000000000000000000000000000000"},
+		{"0x80000000000000000000000000000001", "0x80000000000000000000000000000000"},
+		{"0x80000000000000000000000000000001", "0x80000000000000000000000000000001"},
+		{"0x80000000000000000000000000000002", "0x80000000000000000000000000000001"},
+		{"0x180000000000000000000000000000000", "0x80000000000000000000000000000001"},
+		{"0x0", "0x80000000000000000000000000000001"},
+		{"0x1", "0x80000000000000000000000000000001"},
+		{"0x1", "0x80000000000000000000000000000001"},
+		{"0x800000000000000080000000000000000000000000000000", "0x80000000000000008000000000000001"},
+		{"0x800000000000000080000000000000000000000000000000", "0x80000000000000010000000000000000"},
+		{"0xfe0000000000000080000000000000000000000000000000", "0xff000000000000000000000000000001"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xff000000000000008000000000000001"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xff000000000000010000000000000001"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xff000000000000010000000000000000"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xffffffffffffffffffffffffffffffff"},
+		{"0xfffffffffffffffffffffffffffffffeffffffffffffffff", "0xffffffffffffffffffffffffffffffff"},
 	}
 
 	for i := 0; i < len(testCases); i++ {
-		tc := testCases[i]
-		reciprocal := reciprocal3by2(tc.d[0], tc.d[1])
-		q, r := udivrem3by2(tc.u[0], tc.u[1], tc.u[2], tc.d[0], tc.d[1], reciprocal)
-
-		if q != tc.quot {
-			t.Errorf("testcase %d: quot %x exp %x", i, q, tc.quot)
+		numerator, err := FromHex(testCases[i][0])
+		if err != nil || numerator[3] != 0 {
+			t.Fatalf("wrong testcase %d: numerator %s (%v)", i, testCases[i][0], err)
 		}
-		if r != tc.rem {
-			t.Errorf("testcase %d: rem %x exp %x", i, r, tc.rem)
+		divisor, err := FromHex(testCases[i][1])
+		if err != nil || divisor[3] != 0 || divisor[2] != 0 {
+			t.Fatalf("wrong testcase %d: divisor %s (%v)", i, testCases[i][0], err)
+		}
+
+		reciprocal := reciprocal3by2(divisor[1], divisor[0])
+		q, r := udivrem3by2(numerator[2], numerator[1], numerator[0], divisor[1], divisor[0], reciprocal)
+
+		expectedQ, expectedRBig := new(big.Int).QuoRem(numerator.ToBig(), divisor.ToBig(), new(big.Int))
+		expectedR, overflow := FromBig(expectedRBig);
+		if !expectedQ.IsUint64() || overflow {
+			t.Fatalf("wrong testcase %d: divisor %x not normalized", i, divisor)
+		}
+		if q != expectedQ.Uint64() {
+			t.Errorf("testcase %d: quot %x exp %x", i, q, expectedQ.Uint64())
+		}
+		if r != [2]uint64{expectedR[0], expectedR[1]} {
+			t.Errorf("testcase %d: rem %x exp %x", i, r, expectedR[0:2])
 		}
 	}
 }
