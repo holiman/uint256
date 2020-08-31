@@ -133,7 +133,7 @@ func udivrem3by2(u2, u1, u0, dh, dl, reciprocal uint64) (quot uint64, rem [2]uin
 
 	qh++ // ++q.hi
 
-	if r[1] > ql {
+	if r[1] >= ql {
 		qh--
 		// r is a uint128
 		//r += d
