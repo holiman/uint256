@@ -28,6 +28,7 @@ var (
 
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
+	// Keep then in sync with div_test_cases in intx library.
 	binTestCases = [][2]string{
 		{"0", "0"},
 		{"1", "0"},
@@ -70,6 +71,7 @@ var (
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xffffffffffffffffffffffffffffffff"},
 	}
 
 	// A collection of interesting input values for ternary operators (addmod, mulmod).
@@ -1293,7 +1295,7 @@ func TestUdivrem3by2(t *testing.T) {
 		q, r := udivrem3by2(numerator[2], numerator[1], numerator[0], divisor[1], divisor[0], reciprocal)
 
 		expectedQ, expectedRBig := new(big.Int).QuoRem(numerator.ToBig(), divisor.ToBig(), new(big.Int))
-		expectedR, overflow := FromBig(expectedRBig);
+		expectedR, overflow := FromBig(expectedRBig)
 		if !expectedQ.IsUint64() || overflow {
 			t.Fatalf("wrong testcase %d: divisor %x not normalized", i, divisor)
 		}
