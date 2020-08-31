@@ -464,7 +464,7 @@ func udivremKnuthFast(quot, u, d []uint64) {
 		var qhat uint64
 		var rhat [2]uint64
 		//if u2 >= dh { // Division overflows.
-		if u2 >= dh {
+		if u2 == dh && u1 == dl {
 		//if u2 > divisor[1] && u1 >= divisor[0] {
 			fmt.Println("udivremKnuthFast division overflows.")
 			qhat = ^uint64(0)
@@ -475,7 +475,7 @@ func udivremKnuthFast(quot, u, d []uint64) {
 			qhat, rhat = udivrem3by2(u2, u1, u0, dh, dl, reciprocal)
 			fmt.Printf("udivremKnuthFast called udivrem3by2 and got qhat: %v    rhat: %v\n", qhat, rhat)
 
-			overflow := subMulTo(u[j:], d, qhat)
+			overflow := subMulTo(u[j:], d[0:len(d)-2], qhat)
 			// s, carry1 := bits.Sub64(x[i], borrow, 0)
 			var carry uint64
 			u[j+len(d)-2], carry = bits.Sub64(rhat[0], overflow, 0)
@@ -486,8 +486,8 @@ func udivremKnuthFast(quot, u, d []uint64) {
 				qhat--
 				// add(&u[j], &u[j], d, dlen - 1), u[j] = u[j] + d
 				//uplusd := addTo()
-				u[j+len(d) - 1] += dh + addTo(u[j:], d)
-				
+				u[j+len(d) - 1] += dh + addTo(u[j:], d[0:len(d)-1])
+
 				//u[j+len(d)-1] += dh + ()
 			}
 
