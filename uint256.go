@@ -549,20 +549,7 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 		return rem
 	}
 
-	//quotCopy := quot
-	quotCopy := make([]uint64, len(quot))
-	copy(quotCopy, quot)
-	//unCopy := un
-	unCopy := make([]uint64, len(un))
-	copy(unCopy, un)
-	//dnCopy := dn
-	dnCopy := make([]uint64, len(dn))
-	copy(dnCopy, dn)
-	//udivremKnuth(quot, un, dn)
-	udivremKnuth(quotCopy, unCopy, dnCopy)
-	//udivremKnuthFast(quotCopy, unCopy, dnCopy)
 	udivremKnuthFast(quot, un, dn)
-	//udivremKnuthFast(quotCopy, unCopy, dnCopy)
 
 	for i := 0; i < dLen-1; i++ {
 		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
