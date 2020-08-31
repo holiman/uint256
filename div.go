@@ -5,7 +5,6 @@
 package uint256
 
 import "math/bits"
-import "fmt"
 
 // reciprocal2by1 computes <^d, ^0> / d.
 func reciprocal2by1(d uint64) uint64 {
@@ -42,7 +41,6 @@ func udivrem2by1(uh, ul, d, reciprocal uint64) (quot, rem uint64) {
 	qh++
 
 	r := ul - qh*d
-	fmt.Println("udivrem2by1 r:", r)
 
 	if r > ql {
 		qh--
@@ -53,8 +51,6 @@ func udivrem2by1(uh, ul, d, reciprocal uint64) (quot, rem uint64) {
 		qh++
 		r -= d
 	}
-
-	fmt.Printf("udivrem2by1 returning qh: %v, r: %v\n", qh, r)
 
 	return qh, r
 }
@@ -75,9 +71,9 @@ func reciprocal3by2(dh, dl uint64) uint64 {
 		}
 		p -= d[1]
 	}
-	
+
 	th, tl := bits.Mul64(v, d[0])
-	
+
 	p += th
 	if p < th {
 		v--
@@ -87,10 +83,9 @@ func reciprocal3by2(dh, dl uint64) uint64 {
 			}
 		}
 	}
-	
+
 	return v
 }
-
 
 func udivrem3by2(u2, u1, u0, dh, dl, reciprocal uint64) (quot uint64, rem [2]uint64) {
 	var carry uint64
@@ -100,17 +95,9 @@ func udivrem3by2(u2, u1, u0, dh, dl, reciprocal uint64) (quot uint64, rem [2]uin
 	ql, carry = bits.Add64(ql, u1, 0)
 	qh, _ = bits.Add64(qh, u2, carry)
 
-	fmt.Printf("udivrem3by2 u1: %v   qh: %v   dh: %v  dl: %v\n", u1, qh, dh, dl)
-
-	r1 := u1 - qh * dh
-
-	fmt.Println("udivrem3by2 r1:", r1)
-
+	r1 := u1 - qh*dh
 
 	th, tl := bits.Mul64(dl, qh)
-	
-	fmt.Printf("udivrem3by2 th: %v   tl: %v\n", th, tl)
-
 
 	// for udivrem2by1
 	// auto r = u.lo - q.hi * d;
@@ -120,7 +107,7 @@ func udivrem3by2(u2, u1, u0, dh, dl, reciprocal uint64) (quot uint64, rem [2]uin
 	// auto r = uint128{r1, u0} - t - d;
 	//r =: 
 	// first do (uint128{r1, u0} - t)
-	
+
 	var r1u0minust [2]uint64
 	r1u0minust[0], carry = bits.Sub64(u0, tl, 0)
 	r1u0minust[1], _ = bits.Sub64(r1, th, carry)
@@ -128,8 +115,6 @@ func udivrem3by2(u2, u1, u0, dh, dl, reciprocal uint64) (quot uint64, rem [2]uin
 	var r [2]uint64
 	r[0], carry = bits.Sub64(r1u0minust[0], dl, 0)
 	r[1], _ = bits.Sub64(r1u0minust[1], dh, carry)
-
-	fmt.Println("udivrem3by2 r before checks:", r)
 
 	qh++ // ++q.hi
 
@@ -142,15 +127,13 @@ func udivrem3by2(u2, u1, u0, dh, dl, reciprocal uint64) (quot uint64, rem [2]uin
 	}
 
 	//if r >= d {
-	if r[1] > dh || ( r[1] == dh && r[0] >= dl ) {
+	if r[1] > dh || (r[1] == dh && r[0] >= dl) {
 		qh++
 		// r is a uint128
 		//r -= d
 		r[0], carry = bits.Sub64(r[0], dl, 0)
 		r[1], _ = bits.Sub64(r[1], dh, carry)
 	}
-	
-	fmt.Printf("udivrem3by2 returning qh: %v, r: %v\n", qh, r)
 
 	return qh, r
 }
