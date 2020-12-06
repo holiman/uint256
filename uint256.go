@@ -439,6 +439,70 @@ func udivremKnuth(quot, u, d []uint64) {
 	}
 }
 
+func udivremKnuthFast(quot, u, d []uint64) {
+	dh := d[len(d)-1]
+	dl := d[len(d)-2]
+	//var divisor [2]uint64
+	//divisor[0] = dl
+	//divisor[1] = dh
+	reciprocal := reciprocal3by2(dh, dl)
+
+	for j := len(u) - len(d) - 1; j >= 0; j-- {
+		u2 := u[j+len(d)]
+		u1 := u[j+len(d)-1]
+		u0 := u[j+len(d)-2]
+
+		var qhat uint64
+		var rhat [2]uint64
+		//if u2 >= dh { // Division overflows.
+		if u2 == dh && u1 == dl {
+			//if u2 > divisor[1] && u1 >= divisor[0] {
+			qhat = ^uint64(0)
+			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+			u[j+len(d)] = u2 - subMulTo(u[j:], d, qhat)
+			//u[j+len(d)] += addTo(u[j:], d)
+		} else {
+			qhat, rhat = udivrem3by2(u2, u1, u0, dh, dl, reciprocal)
+
+			overflow := subMulTo(u[j:], d[0:len(d)-2], qhat)
+			// s, carry1 := bits.Sub64(x[i], borrow, 0)
+			var carry uint64
+			u[j+len(d)-2], carry = bits.Sub64(rhat[0], overflow, 0)
+			u[j+len(d)-1], carry = bits.Sub64(rhat[1], carry, 0)
+
+			if carry > 0 {
+				qhat--
+				// add(&u[j], &u[j], d, dlen - 1), u[j] = u[j] + d
+				//uplusd := addTo()
+				u[j+len(d)-1] += dh + addTo(u[j:], d[0:len(d)-1])
+
+				//u[j+len(d)-1] += dh + ()
+			}
+
+			/*
+				ph, pl := bits.Mul64(qhat, dl)
+				//if ph > rhat || (ph == rhat && pl > u0) {
+				if ph > rhat[0] || (ph == rhat[0] && pl > u0) {
+					qhat--
+					// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+				}
+			*/
+		}
+
+		/*
+			// Multiply and subtract.
+			borrow := subMulTo(u[j:], d, qhat)
+			u[j+len(d)] = u2 - borrow
+			if u2 < borrow { // Too much subtracted, add back.
+				qhat--
+				u[j+len(d)] += addTo(u[j:], d)
+			}
+		*/
+
+		quot[j] = qhat // Store quotient digit.
+	}
+}
+
 // udivrem divides u by d and produces both quotient and remainder.
 // The quotient is stored in provided quot - len(u)-len(d)+1 words.
 // It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
@@ -485,7 +549,7 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 		return rem
 	}
 
-	udivremKnuth(quot, un, dn)
+	udivremKnuthFast(quot, un, dn)
 
 	for i := 0; i < dLen-1; i++ {
 		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))

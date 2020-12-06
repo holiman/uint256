@@ -28,6 +28,7 @@ var (
 
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
+	// Keep then in sync with div_test_cases in intx library.
 	binTestCases = [][2]string{
 		{"0", "0"},
 		{"1", "0"},
@@ -70,6 +71,7 @@ var (
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xffffffffffffffffffffffffffffffff"},
 	}
 
 	// A collection of interesting input values for ternary operators (addmod, mulmod).
@@ -1225,6 +1227,83 @@ func TestByte32Representation(t *testing.T) {
 
 		if got != exp {
 			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		}
+	}
+}
+
+// TestReciprocal3by2 tests reciprocal3by2 procedure with some elementary test
+// cases taken directly from intx "reciprocal_3by2" unit test.
+func TestReciprocal3by2(t *testing.T) {
+	testCases := [][3]uint64{
+		{0x8000000000000000, 0x0000000000000000, 0xffffffffffffffff},
+		{0x8000000000000000, 0x0000000000000001, 0xffffffffffffffff},
+		{0x8000000000000000, 0x8000000000000000, 0xfffffffffffffffe},
+		{0x8000000000000001, 0x0000000000000000, 0xfffffffffffffffc},
+		{0x8000000000000000, 0xffffffffffffffff, 0xfffffffffffffffc},
+		{0xc000000000000000, 0x0000000000000000, 0x5555555555555555},
+		{0xc000000000000000, 0x0000000000000001, 0x5555555555555555},
+		{0xc000000000000000, 0xffffffffffffffff, 0x5555555555555553},
+		{0xfffffffffffffffe, 0x0000000000000000, 2},
+		{0xfffffffffffffffe, 0x0000000000000001, 2},
+		{0xfffffffffffffffe, 0xffffffffffffffff, 1},
+		{0xffffffffffffffff, 0x0000000000000000, 1},
+		{0xffffffffffffffff, 0x0000000000000001, 0},
+		{0xffffffffffffffff, 0xffffffffffffffff, 0},
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		testCase := testCases[i]
+		r := reciprocal3by2(testCase[0], testCase[1])
+		if r != testCase[2] {
+			t.Errorf("testcase %d: got %x exp %x", i, r, testCase[2])
+		}
+	}
+}
+
+func TestUdivrem3by2(t *testing.T) {
+	type testCase [2]string
+	testCases := []testCase{
+		{"0x80000000000000000000000000000000", "0x80000000000000000000000000000000"},
+		{"0x80000000000000000000000000000001", "0x80000000000000000000000000000000"},
+		{"0x80000000000000000000000000000001", "0x80000000000000000000000000000001"},
+		{"0x80000000000000000000000000000002", "0x80000000000000000000000000000001"},
+		{"0x180000000000000000000000000000000", "0x80000000000000000000000000000001"},
+		{"0x0", "0x80000000000000000000000000000001"},
+		{"0x1", "0x80000000000000000000000000000001"},
+		{"0x1", "0x80000000000000000000000000000001"},
+		{"0x800000000000000080000000000000000000000000000000", "0x80000000000000008000000000000001"},
+		{"0x800000000000000080000000000000000000000000000000", "0x80000000000000010000000000000000"},
+		{"0xfe0000000000000080000000000000000000000000000000", "0xff000000000000000000000000000001"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xff000000000000008000000000000001"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xff000000000000010000000000000001"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xff000000000000010000000000000000"},
+		{"0xff00000000000000800000000000000000000000000000ff", "0xffffffffffffffffffffffffffffffff"},
+		{"0xfffffffffffffffffffffffffffffffeffffffffffffffff", "0xffffffffffffffffffffffffffffffff"},
+	}
+
+	for i := 0; i < len(testCases); i++ {
+		numerator, err := FromHex(testCases[i][0])
+		if err != nil || numerator[3] != 0 {
+			t.Fatalf("wrong testcase %d: numerator %s (%v)", i, testCases[i][0], err)
+		}
+		divisor, err := FromHex(testCases[i][1])
+		if err != nil || divisor[3] != 0 || divisor[2] != 0 {
+			t.Fatalf("wrong testcase %d: divisor %s (%v)", i, testCases[i][0], err)
+		}
+
+		reciprocal := reciprocal3by2(divisor[1], divisor[0])
+		q, r := udivrem3by2(numerator[2], numerator[1], numerator[0], divisor[1], divisor[0], reciprocal)
+
+		expectedQ, expectedRBig := new(big.Int).QuoRem(numerator.ToBig(), divisor.ToBig(), new(big.Int))
+		expectedR, overflow := FromBig(expectedRBig)
+		if !expectedQ.IsUint64() || overflow {
+			t.Fatalf("wrong testcase %d: divisor %x not normalized", i, divisor)
+		}
+		if q != expectedQ.Uint64() {
+			t.Errorf("testcase %d: quot %x exp %x", i, q, expectedQ.Uint64())
+		}
+		if r != [2]uint64{expectedR[0], expectedR[1]} {
+			t.Errorf("testcase %d: rem %x exp %x", i, r, expectedR[0:2])
 		}
 	}
 }
