@@ -788,13 +788,18 @@ func (z *Int) Eq(x *Int) bool {
 //   +1 if z >  x
 //
 func (z *Int) Cmp(x *Int) (r int) {
-	if z.Gt(x) {
-		return 1
-	}
-	if z.Lt(x) {
+	// z < x <=> z - x < 0 i.e. when subtraction overflows.
+	d0, carry := bits.Sub64(z[0], x[0], 0)
+	d1, carry := bits.Sub64(z[1], x[1], carry)
+	d2, carry := bits.Sub64(z[2], x[2], carry)
+	d3, carry := bits.Sub64(z[3], x[3], carry)
+	if carry == 1 {
 		return -1
 	}
-	return 0
+	if d0|d1|d2|d3 == 0 {
+		return 0
+	}
+	return 1
 }
 
 // LtUint64 returns true if z is smaller than n
