@@ -592,12 +592,9 @@ func TestAddSubUint64(t *testing.T) {
 		tc := &testCases[i]
 		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
 		arg, _ := FromBig(bigArg)
-
-		var have, want *Int
-
 		{ // SubUint64
-			want, _ = FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
-			have = new(Int).SetAllOne().SubUint64(arg, tc.n)
+			want, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).SetAllOne().SubUint64(arg, tc.n)
 			if !have.Eq(want) {
 				t.Logf("args: %s, %d\n", tc.arg, tc.n)
 				t.Logf("want : %x\n", want)
