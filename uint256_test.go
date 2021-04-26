@@ -141,6 +141,7 @@ func randNums() (*big.Int, *Int, error) {
 	err := checkOverflow(b, f, overflow)
 	return b, f, err
 }
+
 func randHighNums() (*big.Int, *Int, error) {
 	//How many bits? 0-256
 	nbits := int64(256)
@@ -188,6 +189,7 @@ func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a
 		}
 	}
 }
+
 func TestRandomSubOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -199,7 +201,7 @@ func TestRandomSubOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		f1a, f2a := f1.Clone(), f2.Clone()
-		overflow := f1.SubOverflow(f1, f2)
+		_, overflow := f1.SubOverflow(f1, f2)
 		b.Sub(b, b2)
 		if err := checkUnderflow(b, f1, overflow); err != nil {
 			t.Fatal(err)
@@ -209,6 +211,7 @@ func TestRandomSubOverflow(t *testing.T) {
 		}
 	}
 }
+
 func TestRandomSub(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -230,6 +233,7 @@ func TestRandomAdd(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomMul(t *testing.T) {
 
 	testRandomOp(t,
@@ -241,6 +245,7 @@ func TestRandomMul(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomMulOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -252,7 +257,7 @@ func TestRandomMulOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		f1a, f2a := f1.Clone(), f2.Clone()
-		overflow := f1.MulOverflow(f1, f2)
+		_, overflow := f1.MulOverflow(f1, f2)
 		b.Mul(b, b2)
 		if err := checkOverflow(b, f1, overflow); err != nil {
 			t.Fatal(err)
@@ -262,6 +267,7 @@ func TestRandomMulOverflow(t *testing.T) {
 		}
 	}
 }
+
 func TestRandomSquare(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -272,6 +278,7 @@ func TestRandomSquare(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomDiv(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -301,6 +308,7 @@ func TestRandomMod(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomSMod(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -484,21 +492,21 @@ func TestSRsh(t *testing.T) {
 
 func TestByte(t *testing.T) {
 	z := new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual := z.Byte(NewInt().SetUint64(0))
+	actual := z.Byte(NewInt(0))
 	expected := new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ab"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual = z.Byte(NewInt().SetUint64(31))
+	actual = z.Byte(NewInt(31))
 	expected = new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ef"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %x, got %x", expected, actual)
 	}
 
 	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual = z.Byte(NewInt().SetUint64(32))
+	actual = z.Byte(NewInt(32))
 	expected = new(Int).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"))
 	if !actual.Eq(expected) {
 		t.Fatalf("Expected %x, got %x", expected, actual)
@@ -559,7 +567,7 @@ func TestSignExtend(t *testing.T) {
 	}
 }
 
-func TestSubUint64(t *testing.T) {
+func TestAddSubUint64(t *testing.T) {
 	type testCase struct {
 		arg string
 		n   uint64
@@ -571,20 +579,38 @@ func TestSubUint64(t *testing.T) {
 		{"1", 3},
 		{"0x10000000000000000", 1},
 		{"0x100000000000000000000000000000000", 1},
+		{"0", 0xffffffffffffffff},
+		{"1", 0xffffffff},
+		{"0xffffffffffffffff", 1},
+		{"0xffffffffffffffff", 0xffffffffffffffff},
+		{"0x10000000000000000", 1},
+		{"0xfffffffffffffffffffffffffffffffff", 1},
+		{"0xfffffffffffffffffffffffffffffffff", 2},
 	}
 
 	for i := 0; i < len(testCases); i++ {
 		tc := &testCases[i]
 		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
 		arg, _ := FromBig(bigArg)
-		expected, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
-		result := new(Int).SubUint64(arg, tc.n)
-
-		if !result.Eq(expected) {
-			t.Logf("args: %s, %d\n", tc.arg, tc.n)
-			t.Logf("exp : %x\n", expected)
-			t.Logf("got : %x\n\n", result)
-			t.Fail()
+		{ // SubUint64
+			want, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).SetAllOne().SubUint64(arg, tc.n)
+			if !have.Eq(want) {
+				t.Logf("args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
+		}
+		{ // AddUint64
+			want, _ := FromBig(U256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).AddUint64(arg, tc.n)
+			if !have.Eq(want) {
+				t.Logf("args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
 		}
 	}
 }
@@ -1071,7 +1097,7 @@ func TestWriteToSlice(t *testing.T) {
 		t.Errorf("got %x, expected %x", dest, x1)
 	}
 
-	fb := NewInt()
+	fb := new(Int)
 	exp := make([]byte, 32)
 	fb.WriteToSlice(dest)
 	if !bytes.Equal(dest, exp) {
@@ -1191,7 +1217,7 @@ func TestByte20Representation(t *testing.T) {
 		exp := bytesToAddress(a.Bytes())
 
 		// uint256.Int -> address
-		b := NewInt().SetBytes(bytearr)
+		b := new(Int).SetBytes(bytearr)
 		got := gethAddress(b.Bytes20())
 
 		if got != exp {
@@ -1220,7 +1246,7 @@ func TestByte32Representation(t *testing.T) {
 		exp := bytesToHash(a.Bytes())
 
 		// uint256.Int -> address
-		b := NewInt().SetBytes(bytearr)
+		b := new(Int).SetBytes(bytearr)
 		got := gethHash(b.Bytes32())
 
 		if got != exp {

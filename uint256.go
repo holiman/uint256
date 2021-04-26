@@ -16,9 +16,11 @@ import (
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
-// NewInt returns a new zero-initialized Int.
-func NewInt() *Int {
-	return &Int{}
+// NewInt returns a new initialized Int.
+func NewInt(val uint64) *Int {
+	z := &Int{}
+	z.SetUint64(val)
+	return z
 }
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
@@ -180,14 +182,14 @@ func (z *Int) Add(x, y *Int) *Int {
 	return z
 }
 
-// AddOverflow sets z to the sum x+y, and returns whether overflow occurred
-func (z *Int) AddOverflow(x, y *Int) bool {
+// AddOverflow sets z to the sum x+y, and returns z and whether overflow occurred
+func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
 	z[0], carry = bits.Add64(x[0], y[0], 0)
 	z[1], carry = bits.Add64(x[1], y[1], carry)
 	z[2], carry = bits.Add64(x[2], y[2], carry)
 	z[3], carry = bits.Add64(x[3], y[3], carry)
-	return carry != 0
+	return z, carry != 0
 }
 
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
@@ -199,13 +201,24 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
 		m = m.Clone()
 	}
-	if overflow := z.AddOverflow(x, y); overflow {
+	if _, overflow := z.AddOverflow(x, y); overflow {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
 		rem := udivrem(quot[:], sum[:], m)
 		return z.Set(&rem)
 	}
 	return z.Mod(z, m)
+}
+
+// AddUint64 sets z to x + y, where y is a uint64, and returns z
+func (z *Int) AddUint64(x *Int, y uint64) *Int {
+	var carry uint64
+
+	z[0], carry = bits.Add64(x[0], y, 0)
+	z[1], carry = bits.Add64(x[1], 0, carry)
+	z[2], carry = bits.Add64(x[2], 0, carry)
+	z[3], _ = bits.Add64(x[3], 0, carry)
+	return z
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
@@ -223,28 +236,21 @@ func (z *Int) PaddedBytes(n int) []byte {
 // SubUint64 set z to the difference x - y, where y is a uint64, and returns z
 func (z *Int) SubUint64(x *Int, y uint64) *Int {
 	var carry uint64
-
-	if z[0], carry = bits.Sub64(x[0], y, carry); carry == 0 {
-		return z
-	}
-	if z[1], carry = bits.Sub64(x[1], 0, carry); carry == 0 {
-		return z
-	}
-	if z[2], carry = bits.Sub64(x[2], 0, carry); carry == 0 {
-		return z
-	}
-	z[3]--
+	z[0], carry = bits.Sub64(x[0], y, carry)
+	z[1], carry = bits.Sub64(x[1], 0, carry)
+	z[2], carry = bits.Sub64(x[2], 0, carry)
+	z[3], _ = bits.Sub64(x[3], 0, carry)
 	return z
 }
 
-// SubOverflow sets z to the difference x-y and returns true if the operation underflowed
-func (z *Int) SubOverflow(x, y *Int) bool {
+// SubOverflow sets z to the difference x-y and returns z and true if the operation underflowed
+func (z *Int) SubOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
 	z[0], carry = bits.Sub64(x[0], y[0], 0)
 	z[1], carry = bits.Sub64(x[1], y[1], carry)
 	z[2], carry = bits.Sub64(x[2], y[2], carry)
 	z[3], carry = bits.Sub64(x[3], y[3], carry)
-	return carry != 0
+	return z, carry != 0
 }
 
 // Sub sets z to the difference x-y
@@ -331,11 +337,11 @@ func (z *Int) Mul(x, y *Int) *Int {
 	return z.Set(&res)
 }
 
-// MulOverflow sets z to the product x*y, and returns whether overflow occurred
-func (z *Int) MulOverflow(x, y *Int) bool {
+// MulOverflow sets z to the product x*y, and returns z and  whether overflow occurred
+func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
 	p := umul(x, y)
 	copy(z[:], p[:4])
-	return (p[4] | p[5] | p[6] | p[7]) != 0
+	return z, (p[4] | p[5] | p[6] | p[7]) != 0
 }
 
 func (z *Int) squared() {
