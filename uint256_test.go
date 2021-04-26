@@ -141,6 +141,7 @@ func randNums() (*big.Int, *Int, error) {
 	err := checkOverflow(b, f, overflow)
 	return b, f, err
 }
+
 func randHighNums() (*big.Int, *Int, error) {
 	//How many bits? 0-256
 	nbits := int64(256)
@@ -188,6 +189,7 @@ func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a
 		}
 	}
 }
+
 func TestRandomSubOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -199,7 +201,7 @@ func TestRandomSubOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		f1a, f2a := f1.Clone(), f2.Clone()
-		overflow := f1.SubOverflow(f1, f2)
+		_, overflow := f1.SubOverflow(f1, f2)
 		b.Sub(b, b2)
 		if err := checkUnderflow(b, f1, overflow); err != nil {
 			t.Fatal(err)
@@ -209,6 +211,7 @@ func TestRandomSubOverflow(t *testing.T) {
 		}
 	}
 }
+
 func TestRandomSub(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -230,6 +233,7 @@ func TestRandomAdd(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomMul(t *testing.T) {
 
 	testRandomOp(t,
@@ -241,6 +245,7 @@ func TestRandomMul(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomMulOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -252,7 +257,7 @@ func TestRandomMulOverflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		f1a, f2a := f1.Clone(), f2.Clone()
-		overflow := f1.MulOverflow(f1, f2)
+		_, overflow := f1.MulOverflow(f1, f2)
 		b.Mul(b, b2)
 		if err := checkOverflow(b, f1, overflow); err != nil {
 			t.Fatal(err)
@@ -262,6 +267,7 @@ func TestRandomMulOverflow(t *testing.T) {
 		}
 	}
 }
+
 func TestRandomSquare(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -272,6 +278,7 @@ func TestRandomSquare(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomDiv(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {
@@ -301,6 +308,7 @@ func TestRandomMod(t *testing.T) {
 		},
 	)
 }
+
 func TestRandomSMod(t *testing.T) {
 	testRandomOp(t,
 		func(f1, f2, f3 *Int) {

@@ -182,14 +182,14 @@ func (z *Int) Add(x, y *Int) *Int {
 	return z
 }
 
-// AddOverflow sets z to the sum x+y, and returns whether overflow occurred
-func (z *Int) AddOverflow(x, y *Int) bool {
+// AddOverflow sets z to the sum x+y, and returns z and whether overflow occurred
+func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
 	z[0], carry = bits.Add64(x[0], y[0], 0)
 	z[1], carry = bits.Add64(x[1], y[1], carry)
 	z[2], carry = bits.Add64(x[2], y[2], carry)
 	z[3], carry = bits.Add64(x[3], y[3], carry)
-	return carry != 0
+	return z, carry != 0
 }
 
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
@@ -201,7 +201,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
 		m = m.Clone()
 	}
-	if overflow := z.AddOverflow(x, y); overflow {
+	if _, overflow := z.AddOverflow(x, y); overflow {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
 		rem := udivrem(quot[:], sum[:], m)
@@ -243,14 +243,14 @@ func (z *Int) SubUint64(x *Int, y uint64) *Int {
 	return z
 }
 
-// SubOverflow sets z to the difference x-y and returns true if the operation underflowed
-func (z *Int) SubOverflow(x, y *Int) bool {
+// SubOverflow sets z to the difference x-y and returns z and true if the operation underflowed
+func (z *Int) SubOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
 	z[0], carry = bits.Sub64(x[0], y[0], 0)
 	z[1], carry = bits.Sub64(x[1], y[1], carry)
 	z[2], carry = bits.Sub64(x[2], y[2], carry)
 	z[3], carry = bits.Sub64(x[3], y[3], carry)
-	return carry != 0
+	return z, carry != 0
 }
 
 // Sub sets z to the difference x-y
@@ -337,11 +337,11 @@ func (z *Int) Mul(x, y *Int) *Int {
 	return z.Set(&res)
 }
 
-// MulOverflow sets z to the product x*y, and returns whether overflow occurred
-func (z *Int) MulOverflow(x, y *Int) bool {
+// MulOverflow sets z to the product x*y, and returns z and  whether overflow occurred
+func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
 	p := umul(x, y)
 	copy(z[:], p[:4])
-	return (p[4] | p[5] | p[6] | p[7]) != 0
+	return z, (p[4] | p[5] | p[6] | p[7]) != 0
 }
 
 func (z *Int) squared() {
