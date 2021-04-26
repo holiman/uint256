@@ -559,7 +559,7 @@ func TestSignExtend(t *testing.T) {
 	}
 }
 
-func TestSubUint64(t *testing.T) {
+func TestAddSubUint64(t *testing.T) {
 	type testCase struct {
 		arg string
 		n   uint64
@@ -571,20 +571,41 @@ func TestSubUint64(t *testing.T) {
 		{"1", 3},
 		{"0x10000000000000000", 1},
 		{"0x100000000000000000000000000000000", 1},
+		{"0", 0xffffffffffffffff},
+		{"1", 0xffffffff},
+		{"0xffffffffffffffff", 1},
+		{"0xffffffffffffffff", 0xffffffffffffffff},
+		{"0x10000000000000000", 1},
+		{"0xfffffffffffffffffffffffffffffffff", 1},
+		{"0xfffffffffffffffffffffffffffffffff", 2},
 	}
 
 	for i := 0; i < len(testCases); i++ {
 		tc := &testCases[i]
 		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
 		arg, _ := FromBig(bigArg)
-		expected, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
-		result := new(Int).SubUint64(arg, tc.n)
 
-		if !result.Eq(expected) {
-			t.Logf("args: %s, %d\n", tc.arg, tc.n)
-			t.Logf("exp : %x\n", expected)
-			t.Logf("got : %x\n\n", result)
-			t.Fail()
+		var have, want *Int
+
+		{ // SubUint64
+			want, _ = FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			have = new(Int).SetAllOne().SubUint64(arg, tc.n)
+			if !have.Eq(want) {
+				t.Logf("args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
+		}
+		{ // AddUint64
+			want, _ := FromBig(U256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).AddUint64(arg, tc.n)
+			if !have.Eq(want) {
+				t.Logf("args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
 		}
 	}
 }

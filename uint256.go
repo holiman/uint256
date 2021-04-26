@@ -210,6 +210,17 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	return z.Mod(z, m)
 }
 
+// AddUint64 sets z to x + y, where y is a uint64, and returns z
+func (z *Int) AddUint64(x *Int, y uint64) *Int {
+	var carry uint64
+
+	z[0], carry = bits.Add64(x[0], y, 0)
+	z[1], carry = bits.Add64(x[1], 0, carry)
+	z[2], carry = bits.Add64(x[2], 0, carry)
+	z[3], _ = bits.Add64(x[3], 0, carry)
+	return z
+}
+
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
 // of the slice is at least n bytes.
 // Example, z =1, n = 20 => [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
@@ -225,17 +236,10 @@ func (z *Int) PaddedBytes(n int) []byte {
 // SubUint64 set z to the difference x - y, where y is a uint64, and returns z
 func (z *Int) SubUint64(x *Int, y uint64) *Int {
 	var carry uint64
-
-	if z[0], carry = bits.Sub64(x[0], y, carry); carry == 0 {
-		return z
-	}
-	if z[1], carry = bits.Sub64(x[1], 0, carry); carry == 0 {
-		return z
-	}
-	if z[2], carry = bits.Sub64(x[2], 0, carry); carry == 0 {
-		return z
-	}
-	z[3]--
+	z[0], carry = bits.Sub64(x[0], y, carry)
+	z[1], carry = bits.Sub64(x[1], 0, carry)
+	z[2], carry = bits.Sub64(x[2], 0, carry)
+	z[3], _ = bits.Sub64(x[3], 0, carry)
 	return z
 }
 
