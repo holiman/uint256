@@ -179,13 +179,46 @@ func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a
 		if err != nil {
 			t.Fatal(err)
 		}
-		f1a, f2a := f1.Clone(), f2.Clone()
-		nativeFunc(f1, f1, f2)
-		bigintFunc(b1, b1, b2)
-		//checkOverflow(b, f1, overflow)
-		if eq := checkEq(b1, f1); !eq {
-			bf, _ := FromBig(b1)
-			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f2a, f1, bf, b1)
+		{ // Tests the op on the form: a.foo( a, b)
+			f1a, f2a := f1.Clone(), f2.Clone()
+			b1a, b2a := new(big.Int).Set(b1), new(big.Int).Set(b2)
+			nativeFunc(f1a, f1a, f2a)
+			bigintFunc(b1a, b1a, b2a)
+			//checkOverflow(b, f1, overflow)
+			if eq := checkEq(b1a, f1a); !eq {
+				bf, _ := FromBig(b1)
+				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f2a, f1, bf, b1a)
+			}
+		}
+		{ // Tests the op on the form: a.foo( b, a)
+			f1a, f2a := f1.Clone(), f2.Clone()
+			b1a, b2a := new(big.Int).Set(b1), new(big.Int).Set(b2)
+			nativeFunc(f1a, f2a, f1a)
+			bigintFunc(b1a, b2a, b1a)
+			if eq := checkEq(b1a, f1a); !eq {
+				bf, _ := FromBig(b1)
+				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f2a, f1, bf, b1a)
+			}
+		}
+		{ // Tests the op on the form: a.foo( a , a)
+			f1a := f1.Clone()
+			b1a := new(big.Int).Set(b1)
+			nativeFunc(f1a, f1a, f1a)
+			bigintFunc(b1a, b1a, b1a)
+			if eq := checkEq(b1a, f1a); !eq {
+				bf, _ := FromBig(b1)
+				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f1a, f1, bf, b1a)
+			}
+		}
+		{ // Tests the op on the form: a.foo( b , b)
+			f1a, f2a := f1.Clone(), f2.Clone()
+			b1a, b2a := new(big.Int).Set(b1), new(big.Int).Set(b2)
+			nativeFunc(f1a, f2a, f2a)
+			bigintFunc(b1a, b2a, b2a)
+			if eq := checkEq(b1a, f1a); !eq {
+				bf, _ := FromBig(b1)
+				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f2a, f2a, f1, bf, b1a)
+			}
 		}
 	}
 }
