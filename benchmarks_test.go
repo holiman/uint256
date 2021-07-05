@@ -294,6 +294,7 @@ func benchmark_Cmp_Big(bench *testing.B) {
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		b1.Cmp(b2)
+		b2.Cmp(b1)
 	}
 }
 func benchmark_Cmp_Bit(bench *testing.B) {
@@ -305,6 +306,7 @@ func benchmark_Cmp_Bit(bench *testing.B) {
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f.Cmp(f2)
+		f2.Cmp(f)
 	}
 }
 func Benchmark_Cmp(bench *testing.B) {
