@@ -195,10 +195,32 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
+	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
+	// This is always the case when x and y are already reduced modulo such m.
+
+	if (m[3] != 0) && (m[3] >= x[3]) && (m[3] >= y[3]) {
+		sum, c := add256(*x, *y, 0)
+
+		if c != 0 {
+			sum, _ = sub256(sum, *m, 0)
+		}
+
+		for {
+			t, b := sub256(sum, *m, 0)
+			if b != 0 {
+				break
+			}
+			sum = t
+		}
+
+		*z = sum
+		return z
+	}
+
 	if m.IsZero() {
 		return z.Clear()
 	}
-	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
+	if z == m { // z is an alias for m and will be overwritten by AddOverflow before m is read
 		m = m.Clone()
 	}
 	if _, overflow := z.AddOverflow(x, y); overflow {
@@ -584,6 +606,13 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		return z.Clear()
 	}
 	p := umul(x, y)
+
+	if m[3] != 0 {
+		mu := reciprocal(*m)
+		r  := reduce4(p, *m, mu)
+		return z.Set(&r)
+	}
+
 	var (
 		pl Int
 		ph Int
