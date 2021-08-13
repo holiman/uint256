@@ -89,14 +89,14 @@ func shiftLeft(x Int, s int) (z Int) {
 	return
 }
 
-func shiftRight(x Int, s int) (z Int) {
-	if s < 0 {
-		z = shiftleft(x, uint(-s))
-	} else {
-		z = shiftright(x, uint(s))
-	}
-	return
-}
+//func shiftRight(x Int, s int) (z Int) {
+//	if s < 0 {
+//		z = shiftleft(x, uint(-s))
+//	} else {
+//		z = shiftright(x, uint(s))
+//	}
+//	return
+//}
 
 func shiftleft(x Int, s uint) (z Int) {
 	w := s/64	// word shift
@@ -270,7 +270,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 	e2l, c    = bits.Add64(e2l, c2h, c)
 	e2h, _    = bits.Add64(e2h,   0, c)
 
-	b2h, c    = bits.Add64(b2h, d2l, 0)
+	_,   c    = bits.Add64(b2h, d2l, 0)
 	e2l, c    = bits.Add64(e2l, d2h, c)
 	e2h, _    = bits.Add64(e2h,   0, c)
 
@@ -336,7 +336,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 
 	// subtract: t3 = 2^191/y - 2^190/y = 2^190/y
 	_,   b  = bits.Sub64(  0, q0, 0)
-	_,   b  = bits.Sub64(  0, q1, 0)
+	_,   b  = bits.Sub64(  0, q1, b)
 	t3l, b := bits.Sub64(  0, q2, b)
 	t3m, b := bits.Sub64(r2l, q3, b)
 	t3h, _ := bits.Sub64(r2h, q4, b)
@@ -574,7 +574,7 @@ func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
 	t1, t0 = bits.Mul64(x3, mu[3]);	q2, c = bits.Add64(q2, t0, c);	q3, c = bits.Add64(q3, t1, c); q4, _ = bits.Add64(q4, 0, c)
 
 
-	t1, t0 = bits.Mul64(x0, mu[4]);	q0, c = bits.Add64(q0, t0, 0);	q1, c = bits.Add64(q1, t1, c)
+	t1, t0 = bits.Mul64(x0, mu[4]);	_,  c = bits.Add64(q0, t0, 0);	q1, c = bits.Add64(q1, t1, c)
 	t1, t0 = bits.Mul64(x2, mu[4]);	q2, c = bits.Add64(q2, t0, c);	q3, c = bits.Add64(q3, t1, c)
 	q5, t0 = bits.Mul64(x4, mu[4]);	q4, c = bits.Add64(q4, t0, c);	q5, _ = bits.Add64(q5,  0, c)
 
@@ -643,7 +643,7 @@ func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
 		r1, c = bits.Add64(r1, m[1], c)
 		r2, c = bits.Add64(r2, m[2], c)
 		r3, c = bits.Add64(r3, m[3], c)
-		r4, c = bits.Add64(r4,    0, c)
+		r4, _ = bits.Add64(r4,    0, c)
 	}
 
 	// while (r>=m) r-=m
