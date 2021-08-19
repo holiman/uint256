@@ -42,7 +42,7 @@ func cacheStats() (hit, miss uint64) {
 		hit  += cache[s].hit
 		miss += cache[s].miss
 	}
-	return
+	return hit, miss
 }
 
 // Some utility functions
@@ -51,7 +51,7 @@ func leadingZeros(x Int) (z int) {
 	z  = bits.LeadingZeros64(x[3]); if z <  64 { return }
 	z += bits.LeadingZeros64(x[2]); if z < 128 { return }
 	z += bits.LeadingZeros64(x[1]); if z < 192 { return }
-	z += bits.LeadingZeros64(x[0]); return
+	z += bits.LeadingZeros64(x[0]); return z
 }
 
 func onesCount(x Int) (z int) {
@@ -59,7 +59,7 @@ func onesCount(x Int) (z int) {
 		bits.OnesCount64(x[1]) +
 		bits.OnesCount64(x[2]) +
 		bits.OnesCount64(x[3])
-	return
+	return z
 }
 
 func shiftLeft(x Int, s int) (z Int) {
@@ -68,7 +68,7 @@ func shiftLeft(x Int, s int) (z Int) {
 	} else {
 		z = shiftleft(x, uint(s))
 	}
-	return
+	return z
 }
 
 //func shiftRight(x Int, s int) (z Int) {
@@ -77,7 +77,7 @@ func shiftLeft(x Int, s int) (z Int) {
 //	} else {
 //		z = shiftright(x, uint(s))
 //	}
-//	return
+//	return z
 //}
 
 func shiftleft(x Int, s uint) (z Int) {
@@ -105,7 +105,7 @@ func shiftleft(x Int, s uint) (z Int) {
 		j++
 	}
 
-	return
+	return z
 }
 
 func shiftright(x Int, s uint) (z Int) {
@@ -133,7 +133,7 @@ func shiftright(x Int, s uint) (z Int) {
 		j++
 	}
 
-	return
+	return z
 }
 
 // shiftright320 shifts a 320-bit value 0-63 bits right
@@ -149,7 +149,7 @@ func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
 	z[3] = (x[3] >> r) | (x[4] << l)
 	z[4] = (x[4] >> r)
 
-	return
+	return z
 }
 
 // reciprocal computes a 320-bit value representing 1/m
@@ -176,7 +176,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		} else {
 			mu[4] = 0x8000000000000000 >> ((254-s) & 63)
 		}
-		return
+		return mu
 	}
 
 	// Check for reciprocal in the cache
@@ -198,7 +198,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		cache[cacheIndex].hit++
 		cache[cacheIndex].rw.RUnlock()
 
-		return
+		return mu
 	}
 
 	cache[cacheIndex].miss++
@@ -481,7 +481,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		// Reciprocal found, nothing more to do
 		// (another thread computed and stored it)
 
-		return
+		return mu
 	}
 
 	for w=0; w<cacheWays; w++ {
@@ -507,7 +507,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		cache[cacheIndex].inv[0] = mu
 	}
 
-	return
+	return mu
 }
 
 // reduce4 computes the least non-negative residue of x modulo m
@@ -647,5 +647,5 @@ func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
 
 	z[3], z[2], z[1], z[0] = r3, r2, r1, r0
 
-	return
+	return z
 }
