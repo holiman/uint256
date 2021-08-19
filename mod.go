@@ -47,24 +47,6 @@ func cacheStats() (hit, miss uint64) {
 
 // Some utility functions
 
-func add256(x, y Int, c uint64) (Int, uint64) {
-	var z Int
-	z[0], c = bits.Add64(x[0], y[0], c)
-	z[1], c = bits.Add64(x[1], y[1], c)
-	z[2], c = bits.Add64(x[2], y[2], c)
-	z[3], c = bits.Add64(x[3], y[3], c)
-	return z, c
-}
-
-func sub256(x, y Int, b uint64) (Int, uint64) {
-	var z Int
-	z[0], b = bits.Sub64(x[0], y[0], b)
-	z[1], b = bits.Sub64(x[1], y[1], b)
-	z[2], b = bits.Sub64(x[2], y[2], b)
-	z[3], b = bits.Sub64(x[3], y[3], b)
-	return z, b
-}
-
 func leadingZeros(x Int) (z int) {
 	z  = bits.LeadingZeros64(x[3]); if z <  64 { return }
 	z += bits.LeadingZeros64(x[2]); if z < 128 { return }
