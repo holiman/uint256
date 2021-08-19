@@ -195,34 +195,32 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
-	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
-	// This is always the case when x and y are already reduced modulo such m.
-
-	if (m[3] != 0) && (m[3] >= x[3]) && (m[3] >= y[3]) {
-		sum, c := add256(*x, *y, 0)
-
-		if c != 0 {
-			sum, _ = sub256(sum, *m, 0)
-		}
-
-		for {
-			t, b := sub256(sum, *m, 0)
-			if b != 0 {
-				break
-			}
-			sum = t
-		}
-
-		*z = sum
-		return z
-	}
-
 	if m.IsZero() {
 		return z.Clear()
 	}
 	if z == m { // z is an alias for m and will be overwritten by AddOverflow before m is read
 		m = m.Clone()
 	}
+
+	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
+	// This is always the case when x and y are already reduced modulo such m.
+
+	if (m[3] != 0) && (m[3] >= x[3]) && (m[3] >= y[3]) {
+		if z, overflow := z.AddOverflow(x, y); overflow {
+			z, _ = z.SubOverflow(z, m)
+		}
+
+		for {
+			t := *z
+			if _, overflow := t.SubOverflow(&t, m); overflow {
+				break
+			}
+			*z = t
+		}
+
+		return z
+	}
+
 	if _, overflow := z.AddOverflow(x, y); overflow {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
