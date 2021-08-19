@@ -207,7 +207,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 
 	if (m[3] != 0) && (m[3] >= x[3]) && (m[3] >= y[3]) {
 		if z, overflow := z.AddOverflow(x, y); overflow {
-			z, _ = z.SubOverflow(z, m)
+			z.Sub(z, m)
 		}
 
 		for {
