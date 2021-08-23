@@ -210,6 +210,10 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 			z.Sub(z, m)
 		}
 
+		// The worst case here is m = 2^192, x = y = 2m-1, so x+y = 4m-2.
+		// Hence the loop is exited at the latest in the fourth iteration.
+		// For already-reduced inputs, this happens no later than the second iteration.
+
 		for {
 			t := *z
 			if _, overflow := t.SubOverflow(&t, m); overflow {
