@@ -205,7 +205,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
 	// This is always the case when x and y are already reduced modulo such m.
 
-	if (m[3] != 0) && (m[3] >= x[3]) && (m[3] >= y[3]) {
+	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
 		if z, overflow := z.AddOverflow(x, y); overflow {
 			z.Sub(z, m)
 		}
