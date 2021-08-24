@@ -109,7 +109,7 @@ func TestToBig(t *testing.T) {
 	}
 }
 
-func benchmarkSetFromBig(bench *testing.B, b *big.Int) Int {
+func benchSetFromBig(bench *testing.B, b *big.Int) Int {
 	var f Int
 	for i := 0; i < bench.N; i++ {
 		f.SetFromBig(b)
@@ -119,22 +119,22 @@ func benchmarkSetFromBig(bench *testing.B, b *big.Int) Int {
 
 func BenchmarkSetFromBig(bench *testing.B) {
 	param1 := big.NewInt(0xff)
-	bench.Run("1word", func(bench *testing.B) { benchmarkSetFromBig(bench, param1) })
+	bench.Run("1word", func(bench *testing.B) { benchSetFromBig(bench, param1) })
 
 	param2 := new(big.Int).Lsh(param1, 64)
-	bench.Run("2words", func(bench *testing.B) { benchmarkSetFromBig(bench, param2) })
+	bench.Run("2words", func(bench *testing.B) { benchSetFromBig(bench, param2) })
 
 	param3 := new(big.Int).Lsh(param2, 64)
-	bench.Run("3words", func(bench *testing.B) { benchmarkSetFromBig(bench, param3) })
+	bench.Run("3words", func(bench *testing.B) { benchSetFromBig(bench, param3) })
 
 	param4 := new(big.Int).Lsh(param3, 64)
-	bench.Run("4words", func(bench *testing.B) { benchmarkSetFromBig(bench, param4) })
+	bench.Run("4words", func(bench *testing.B) { benchSetFromBig(bench, param4) })
 
 	param5 := new(big.Int).Lsh(param4, 64)
-	bench.Run("overflow", func(bench *testing.B) { benchmarkSetFromBig(bench, param5) })
+	bench.Run("overflow", func(bench *testing.B) { benchSetFromBig(bench, param5) })
 }
 
-func benchmarkToBig(bench *testing.B, f *Int) *big.Int {
+func benchToBig(bench *testing.B, f *Int) *big.Int {
 	var b *big.Int
 	for i := 0; i < bench.N; i++ {
 		b = f.ToBig()
@@ -144,16 +144,16 @@ func benchmarkToBig(bench *testing.B, f *Int) *big.Int {
 
 func BenchmarkToBig(bench *testing.B) {
 	param1 := new(Int).SetUint64(0xff)
-	bench.Run("1word", func(bench *testing.B) { benchmarkToBig(bench, param1) })
+	bench.Run("1word", func(bench *testing.B) { benchToBig(bench, param1) })
 
 	param2 := new(Int).Lsh(param1, 64)
-	bench.Run("2words", func(bench *testing.B) { benchmarkToBig(bench, param2) })
+	bench.Run("2words", func(bench *testing.B) { benchToBig(bench, param2) })
 
 	param3 := new(Int).Lsh(param2, 64)
-	bench.Run("3words", func(bench *testing.B) { benchmarkToBig(bench, param3) })
+	bench.Run("3words", func(bench *testing.B) { benchToBig(bench, param3) })
 
 	param4 := new(Int).Lsh(param3, 64)
-	bench.Run("4words", func(bench *testing.B) { benchmarkToBig(bench, param4) })
+	bench.Run("4words", func(bench *testing.B) { benchToBig(bench, param4) })
 }
 
 func TestFormat(t *testing.T) {
@@ -555,11 +555,24 @@ func TestRlpEncode(t *testing.T) {
 			t.Fatalf("testcase %d got:\n%x\nexp:%x\n", i, got, exp)
 		}
 	}
+	// And test nil
+	{
+		var z *Int
+		var b bytes.Buffer
+		w := bufio.NewWriter(&b)
+		if err := z.EncodeRLP(w); err != nil {
+			t.Fatal(err)
+		}
+		w.Flush()
+		if got, exp := b.Bytes(), hex2Bytes("80"); !bytes.Equal(got, exp) {
+			t.Fatalf("nil-test got:\n%x\nexp:%x\n", got, exp)
+		}
+	}
 }
 
 type nilWriter struct{}
 
-func (n2 *nilWriter) Write(p []byte) (n int, err error) {
+func (*nilWriter) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
