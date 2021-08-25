@@ -709,10 +709,8 @@ func TestDecode(t *testing.T) {
 	}
 	if err := json.Unmarshal([]byte(`{"Foo":"0x1"}`), &jsonDecoded); err != nil {
 		t.Fatalf("Expected no error, got %v", err)
-	} else {
-		if jsonDecoded.Foo.Uint64() != 1 {
-			t.Fatal("Expected 1")
-		}
+	} else if jsonDecoded.Foo.Uint64() != 1 {
+		t.Fatal("Expected 1")
 	}
 }
 
