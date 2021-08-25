@@ -125,14 +125,6 @@ func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	return nil
 }
 
-func checkUnderflow(b *big.Int, f *Int, underflow bool) error {
-	shouldUnderflow := b.Cmp(big.NewInt(0)) < 0
-	if underflow != shouldUnderflow {
-		return fmt.Errorf("Undeflow should be %v, was %v\nf= %x\nb= %x\b", shouldUnderflow, underflow, f, b)
-	}
-	return nil
-}
-
 func randNums() (*big.Int, *Int, error) {
 	//How many bits? 0-256
 	nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
@@ -141,8 +133,7 @@ func randNums() (*big.Int, *Int, error) {
 	max.Exp(big.NewInt(2), big.NewInt(nbits.Int64()), nil)
 	b, _ := rand.Int(rand.Reader, max)
 	f, overflow := FromBig(b)
-	err := checkOverflow(b, f, overflow)
-	return b, f, err
+	return b, f, checkOverflow(b, f, overflow)
 }
 
 func randHighNums() (*big.Int, *Int, error) {
@@ -154,9 +145,7 @@ func randHighNums() (*big.Int, *Int, error) {
 	//Generate cryptographically strong pseudo-random between 0 - max
 	b, _ := rand.Int(rand.Reader, max)
 	f, overflow := FromBig(b)
-	//fmt.Printf("f %v\n", f.Hex())
-	err := checkOverflow(b, f, overflow)
-	return b, f, err
+	return b, f, checkOverflow(b, f, overflow)
 }
 func checkEq(b *big.Int, f *Int) bool {
 	f2, _ := FromBig(b)
@@ -239,8 +228,10 @@ func TestRandomSubOverflow(t *testing.T) {
 		f1a, f2a := f1.Clone(), f2.Clone()
 		_, overflow := f1.SubOverflow(f1, f2)
 		b.Sub(b, b2)
-		if err := checkUnderflow(b, f1, overflow); err != nil {
-			t.Fatal(err)
+
+		// check overflow
+		if have, want := overflow, b.Cmp(big.NewInt(0)) < 0; have != want {
+			t.Fatalf("underflow should be %v, was %v\nf= %x\nb= %x\b", have, want, f1, b)
 		}
 		if eq := checkEq(b, f1); !eq {
 			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f1, b)
