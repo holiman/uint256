@@ -162,9 +162,10 @@ func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
 
 func reciprocal(m Int) (mu [5]uint64) {
 
-	// 0 or a power of 2?
-
 	s := leadingZeros(m)
+	p := 255-s	// floor(log_2(m)), m>0
+
+	// 0 or a power of 2?
 
 	if onesCount(m) <= 1 {
 		if s >= 255 {	// m <= 1
@@ -174,7 +175,11 @@ func reciprocal(m Int) (mu [5]uint64) {
 			mu[1] = -m[0]
 			mu[0] = -m[0]
 		} else {
-			mu[4] = 0x8000000000000000 >> ((254-s) & 63)
+			mu[4] = ^uint64(0) >> (p & 63)
+			mu[3] = ^uint64(0)
+			mu[2] = ^uint64(0)
+			mu[1] = ^uint64(0)
+			mu[0] = ^uint64(0)
 		}
 		return mu
 	}
@@ -461,9 +466,24 @@ func reciprocal(m Int) (mu [5]uint64) {
 	mu[3] = r4i
 	mu[4] = r4h
 
+
 	// Shift into appropriate bit alignment, truncating excess bits
 
-	mu = shiftright320(mu, uint(254-s) & 63)
+	switch (p & 63) - 1 {
+	case -1:
+		mu[0], c = bits.Add64(mu[0], mu[0], 0)
+		mu[1], c = bits.Add64(mu[1], mu[1], c)
+		mu[2], c = bits.Add64(mu[2], mu[2], c)
+		mu[3], c = bits.Add64(mu[3], mu[3], c)
+		mu[4], _ = bits.Add64(mu[4], mu[4], c)
+		break;
+	case 0:
+		break;
+	default:
+		mu = shiftright320(mu, uint((p & 63) - 1))
+		break;
+	}
+
 
 	// Store the reciprocal in the cache
 
@@ -527,7 +547,7 @@ func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
 	x3 := x[6]
 	x4 := x[7]
 
-	// q2 = q1 * mu
+	// q2 = q1 * mu; q3 = q2 / 2^320
 
 	var q0, q1, q2, q3, q4, q5, t0, t1, c uint64
 
@@ -563,7 +583,7 @@ func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
 	t1, t0 = bits.Mul64(x1, mu[4]);	q1, c = bits.Add64(q1, t0, 0);	q2, c = bits.Add64(q2, t1, c)
 	t1, t0 = bits.Mul64(x3, mu[4]);	q3, c = bits.Add64(q3, t0, c);	q4, c = bits.Add64(q4, t1, c); q5, _ = bits.Add64(q5, 0, c)
 
-	// Drop the fractional part of q2
+	// Drop the fractional part of q3
 
 	q0 = q1
 	q1 = q2
