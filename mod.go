@@ -62,80 +62,6 @@ func onesCount(x Int) (z int) {
 	return z
 }
 
-func shiftLeft(x Int, s int) (z Int) {
-	if s < 0 {
-		z = shiftright(x, uint(-s))
-	} else {
-		z = shiftleft(x, uint(s))
-	}
-	return z
-}
-
-//func shiftRight(x Int, s int) (z Int) {
-//	if s < 0 {
-//		z = shiftleft(x, uint(-s))
-//	} else {
-//		z = shiftright(x, uint(s))
-//	}
-//	return z
-//}
-
-func shiftleft(x Int, s uint) (z Int) {
-	w := s/64	// word shift
-	l := s%64	// left shift
-	r := 64-l	// right shift
-
-	var t Int
-
-	// Bit shift
-
-	t[0] = (x[0] << l)
-	t[1] = (x[1] << l) | (x[0] >> r)
-	t[2] = (x[2] << l) | (x[1] >> r)
-	t[3] = (x[3] << l) | (x[2] >> r)
-
-	// Word shift
-
-	i := 0
-	j := w
-
-	for ; j<4; {
-		z[j] = t[i]
-		i++
-		j++
-	}
-
-	return z
-}
-
-func shiftright(x Int, s uint) (z Int) {
-	w := s/64	// word shift
-	r := s%64	// right shift
-	l := 64-r	// left shift
-
-	var t Int
-
-	// Bit shift
-
-	t[0] = (x[0] >> r) | (x[1] << l)
-	t[1] = (x[1] >> r) | (x[2] << l)
-	t[2] = (x[2] >> r) | (x[3] << l)
-	t[3] = (x[3] >> r)
-
-	// Word shift
-
-	i := 0
-	j := w
-
-	for ; j<4; {
-		z[i] = t[j]
-		i++
-		j++
-	}
-
-	return z
-}
-
 // shiftright320 shifts a 320-bit value 0-63 bits right
 // z = x >> (s % 64)
 
@@ -214,13 +140,17 @@ func reciprocal(m Int) (mu [5]uint64) {
 
 	// Maximise division precision by left-aligning divisor
 
-	y := shiftLeft(m, s)	// 1/2 < y < 1
+	var (
+		y Int		// left-aligned copy of m
+		r0 uint32	// estimate of 2^31/y
+	)
+
+	y.Lsh(&m, uint(s))	// 1/2 < y < 1
 
 	// Extract most significant 32 bits
 
 	yh := uint32(y[3] >> 32)
 
-	var r0 uint32	// estimate of 2^31/y
 
 	if yh == 0x80000000 { // Avoid overflow in division
 		r0 = 0xffffffff
