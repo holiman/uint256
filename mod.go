@@ -101,7 +101,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 			mu[1] = -m[0]
 			mu[0] = -m[0]
 		} else {
-			mu[4] = ^uint64(0) >> (p & 63)
+			mu[4] = ^uint64(0) >> uint(p & 63)
 			mu[3] = ^uint64(0)
 			mu[2] = ^uint64(0)
 			mu[1] = ^uint64(0)
