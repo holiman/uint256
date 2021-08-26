@@ -195,36 +195,45 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
+
+	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
+	// This is always the case when x and y are already reduced modulo such m.
+
+	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
+		var (
+			s, t Int
+			overflow bool
+		)
+
+		s = *x
+		if _, overflow = s.SubOverflow(&s, m); overflow {
+			s = *x
+		}
+
+		t = *y
+		if _, overflow = t.SubOverflow(&t, m); overflow {
+			t = *y
+		}
+
+		if _, overflow = s.AddOverflow(&s, &t); overflow {
+			s.SubOverflow(&s, m)
+		}
+
+		t = s
+		if _, overflow = s.SubOverflow(&s, m); overflow {
+			s = t
+		}
+
+		*z = s
+		return z
+	}
+
 	if m.IsZero() {
 		return z.Clear()
 	}
 	if z == m { // z is an alias for m and will be overwritten by AddOverflow before m is read
 		m = m.Clone()
 	}
-
-	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
-	// This is always the case when x and y are already reduced modulo such m.
-
-	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
-		if z, overflow := z.AddOverflow(x, y); overflow {
-			z.Sub(z, m)
-		}
-
-		// The worst case here is m = 2^192, x = y = 2m-1, so x+y = 4m-2.
-		// Hence the loop is exited at the latest in the fourth iteration.
-		// For already-reduced inputs, this happens no later than the second iteration.
-
-		for {
-			t := *z
-			if _, overflow := t.SubOverflow(&t, m); overflow {
-				break
-			}
-			*z = t
-		}
-
-		return z
-	}
-
 	if _, overflow := z.AddOverflow(x, y); overflow {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
