@@ -477,7 +477,6 @@ func reciprocal(m Int) (mu [5]uint64) {
 		mu[3], c = bits.Add64(mu[3], mu[3], c)
 		mu[4], _ = bits.Add64(mu[4], mu[4], c)
 	case 0:
-		break;
 	default:
 		mu = shiftright320(mu, uint((p & 63) - 1))
 	}
