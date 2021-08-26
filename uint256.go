@@ -216,7 +216,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		}
 
 		if _, overflow = s.AddOverflow(&s, &t); overflow {
-			s.SubOverflow(&s, m)
+			s.Sub(&s, m)
 		}
 
 		t = s
