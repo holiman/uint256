@@ -201,7 +201,7 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 
 	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
 		var (
-			s, t Int
+			s, t     Int
 			overflow bool
 		)
 
@@ -620,7 +620,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 
 	if m[3] != 0 {
 		mu := reciprocal(*m)
-		r  := reduce4(p, *m, mu)
+		r := reduce4(p, *m, mu)
 		return z.Set(&r)
 	}
 
