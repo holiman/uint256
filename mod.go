@@ -73,13 +73,10 @@ func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
 			return
 		}
 	}
-	// Shift old elements, evicting the oldest
-	for w = cacheWays - 1; w > 0; w-- {
-		cache[index].mod[w] = cache[index].mod[w-1]
-		cache[index].inv[w] = cache[index].inv[w-1]
-	}
-	cache[index].mod[0] = m
-	cache[index].inv[0] = mu
+	// Evict one at random
+	rnd := m[0] % cacheWays
+	cache[index].mod[rnd] = m
+	cache[index].inv[rnd] = mu
 }
 
 var cache reciprocalCache
