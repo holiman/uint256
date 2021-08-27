@@ -35,15 +35,17 @@ type cacheSet struct {
 	inv	[cacheWays][5]uint64
 }
 
-var cache [cacheSets]cacheSet
+type reciprocalCache [cacheSets]cacheSet
 
-func cacheStats() (hit, miss uint64) {
-	for s:=0; s<cacheSets; s++ {
-		hit  += cache[s].hit
-		miss += cache[s].miss
+func (c reciprocalCache) Stats() (hit, miss uint64) {
+	for _, set := range c {
+		hit += set.hit
+		miss += set.miss
 	}
 	return hit, miss
 }
+
+var cache reciprocalCache
 
 // Some utility functions
 
@@ -396,7 +398,6 @@ func reciprocal(m Int) (mu [5]uint64) {
 	mu[3] = r4i
 	mu[4] = r4h
 
-
 	// Shift into appropriate bit alignment, truncating excess bits
 
 	switch (p & 63) - 1 {
@@ -411,7 +412,6 @@ func reciprocal(m Int) (mu [5]uint64) {
 		mu = shiftright320(mu, uint((p & 63) - 1))
 	}
 
-
 	// Store the reciprocal in the cache
 
 	cache[cacheIndex].rw.Lock()
@@ -419,7 +419,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 
 	var w int
 
-	for w=0; w<cacheWays; w++ {
+	for w = 0; w < cacheWays; w++ {
 		if cache[cacheIndex].mod[w][3] != m[3] { continue }
 		if cache[cacheIndex].mod[w][2] != m[2] { continue }
 		if cache[cacheIndex].mod[w][1] != m[1] { continue }
@@ -431,7 +431,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		return mu
 	}
 
-	for w=0; w<cacheWays; w++ {
+	for w = 0; w < cacheWays; w++ {
 		if cache[cacheIndex].mod[w][3] == 0 &&
 		   cache[cacheIndex].mod[w][2] == 0 &&
 		   cache[cacheIndex].mod[w][1] == 0 &&
@@ -446,7 +446,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		cache[cacheIndex].inv[w] = mu
 	} else {
 		// Shift old elements, evicting the oldest
-		for w=cacheWays-1; w>0; w-- {
+		for w = cacheWays - 1; w > 0; w-- {
 			cache[cacheIndex].mod[w] = cache[cacheIndex].mod[w-1]
 			cache[cacheIndex].inv[w] = cache[cacheIndex].inv[w-1]
 		}
@@ -586,7 +586,9 @@ func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
 		q4, b = bits.Sub64(r4,    0, b)
 
 		// if borrow break
-		if b != 0 { break }
+		if b != 0 {
+			break
+		}
 
 		// r = q
 		r4, r3, r2, r1, r0 = q4, q3, q2, q1, q0
