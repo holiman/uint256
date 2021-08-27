@@ -45,6 +45,43 @@ func (c reciprocalCache) Stats() (hit, miss uint64) {
 	return hit, miss
 }
 
+func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
+	cache[index].rw.RLock()
+	defer cache[index].rw.RUnlock()
+
+	for w := 0; w < cacheWays; w++ {
+		if cache[index].mod[w].Eq(&m) {
+			copy(dest[:], cache[index].inv[w][:])
+			cache[index].hit++
+			return true
+		}
+	}
+	cache[index].miss++
+	return false
+}
+
+func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
+	cache[index].rw.Lock()
+	defer cache[index].rw.Unlock()
+
+	var w int
+	for w = 0; w < cacheWays; w++ {
+		if cache[index].mod[w].IsZero() {
+			// Found an empty slot
+			cache[index].mod[w] = m
+			cache[index].inv[w] = mu
+			return
+		}
+	}
+	// Shift old elements, evicting the oldest
+	for w = cacheWays - 1; w > 0; w-- {
+		cache[index].mod[w] = cache[index].mod[w-1]
+		cache[index].inv[w] = cache[index].inv[w-1]
+	}
+	cache[index].mod[0] = m
+	cache[index].inv[0] = mu
+}
+
 var cache reciprocalCache
 
 // Some utility functions
@@ -123,40 +160,10 @@ func reciprocal(m Int) (mu [5]uint64) {
 	}
 
 	// Check for reciprocal in the cache
-
 	cacheIndex := (m[3] ^ m[2] ^ m[1] ^ m[0]) & cacheMask
-
-	cache[cacheIndex].rw.RLock()
-
-	for w := 0; w < cacheWays; w++ {
-		if cache[cacheIndex].mod[w][3] != m[3] {
-			continue
-		}
-		if cache[cacheIndex].mod[w][2] != m[2] {
-			continue
-		}
-		if cache[cacheIndex].mod[w][1] != m[1] {
-			continue
-		}
-		if cache[cacheIndex].mod[w][0] != m[0] {
-			continue
-		}
-
-		for i := 0; i < 5; i++ {
-			mu[i] = cache[cacheIndex].inv[w][i]
-		}
-
-		cache[cacheIndex].hit++
-		cache[cacheIndex].rw.RUnlock()
-
+	if cache.has(m, cacheIndex, &mu) {
 		return mu
 	}
-
-	cache[cacheIndex].miss++
-
-	// Compute the reciprocal without holding the lock
-
-	cache[cacheIndex].rw.RUnlock()
 
 	// Maximise division precision by left-aligning divisor
 
@@ -522,54 +529,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 	}
 
 	// Store the reciprocal in the cache
-
-	cache[cacheIndex].rw.Lock()
-	defer cache[cacheIndex].rw.Unlock()
-
-	var w int
-
-	for w = 0; w < cacheWays; w++ {
-		if cache[cacheIndex].mod[w][3] != m[3] {
-			continue
-		}
-		if cache[cacheIndex].mod[w][2] != m[2] {
-			continue
-		}
-		if cache[cacheIndex].mod[w][1] != m[1] {
-			continue
-		}
-		if cache[cacheIndex].mod[w][0] != m[0] {
-			continue
-		}
-
-		// Reciprocal found, nothing more to do
-		// (another thread computed and stored it)
-
-		return mu
-	}
-
-	for w = 0; w < cacheWays; w++ {
-		if cache[cacheIndex].mod[w][3] == 0 &&
-			cache[cacheIndex].mod[w][2] == 0 &&
-			cache[cacheIndex].mod[w][1] == 0 &&
-			cache[cacheIndex].mod[w][0] == 0 {
-			break
-		}
-	}
-
-	if w < cacheWays {
-		// Found an empty slot
-		cache[cacheIndex].mod[w] = m
-		cache[cacheIndex].inv[w] = mu
-	} else {
-		// Shift old elements, evicting the oldest
-		for w = cacheWays - 1; w > 0; w-- {
-			cache[cacheIndex].mod[w] = cache[cacheIndex].mod[w-1]
-			cache[cacheIndex].inv[w] = cache[cacheIndex].inv[w-1]
-		}
-		cache[cacheIndex].mod[0] = m
-		cache[cacheIndex].inv[0] = mu
-	}
+	cache.put(m, cacheIndex, mu)
 
 	return mu
 }
