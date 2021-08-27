@@ -5,6 +5,7 @@
 package uint256
 
 import (
+	"fmt"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -726,6 +727,10 @@ func BenchmarkMulMod(b *testing.B) {
 	b.Run("mod192/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big192Samples) })
 	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int256SamplesLt) })
 	b.Run("mod256/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big256SamplesLt) })
+	if hits, misses := cache.Stats(); hits+misses != 0 {
+		fmt.Printf("Hits/Misses	%d/%d (hitrate %.03f%%)\n", hits, misses, 100*float64(hits)/float64(hits+misses))
+	}
+
 }
 
 func benchmark_SdivLarge_Big(bench *testing.B) {

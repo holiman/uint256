@@ -35,15 +35,17 @@ type cacheSet struct {
 	inv [cacheWays][5]uint64
 }
 
-var cache [cacheSets]cacheSet
+type reciprocalCache [cacheSets]cacheSet
 
-func cacheStats() (hit, miss uint64) {
-	for s := 0; s < cacheSets; s++ {
-		hit += cache[s].hit
-		miss += cache[s].miss
+func (c reciprocalCache) Stats() (hit, miss uint64) {
+	for _, set := range c {
+		hit += set.hit
+		miss += set.miss
 	}
 	return hit, miss
 }
+
+var cache reciprocalCache
 
 // Some utility functions
 
