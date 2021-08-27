@@ -16,16 +16,22 @@ var (
 	int32Samples    [numSamples]Int
 	int32SamplesLt  [numSamples]Int
 	int64Samples    [numSamples]Int
+	int64SamplesLt  [numSamples]Int
 	int128Samples   [numSamples]Int
+	int128SamplesLt [numSamples]Int
 	int192Samples   [numSamples]Int
+	int192SamplesLt [numSamples]Int
 	int256Samples   [numSamples]Int
 	int256SamplesLt [numSamples]Int // int256SamplesLt[i] <= int256Samples[i]
 
 	big32Samples    [numSamples]big.Int
 	big32SamplesLt  [numSamples]big.Int
 	big64Samples    [numSamples]big.Int
+	big64SamplesLt  [numSamples]big.Int
 	big128Samples   [numSamples]big.Int
+	big128SamplesLt [numSamples]big.Int
 	big192Samples   [numSamples]big.Int
+	big192SamplesLt [numSamples]big.Int
 	big256Samples   [numSamples]big.Int
 	big256SamplesLt [numSamples]big.Int // big256SamplesLt[i] <= big256Samples[i]
 
@@ -55,21 +61,56 @@ func initSamples() bool {
 		int32SamplesLt[i].SetUint64(uint64(x32l))
 		big32SamplesLt[i] = *int32SamplesLt[i].ToBig()
 
-		int64Samples[i] = newRandInt(1)
-		big64Samples[i] = *int64Samples[i].ToBig()
-
-		int128Samples[i] = newRandInt(2)
-		big128Samples[i] = *int128Samples[i].ToBig()
-
-		int192Samples[i] = newRandInt(3)
-		big192Samples[i] = *int192Samples[i].ToBig()
-
-		int256Samples[i] = newRandInt(4)
-		int256SamplesLt[i] = newRandInt(4)
-		if int256Samples[i].Lt(&int256SamplesLt[i]) {
-			int256Samples[i], int256SamplesLt[i] = int256SamplesLt[i], int256Samples[i]
+		l := newRandInt(1)
+		g := newRandInt(1)
+		if g.Lt(&l) {
+			g,l = l,g
 		}
+		if g[0] == 0 {
+			g[0]++
+		}
+		int64Samples[i] = g
+		big64Samples[i] = *int64Samples[i].ToBig()
+		int64SamplesLt[i] = l
+		big64SamplesLt[i] = *int64SamplesLt[i].ToBig()
+
+		l = newRandInt(2)
+		g = newRandInt(2)
+		if g.Lt(&l) {
+			g,l = l,g
+		}
+		if g[1] == 0 {
+			g[1]++
+		}
+		int128Samples[i] = g
+		big128Samples[i] = *int128Samples[i].ToBig()
+		int128SamplesLt[i] = l
+		big128SamplesLt[i] = *int128SamplesLt[i].ToBig()
+
+		l = newRandInt(3)
+		g = newRandInt(3)
+		if g.Lt(&l) {
+			g,l = l,g
+		}
+		if g[2] == 0 {
+			g[2]++
+		}
+		int192Samples[i] = g
+		big192Samples[i] = *int192Samples[i].ToBig()
+		int192SamplesLt[i] = l
+		big192SamplesLt[i] = *int192SamplesLt[i].ToBig()
+
+		l = newRandInt(4)
+		g = newRandInt(4)
+		if g.Lt(&l) {
+			g,l = l,g
+		}
+		if g[3] == 0 {
+			g[3]++
+		}
+		int256Samples[i] = g
 		big256Samples[i] = *int256Samples[i].ToBig()
+		int256SamplesLt[i] = l
 		big256SamplesLt[i] = *int256SamplesLt[i].ToBig()
 	}
 
@@ -626,86 +667,53 @@ func BenchmarkAddMod(b *testing.B) {
 		}
 	}
 
-	// Compute least non negative residue of the addend for each modulus
-
-	{
-		var (
-			I Int
-			B big.Int
-
-			residue32Int  [len(int32Samples)]Int
-			residue32Big  [len(int32Samples)]big.Int
-			residue64Int  [len(int64Samples)]Int
-			residue64Big  [len(int64Samples)]big.Int
-			residue128Int [len(int128Samples)]Int
-			residue128Big [len(int128Samples)]big.Int
-			residue192Int [len(int192Samples)]Int
-			residue192Big [len(int192Samples)]big.Int
-			residue256Int [len(int256Samples)]Int
-			residue256Big [len(int256Samples)]big.Int
-		)
-
-		for i := 0; i < len( int32Samples); i++ {  residue32Int[i] = *(I.Mod( &int32Samples[i],  &int32SamplesLt[i])) }
-		for i := 0; i < len( big32Samples); i++ {  residue32Big[i] = *(B.Mod( &big32Samples[i],  &big32SamplesLt[i])) }
-
-		for i := 0; i < len( int64Samples); i++ {  residue64Int[i] = *(I.Mod( &int64Samples[i],  &int64Samples[i])) }
-		for i := 0; i < len( big64Samples); i++ {  residue64Big[i] = *(B.Mod( &big64Samples[i],  &big64Samples[i])) }
-
-		for i := 0; i < len(int128Samples); i++ { residue128Int[i] = *(I.Mod(&int128Samples[i], &int128Samples[i])) }
-		for i := 0; i < len(big128Samples); i++ { residue128Big[i] = *(B.Mod(&big128Samples[i], &big128Samples[i])) }
-
-		for i := 0; i < len(int192Samples); i++ { residue192Int[i] = *(I.Mod(&int192Samples[i], &int192Samples[i])) }
-		for i := 0; i < len(big192Samples); i++ { residue192Big[i] = *(B.Mod(&big192Samples[i], &big192Samples[i])) }
-
-		for i := 0; i < len(int256Samples); i++ { residue256Int[i] = *(I.Mod(&int256Samples[i], &int256SamplesLt[i])) }
-		for i := 0; i < len(big256Samples); i++ { residue256Big[i] = *(B.Mod(&big256Samples[i], &big256SamplesLt[i])) }
-
-		b.Run("small/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &residue32Int,  &int32SamplesLt) })
-		b.Run("small/big",	func(b *testing.B) { benchmarkAddModBig		(b, &residue32Big,  &big32SamplesLt) })
-		b.Run("mod64/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &residue256Int, &int64Samples) })
-		b.Run("mod64/big",	func(b *testing.B) { benchmarkAddModBig		(b, &residue256Big, &big64Samples) })
-		b.Run("mod128/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &residue256Int, &int128Samples) })
-		b.Run("mod128/big",	func(b *testing.B) { benchmarkAddModBig		(b, &residue256Big, &big128Samples) })
-		b.Run("mod192/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &residue256Int, &int192Samples) })
-		b.Run("mod192/big",	func(b *testing.B) { benchmarkAddModBig		(b, &residue256Big, &big192Samples) })
-		b.Run("mod256/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &residue256Int, &int256SamplesLt) })
-		b.Run("mod256/big",	func(b *testing.B) { benchmarkAddModBig		(b, &residue256Big, &big256SamplesLt) })
-	}
+	b.Run("small/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b,  &int32SamplesLt,  &int32Samples) })
+	b.Run("small/big",	func(b *testing.B) { benchmarkAddModBig		(b,  &big32SamplesLt,  &big32Samples) })
+	b.Run("mod64/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b,  &int64SamplesLt,  &int64Samples) })
+	b.Run("mod64/big",	func(b *testing.B) { benchmarkAddModBig		(b,  &big64SamplesLt,  &big64Samples) })
+	b.Run("mod128/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &int128SamplesLt, &int128Samples) })
+	b.Run("mod128/big",	func(b *testing.B) { benchmarkAddModBig		(b, &big128SamplesLt, &big128Samples) })
+	b.Run("mod192/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &int192SamplesLt, &int192Samples) })
+	b.Run("mod192/big",	func(b *testing.B) { benchmarkAddModBig		(b, &big192SamplesLt, &big192Samples) })
+	b.Run("mod256/uint256",	func(b *testing.B) { benchmarkAddModUint256	(b, &int256SamplesLt, &int256Samples) })
+	b.Run("mod256/big",	func(b *testing.B) { benchmarkAddModBig		(b, &big256SamplesLt, &big256Samples) })
 }
 
 func BenchmarkMulMod(b *testing.B) {
 	benchmarkMulModUint256 := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
-		var sink, x Int
-		for j := 0; j < b.N; j += numSamples {
-			for i := 0; i < numSamples; i++ {
-				y := factorsSamples[i]
-				sink.MulMod(&x, &y, &modSamples[i])
-				x = y
+		iter := (b.N + numSamples - 1) / numSamples
+
+		for j := 0; j < numSamples; j++ {
+			x := factorsSamples[j]
+
+			for i := 0; i < iter; i++ {
+				x.MulMod(&x, &factorsSamples[j], &modSamples[j])
 			}
 		}
 	}
 	benchmarkMulModBig := func(b *testing.B, factorsSamples, modSamples *[numSamples]big.Int) {
-		var sink, x big.Int
-		for j := 0; j < b.N; j += numSamples {
-			for i := 0; i < numSamples; i++ {
-				y := factorsSamples[i]
-				sink.Mul(&x, &y)
-				sink.Mod(&sink, &modSamples[i])
-				x = y
+		iter := (b.N + numSamples - 1) / numSamples
+
+		for j := 0; j < numSamples; j++ {
+			x := factorsSamples[j]
+
+			for i := 0; i < iter; i++ {
+				x.Mul(&x, &factorsSamples[j])
+				x.Mod(&x, &modSamples[j])
 			}
 		}
 	}
 
-	b.Run("small/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int32Samples, &int32SamplesLt) })
-	b.Run("small/big", func(b *testing.B) { benchmarkMulModBig(b, &big32Samples, &big32SamplesLt) })
-	b.Run("mod64/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int64Samples) })
-	b.Run("mod64/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big64Samples) })
-	b.Run("mod128/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int128Samples) })
-	b.Run("mod128/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big128Samples) })
-	b.Run("mod192/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int192Samples) })
-	b.Run("mod192/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big192Samples) })
-	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256Samples, &int256SamplesLt) })
-	b.Run("mod256/big", func(b *testing.B) { benchmarkMulModBig(b, &big256Samples, &big256SamplesLt) })
+	b.Run("small/uint256",	func(b *testing.B) { benchmarkMulModUint256	(b,  &int32SamplesLt,  &int32Samples) })
+	b.Run("small/big",	func(b *testing.B) { benchmarkMulModBig		(b,  &big32SamplesLt,  &big32Samples) })
+	b.Run("mod64/uint256",	func(b *testing.B) { benchmarkMulModUint256	(b,  &int64SamplesLt,  &int64Samples) })
+	b.Run("mod64/big",	func(b *testing.B) { benchmarkMulModBig		(b,  &big64SamplesLt,  &big64Samples) })
+	b.Run("mod128/uint256",	func(b *testing.B) { benchmarkMulModUint256	(b, &int128SamplesLt, &int128Samples) })
+	b.Run("mod128/big",	func(b *testing.B) { benchmarkMulModBig		(b, &big128SamplesLt, &big128Samples) })
+	b.Run("mod192/uint256",	func(b *testing.B) { benchmarkMulModUint256	(b, &int192SamplesLt, &int192Samples) })
+	b.Run("mod192/big",	func(b *testing.B) { benchmarkMulModBig		(b, &big192SamplesLt, &big192Samples) })
+	b.Run("mod256/uint256",	func(b *testing.B) { benchmarkMulModUint256	(b, &int256SamplesLt, &int256Samples) })
+	b.Run("mod256/big",	func(b *testing.B) { benchmarkMulModBig		(b, &big256SamplesLt, &big256Samples) })
 
 	hit, miss := cacheStats()
 
