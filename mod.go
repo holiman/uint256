@@ -84,9 +84,9 @@ var cache reciprocalCache
 // Some utility functions
 
 func leadingZeros(x Int) (z int) {
-	z  = bits.LeadingZeros64(x[3]); if z <  64 { return }
-	z += bits.LeadingZeros64(x[2]); if z < 128 { return }
-	z += bits.LeadingZeros64(x[1]); if z < 192 { return }
+	z  = bits.LeadingZeros64(x[3]); if z <  64 { return z }
+	z += bits.LeadingZeros64(x[2]); if z < 128 { return z }
+	z += bits.LeadingZeros64(x[1]); if z < 192 { return z }
 	z += bits.LeadingZeros64(x[0]); return z
 }
 
