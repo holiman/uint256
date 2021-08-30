@@ -16,70 +16,67 @@ import (
 //
 // Adjust cacheIndexBits and cacheWays to scale the size of the cache.
 // Reasonable values are quite small, e.g. cacheIndexBits from 2 to 10, and
-// cacheWays from 3 to 11 (3+8n makes set size an integer number of cachelines)
+// cacheWays around 5 (5+8n makes set size an integer number of cachelines)
 
 const (
-	cacheIndexBits = 9
-	cacheWays      = 3
+	cacheIndexBits = 8
+	cacheWays      = 5
 
 	cacheSets = 1 << cacheIndexBits
 	cacheMask = cacheSets - 1
 )
 
 type cacheSet struct {
-	hit  uint64
-	miss uint64
-
 	rw  sync.RWMutex
 	mod [cacheWays]Int
 	inv [cacheWays][5]uint64
 }
 
-type reciprocalCache [cacheSets]cacheSet
+type reciprocalCache struct {
+	set [cacheSets]cacheSet
+	hit  uint64
+	miss uint64
+}
 
 func (c *reciprocalCache) Stats() (hit, miss uint64) {
-	for _, set := range c {
-		hit += set.hit
-		miss += set.miss
-	}
-	return hit, miss
+	return c.hit, c.miss
 }
 
 func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
-	cache[index].rw.RLock()
-	defer cache[index].rw.RUnlock()
+	cache.set[index].rw.RLock()
+	defer cache.set[index].rw.RUnlock()
 
 	for w := 0; w < cacheWays; w++ {
-		if cache[index].mod[w].Eq(&m) {
-			copy(dest[:], cache[index].inv[w][:])
-			cache[index].hit++
+		if cache.set[index].mod[w].Eq(&m) {
+			copy(dest[:], cache.set[index].inv[w][:])
+			cache.hit++
 			return true
 		}
 	}
-	cache[index].miss++
+	cache.miss++
 	return false
 }
 
 func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
-	cache[index].rw.Lock()
-	defer cache[index].rw.Unlock()
+	cache.set[index].rw.Lock()
+	defer cache.set[index].rw.Unlock()
 
 	var w int
 	for w = 0; w < cacheWays; w++ {
-		if cache[index].mod[w].IsZero() {
+		if cache.set[index].mod[w].IsZero() {
 			// Found an empty slot
-			cache[index].mod[w] = m
-			cache[index].inv[w] = mu
+			cache.set[index].mod[w] = m
+			cache.set[index].inv[w] = mu
 			return
 		}
 	}
 	// Shift old elements, evicting the oldest
 	for w = cacheWays - 1; w > 0; w-- {
-		cache[index].mod[w] = cache[index].mod[w-1]
-		cache[index].inv[w] = cache[index].inv[w-1]
+		cache.set[index].mod[w] = cache.set[index].mod[w-1]
+		cache.set[index].inv[w] = cache.set[index].inv[w-1]
 	}
-	cache[index].mod[0] = m
-	cache[index].inv[0] = mu
+	cache.set[index].mod[0] = m
+	cache.set[index].inv[0] = mu
 }
 
 var cache reciprocalCache
