@@ -37,7 +37,7 @@ type cacheSet struct {
 
 type reciprocalCache [cacheSets]cacheSet
 
-func (c reciprocalCache) Stats() (hit, miss uint64) {
+func (c *reciprocalCache) Stats() (hit, miss uint64) {
 	for _, set := range c {
 		hit += set.hit
 		miss += set.miss
