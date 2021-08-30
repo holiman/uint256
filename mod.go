@@ -15,8 +15,13 @@ import (
 // multithreaded settings.
 //
 // Adjust cacheIndexBits and cacheWays to scale the size of the cache.
+// Total cache size is (24+72*cacheWays)*2^cacheIndexBits bytes, which is
+// 96 KiB with cacheIndexBits = 8 and cacheWays = 5. There are also 16 bytes
+// for hit and miss counters.
+//
 // Reasonable values are quite small, e.g. cacheIndexBits from 2 to 10, and
-// cacheWays around 5 (5+8n makes set size an integer number of cachelines)
+// cacheWays around 5. Note that cacheWays = 5+8n makes the set size an integer
+// number of 64-byte cachelines.
 
 const (
 	cacheIndexBits = 8
