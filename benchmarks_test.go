@@ -714,10 +714,6 @@ func BenchmarkMulMod(b *testing.B) {
 	b.Run("mod192/big",	func(b *testing.B) { benchmarkMulModBig		(b, &big192SamplesLt, &big192Samples) })
 	b.Run("mod256/uint256",	func(b *testing.B) { benchmarkMulModUint256	(b, &int256SamplesLt, &int256Samples) })
 	b.Run("mod256/big",	func(b *testing.B) { benchmarkMulModBig		(b, &big256SamplesLt, &big256Samples) })
-
-	hit, miss := cacheStats()
-
-	b.Logf("Hits/tMisses\t%v/%v\n", hit, miss)
 }
 
 func benchmark_SdivLarge_Big(bench *testing.B) {
