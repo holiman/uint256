@@ -166,26 +166,26 @@ func checkThreeArgOp(op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
 }
 
 func Fuzz(data []byte) int {
-	if len(data) != 65 {
-		return -1
+	switch len(data) {
+	case 64:
+		return fuzzBinaryOp(data)
+	case 96:
+		return fuzzTernaryOp(data)
 	}
-	op := data[0]
+	return -1
+}
+func fuzzBinaryOp(data []byte) int {
 	var x, y Int
-	x.SetBytes(data[1:33])
-	y.SetBytes(data[33:])
-
-	switch op {
-	case opUdivrem:
-		if y.IsZero() {
-			return 0
-		}
+	x.SetBytes(data[0:32])
+	y.SetBytes(data[32:])
+	if !y.IsZero() { // uDivrem
 		checkDualArgOp((*Int).Div, (*big.Int).Div, x, y)
 		checkDualArgOp((*Int).Mod, (*big.Int).Mod, x, y)
-
-	case opMul:
+	}
+	{ // opMul
 		checkDualArgOp((*Int).Mul, (*big.Int).Mul, x, y)
-
-	case opLsh:
+	}
+	{ // opLsh
 		lsh := func(z, x, y *Int) *Int {
 			return z.Lsh(x, uint(y[0]))
 		}
@@ -197,14 +197,12 @@ func Fuzz(data []byte) int {
 			return z.Lsh(x, n)
 		}
 		checkDualArgOp(lsh, bigLsh, x, y)
-
-	case opAdd:
+	}
+	{ // opAdd
 		checkDualArgOp((*Int).Add, (*big.Int).Add, x, y)
-
-	case opSub:
+	}
+	{ // opSub
 		checkDualArgOp((*Int).Sub, (*big.Int).Sub, x, y)
-	default:
-		return 0
 	}
 	return 1
 }
@@ -217,25 +215,28 @@ func intMulMod(f1, f2, f3, f4 *Int) *Int {
 	return f1.MulMod(f2, f3, f4)
 }
 
-func Fuzz3Args(data []byte) int {
-	if len(data) != 1+32+32+23 {
+func bigAddMod(b1, b2, b3, b4 *big.Int) *big.Int {
+	return b1.Mod(big.NewInt(0).Add(b2, b3), b4)
+}
+
+func intAddMod(f1, f2, f3, f4 *Int) *Int {
+	return f1.AddMod(f2, f3, f4)
+}
+
+func fuzzTernaryOp(data []byte) int {
+	var x, y, z Int
+	x.SetBytes(data[:32])
+	y.SetBytes(data[32:64])
+	z.SetBytes(data[64:])
+	if z.IsZero() {
 		return 0
 	}
-	op := data[0]
 
-	var x, y, z Int
-	x.SetBytes(data[1:33])
-	y.SetBytes(data[33:65])
-	z.SetBytes(data[65:])
-
-	switch op {
-	case opMulmod:
-		if z.IsZero() {
-			return 0
-		}
+	{ // mulMod
 		checkThreeArgOp(intMulMod, bigMulMod, x, y, z)
-	default:
-		return 0
+	}
+	{ // addMod
+		checkThreeArgOp(intAddMod, bigAddMod, x, y, z)
 	}
 	return 1
 }
