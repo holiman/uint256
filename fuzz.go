@@ -2,6 +2,7 @@
 // Copyright 2020 uint256 Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
+//go:build gofuzz
 // +build gofuzz
 
 package uint256
@@ -11,45 +12,55 @@ import (
 	"math/big"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 const (
-	opUdivrem = 0
-	opMul     = 1
-	opLsh     = 2
-	opAdd     = 4
-	opSub     = 5
+	opUdivrem = iota
+	opMul
+	opLsh
+	opAdd
+	opSub
+	opMulmod
 )
 
-type opFunc func(*Int, *Int, *Int) *Int
-type bigFunc func(*big.Int, *big.Int, *big.Int) *big.Int
+type opDualArgFunc func(*Int, *Int, *Int) *Int
+type bigDualArgFunc func(*big.Int, *big.Int, *big.Int) *big.Int
 
-func crash(op opFunc, x, y Int, msg string) {
+type opThreeArgFunc func(*Int, *Int, *Int, *Int) *Int
+type bigThreeArgFunc func(*big.Int, *big.Int, *big.Int, *big.Int) *big.Int
+
+func crash(op interface{}, msg string, args ...Int) {
 	fn := runtime.FuncForPC(reflect.ValueOf(op).Pointer())
 	fnName := fn.Name()
 	fnFile, fnLine := fn.FileLine(fn.Entry())
-	panic(fmt.Sprintf("%s\nfor %s (%s:%d)\nx: %x\ny: %x", msg, fnName, fnFile, fnLine, &x, &y))
+	var strArgs []string
+	for i, arg := range args {
+		strArgs = append(strArgs, fmt.Sprintf("%d: %x", i, &arg))
+	}
+	panic(fmt.Sprintf("%s\nfor %s (%s:%d)\n%v",
+		msg, fnName, fnFile, fnLine, strings.Join(strArgs, "\n")))
 }
 
-func checkOp(op opFunc, bigOp bigFunc, x, y Int) {
+func checkDualArgOp(op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
 	origX := x
 	origY := y
 
 	var result Int
 	ret := op(&result, &x, &y)
 	if ret != &result {
-		crash(op, x, y, "returned not the pointer receiver")
+		crash(op, "returned not the pointer receiver", x, y)
 	}
 	if x != origX {
-		crash(op, x, y, "first argument modified")
+		crash(op, "first argument modified", x, y)
 	}
 	if y != origY {
-		crash(op, x, y, "second argument modified")
+		crash(op, "second argument modified", x, y)
 	}
 
 	expected, _ := FromBig(bigOp(new(big.Int), x.ToBig(), y.ToBig()))
 	if result != *expected {
-		crash(op, x, y, "unexpected result")
+		crash(op, "unexpected result", x, y)
 	}
 
 	// Test again when the receiver is not zero.
@@ -57,43 +68,108 @@ func checkOp(op opFunc, bigOp bigFunc, x, y Int) {
 	garbage.Xor(&x, &y)
 	ret = op(&garbage, &x, &y)
 	if ret != &garbage {
-		crash(op, x, y, "returned not the pointer receiver")
+		crash(op, "returned not the pointer receiver", x, y)
 	}
 	if garbage != *expected {
-		crash(op, x, y, "unexpected result")
+		crash(op, "unexpected result", x, y)
 	}
 	if x != origX {
-		crash(op, x, y, "first argument modified")
+		crash(op, "first argument modified", x, y)
 	}
 	if y != origY {
-		crash(op, x, y, "second argument modified")
+		crash(op, "second argument modified", x, y)
 	}
 
 	// Test again with the receiver aliasing arguments.
 	ret = op(&x, &x, &y)
 	if ret != &x {
-		crash(op, x, y, "returned not the pointer receiver")
+		crash(op, "returned not the pointer receiver", x, y)
 	}
 	if x != *expected {
-		crash(op, x, y, "unexpected result")
+		crash(op, "unexpected result", x, y)
 	}
 
 	ret = op(&y, &origX, &y)
 	if ret != &y {
-		crash(op, x, y, "returned not the pointer receiver")
+		crash(op, "returned not the pointer receiver", x, y)
 	}
 	if y != *expected {
-		crash(op, x, y, "unexpected result")
+		crash(op, "unexpected result", x, y)
+	}
+}
+
+func checkThreeArgOp(op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
+	origX := x
+	origY := y
+	origZ := z
+
+	var result Int
+	ret := op(&result, &x, &y, &z)
+	if ret != &result {
+		crash(op, "returned not the pointer receiver", x, y, z)
+	}
+	switch {
+	case x != origX:
+		crash(op, "first argument modified", x, y, z)
+	case y != origY:
+		crash(op, "second argument modified", x, y, z)
+	case z != origZ:
+		crash(op, "third argument modified", x, y, z)
+	}
+	expected, _ := FromBig(bigOp(new(big.Int), x.ToBig(), y.ToBig(), z.ToBig()))
+	if have, want := result, *expected; have != want {
+		crash(op, fmt.Sprintf("unexpected result: have %v want %v", have, want), x, y, z)
+	}
+
+	// Test again when the receiver is not zero.
+	var garbage Int
+	garbage.Xor(&x, &y)
+	ret = op(&garbage, &x, &y, &z)
+	if ret != &garbage {
+		crash(op, "returned not the pointer receiver", x, y, z)
+	}
+	if have, want := garbage, *expected; have != want {
+		crash(op, fmt.Sprintf("unexpected result: have %v want %v", have, want), x, y, z)
+	}
+	switch {
+	case x != origX:
+		crash(op, "first argument modified", x, y, z)
+	case y != origY:
+		crash(op, "second argument modified", x, y, z)
+	case z != origZ:
+		crash(op, "third argument modified", x, y, z)
+	}
+
+	// Test again with the receiver aliasing arguments.
+	ret = op(&x, &x, &y, &z)
+	if ret != &x {
+		crash(op, "returned not the pointer receiver", x, y, z)
+	}
+	if have, want := x, *expected; have != want {
+		crash(op, fmt.Sprintf("unexpected result: have %v want %v", have, want), x, y, z)
+	}
+
+	ret = op(&y, &origX, &y, &z)
+	if ret != &y {
+		crash(op, "returned not the pointer receiver", x, y, z)
+	}
+	if y != *expected {
+		crash(op, "unexpected result", x, y, z)
+	}
+	ret = op(&z, &origX, &origY, &z)
+	if ret != &z {
+		crash(op, "returned not the pointer receiver", x, y, z)
+	}
+	if z != *expected {
+		crash(op, fmt.Sprintf("unexpected result: have %v want %v", z.ToBig(), expected), x, y, z)
 	}
 }
 
 func Fuzz(data []byte) int {
 	if len(data) != 65 {
-		return 0
+		return -1
 	}
-
 	op := data[0]
-
 	var x, y Int
 	x.SetBytes(data[1:33])
 	y.SetBytes(data[33:])
@@ -103,11 +179,11 @@ func Fuzz(data []byte) int {
 		if y.IsZero() {
 			return 0
 		}
-		checkOp((*Int).Div, (*big.Int).Div, x, y)
-		checkOp((*Int).Mod, (*big.Int).Mod, x, y)
+		checkDualArgOp((*Int).Div, (*big.Int).Div, x, y)
+		checkDualArgOp((*Int).Mod, (*big.Int).Mod, x, y)
 
 	case opMul:
-		checkOp((*Int).Mul, (*big.Int).Mul, x, y)
+		checkDualArgOp((*Int).Mul, (*big.Int).Mul, x, y)
 
 	case opLsh:
 		lsh := func(z, x, y *Int) *Int {
@@ -120,14 +196,46 @@ func Fuzz(data []byte) int {
 			}
 			return z.Lsh(x, n)
 		}
-		checkOp(lsh, bigLsh, x, y)
+		checkDualArgOp(lsh, bigLsh, x, y)
 
 	case opAdd:
-		checkOp((*Int).Add, (*big.Int).Add, x, y)
+		checkDualArgOp((*Int).Add, (*big.Int).Add, x, y)
 
 	case opSub:
-		checkOp((*Int).Sub, (*big.Int).Sub, x, y)
+		checkDualArgOp((*Int).Sub, (*big.Int).Sub, x, y)
+	default:
+		return 0
 	}
+	return 1
+}
 
-	return 0
+func bigMulMod(b1, b2, b3, b4 *big.Int) *big.Int {
+	return b1.Mod(big.NewInt(0).Mul(b2, b3), b4)
+}
+
+func intMulMod(f1, f2, f3, f4 *Int) *Int {
+	return f1.MulMod(f2, f3, f4)
+}
+
+func Fuzz3Args(data []byte) int {
+	if len(data) != 1+32+32+23 {
+		return 0
+	}
+	op := data[0]
+
+	var x, y, z Int
+	x.SetBytes(data[1:33])
+	y.SetBytes(data[33:65])
+	z.SetBytes(data[65:])
+
+	switch op {
+	case opMulmod:
+		if z.IsZero() {
+			return 0
+		}
+		checkThreeArgOp(intMulMod, bigMulMod, x, y, z)
+	default:
+		return 0
+	}
+	return 1
 }
