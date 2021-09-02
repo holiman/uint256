@@ -347,6 +347,18 @@ func TestRandomSMod(t *testing.T) {
 	)
 }
 
+func set3Int(s1, s2, s3, d1, d2, d3 *Int) {
+	d1.Set(s1)
+	d2.Set(s2)
+	d3.Set(s3)
+}
+
+func set3Big(s1, s2, s3, d1, d2, d3 *big.Int) {
+	d1.Set(s1)
+	d2.Set(s2)
+	d3.Set(s3)
+}
+
 func TestRandomMulMod(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b1, f1, err := randNums()
@@ -379,9 +391,12 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
 		}
 	}
-	// Tests with one operand a power of 2
+
+	// Tests related to powers of 2
+
 	for i := uint(0); i < 256; i++ {
-		b := big.NewInt(1)
+		one := big.NewInt(1)
+		b := one
 		f := NewInt(1)
 
 		t1, t2, t3 := b, b, b
@@ -412,12 +427,10 @@ func TestRandomMulMod(t *testing.T) {
 			}
 		}
 
-		t1.Set(b1)
-		t2.Set(b2)
-		t3.Set(b3)
-		u1.Set(f1)
-		u2.Set(f2)
-		u3.Set(f3)
+		// Tests with one operand a power of 2
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
 
 		b.Mod(b.Mul(t1, t2), t3)
 		f.MulMod(u1, u2, u3)
@@ -426,12 +439,8 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf1= 0x%x\nf2= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f2, f3, f, b)
 		}
 
-		t1.Set(b1)
-		t2.Set(b2)
-		t3.Set(b3)
-		u1.Set(f1)
-		u2.Set(f2)
-		u3.Set(f3)
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
 
 		b.Mod(b.Mul(t1, t3), t2)
 		f.MulMod(u1, u3, u2)
@@ -440,12 +449,8 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf1= 0x%x\nf3= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f3, f2, f, b)
 		}
 
-		t1.Set(b1)
-		t2.Set(b2)
-		t3.Set(b3)
-		u1.Set(f1)
-		u2.Set(f2)
-		u3.Set(f3)
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
 
 		b.Mod(b.Mul(t2, t1), t3)
 		f.MulMod(u2, u1, u3)
@@ -454,12 +459,8 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf2= 0x%x\nf1= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f1, f3, f, b)
 		}
 
-		t1.Set(b1)
-		t2.Set(b2)
-		t3.Set(b3)
-		u1.Set(f1)
-		u2.Set(f2)
-		u3.Set(f3)
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
 
 		b.Mod(b.Mul(t2, t3), t1)
 		f.MulMod(u2, u3, u1)
@@ -468,12 +469,8 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf2= 0x%x\nf3= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f1, f, b)
 		}
 
-		t1.Set(b1)
-		t2.Set(b2)
-		t3.Set(b3)
-		u1.Set(f1)
-		u2.Set(f2)
-		u3.Set(f3)
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
 
 		b.Mod(b.Mul(t3, t1), t2)
 		f.MulMod(u3, u1, u2)
@@ -482,12 +479,143 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf3= 0x%x\nf1= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f1, f2, f, b)
 		}
 
-		t1.Set(b1)
-		t2.Set(b2)
-		t3.Set(b3)
-		u1.Set(f1)
-		u2.Set(f2)
-		u3.Set(f3)
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t3, t2), t1)
+		f.MulMod(u3, u2, u1)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf3= 0x%x\nf2= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f2, f1, f, b)
+		}
+
+		// Tests with one operand a power of 2 plus 1
+
+		b1.Add(b1, one)
+		f1.AddUint64(f1, 1)
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t1, t2), t3)
+		f.MulMod(u1, u2, u3)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf1= 0x%x\nf2= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f2, f3, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t1, t3), t2)
+		f.MulMod(u1, u3, u2)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf1= 0x%x\nf3= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f3, f2, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t2, t1), t3)
+		f.MulMod(u2, u1, u3)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf2= 0x%x\nf1= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f1, f3, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t2, t3), t1)
+		f.MulMod(u2, u3, u1)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf2= 0x%x\nf3= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f1, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t3, t1), t2)
+		f.MulMod(u3, u1, u2)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf3= 0x%x\nf1= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f1, f2, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t3, t2), t1)
+		f.MulMod(u3, u2, u1)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf3= 0x%x\nf2= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f2, f1, f, b)
+		}
+
+		// Tests with one operand a power of 2 minus 1
+
+		if i == 0 {
+			continue	// skip zero operand
+		}
+
+		b1.Sub(b1, one)
+		b1.Sub(b1, one)
+		f1.SubUint64(f1, 2)
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t1, t2), t3)
+		f.MulMod(u1, u2, u3)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf1= 0x%x\nf2= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f2, f3, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t1, t3), t2)
+		f.MulMod(u1, u3, u2)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf1= 0x%x\nf3= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f3, f2, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t2, t1), t3)
+		f.MulMod(u2, u1, u3)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf2= 0x%x\nf1= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f1, f3, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t2, t3), t1)
+		f.MulMod(u2, u3, u1)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf2= 0x%x\nf3= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f1, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
+
+		b.Mod(b.Mul(t3, t1), t2)
+		f.MulMod(u3, u1, u2)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf3= 0x%x\nf1= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f1, f2, f, b)
+		}
+
+		set3Big(b1, b2, b3, t1, t2, t3)
+		set3Int(f1, f2, f3, u1, u2, u3)
 
 		b.Mod(b.Mul(t3, t2), t1)
 		f.MulMod(u3, u2, u1)
