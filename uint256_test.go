@@ -379,6 +379,123 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
 		}
 	}
+	// Tests with one operand a power of 2
+	for i := uint(0); i < 256; i++ {
+		b := big.NewInt(1)
+		f := NewInt(1)
+
+		t1, t2, t3 := b, b, b
+		u1, u2, u3 := f, f, f
+
+		b1 := b.Lsh(b, i)
+		f1 := f.Lsh(f, i)
+
+		b2, f2, err := randNums()
+		if err != nil {
+			t.Fatalf("Error getting a random number: %v", err)
+		}
+		for b2.Cmp(big.NewInt(0)) == 0 {
+			b2, f2, err = randNums()
+			if err != nil {
+				t.Fatalf("Error getting a random number: %v", err)
+			}
+		}
+
+		b3, f3, err := randNums()
+		if err != nil {
+			t.Fatalf("Error getting a random number: %v", err)
+		}
+		for b3.Cmp(big.NewInt(0)) == 0 {
+			b3, f3, err = randNums()
+			if err != nil {
+				t.Fatalf("Error getting a random number: %v", err)
+			}
+		}
+
+		t1.Set(b1)
+		t2.Set(b2)
+		t3.Set(b3)
+		u1.Set(f1)
+		u2.Set(f2)
+		u3.Set(f3)
+
+		b.Mod(b.Mul(t1, t2), t3)
+		f.MulMod(u1, u2, u3)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf1= 0x%x\nf2= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f2, f3, f, b)
+		}
+
+		t1.Set(b1)
+		t2.Set(b2)
+		t3.Set(b3)
+		u1.Set(f1)
+		u2.Set(f2)
+		u3.Set(f3)
+
+		b.Mod(b.Mul(t1, t3), t2)
+		f.MulMod(u1, u3, u2)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf1= 0x%x\nf3= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f1, f3, f2, f, b)
+		}
+
+		t1.Set(b1)
+		t2.Set(b2)
+		t3.Set(b3)
+		u1.Set(f1)
+		u2.Set(f2)
+		u3.Set(f3)
+
+		b.Mod(b.Mul(t2, t1), t3)
+		f.MulMod(u2, u1, u3)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf2= 0x%x\nf1= 0x%x\nf3= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f1, f3, f, b)
+		}
+
+		t1.Set(b1)
+		t2.Set(b2)
+		t3.Set(b3)
+		u1.Set(f1)
+		u2.Set(f2)
+		u3.Set(f3)
+
+		b.Mod(b.Mul(t2, t3), t1)
+		f.MulMod(u2, u3, u1)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf2= 0x%x\nf3= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f1, f, b)
+		}
+
+		t1.Set(b1)
+		t2.Set(b2)
+		t3.Set(b3)
+		u1.Set(f1)
+		u2.Set(f2)
+		u3.Set(f3)
+
+		b.Mod(b.Mul(t3, t1), t2)
+		f.MulMod(u3, u1, u2)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf3= 0x%x\nf1= 0x%x\nf2= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f1, f2, f, b)
+		}
+
+		t1.Set(b1)
+		t2.Set(b2)
+		t3.Set(b3)
+		u1.Set(f1)
+		u2.Set(f2)
+		u3.Set(f3)
+
+		b.Mod(b.Mul(t3, t2), t1)
+		f.MulMod(u3, u2, u1)
+
+		if !checkEq(b, f) {
+			t.Fatalf("Expected equality:\nf3= 0x%x\nf2= 0x%x\nf1= 0x%x\n[ op ]==\nf = %x\nb = %x\n", f3, f2, f1, f, b)
+		}
+	}
 }
 
 func S256(x *big.Int) *big.Int {
