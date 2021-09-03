@@ -24,6 +24,10 @@ import (
 // number of 64-byte cachelines.
 //
 // If you want to disable the cache, set cacheIndexBits and cacheWays to 0
+//
+// If you want to have a hardcoded modulus with precomputation, set
+// fixedModulus = true and adjust the value stored in fixed_m. This can be
+// used with or without the regular cache.
 
 const (
 	cacheIndexBits = 8
@@ -31,6 +35,8 @@ const (
 
 	cacheSets = 1 << cacheIndexBits
 	cacheMask = cacheSets - 1
+
+	fixedModulus = true
 )
 
 type cacheSet struct {
@@ -49,10 +55,35 @@ func (c *reciprocalCache) Stats() (hit, miss uint64) {
 	return c.hit, c.miss
 }
 
+var (
+	// Fixed modulus and its reciprocal
+	fixed_m Int
+	fixed_r [5]uint64
+)
+
 func init() {
+	if fixedModulus {
+		// Initialise fixed modulus
+		fixed_m[3] = 0xffffffff00000001
+		fixed_m[2] = 0x0000000000000000
+		fixed_m[1] = 0x00000000ffffffff
+		fixed_m[0] = 0xffffffffffffffff
+
+		fixed_r = reciprocal(fixed_m)
+	}
 }
 
 func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
+	if fixedModulus && m.Eq(&fixed_m) {
+		dest[0] = fixed_r[0]
+		dest[1] = fixed_r[1]
+		dest[2] = fixed_r[2]
+		dest[3] = fixed_r[3]
+		dest[4] = fixed_r[4]
+
+		return true
+	}
+
 	if cacheWays == 0 {
 		return false
 	}
