@@ -22,6 +22,8 @@ import (
 // Reasonable values are quite small, e.g. cacheIndexBits from 2 to 10, and
 // cacheWays around 5. Note that cacheWays = 5+8n makes the set size an integer
 // number of 64-byte cachelines.
+//
+// If you want to disable the cache, set cacheIndexBits and cacheWays to 0
 
 const (
 	cacheIndexBits = 8
@@ -47,7 +49,14 @@ func (c *reciprocalCache) Stats() (hit, miss uint64) {
 	return c.hit, c.miss
 }
 
+func init() {
+}
+
 func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
+	if cacheWays == 0 {
+		return false
+	}
+
 	cache.set[index].rw.RLock()
 	defer cache.set[index].rw.RUnlock()
 
@@ -63,6 +72,10 @@ func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
 }
 
 func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
+	if cacheWays == 0 {
+		return
+	}
+
 	cache.set[index].rw.Lock()
 	defer cache.set[index].rw.Unlock()
 
@@ -80,8 +93,9 @@ func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
 		cache.set[index].mod[w] = cache.set[index].mod[w-1]
 		cache.set[index].inv[w] = cache.set[index].inv[w-1]
 	}
-	cache.set[index].mod[0] = m
-	cache.set[index].inv[0] = mu
+	// w == 0
+	cache.set[index].mod[w] = m
+	cache.set[index].inv[w] = mu
 }
 
 var cache reciprocalCache
