@@ -45,13 +45,18 @@ type cacheSet struct {
 	inv [cacheWays][5]uint64
 }
 
-type reciprocalCache struct {
+type ReciprocalCache struct {
 	set [cacheSets]cacheSet
 	hit  uint64
 	miss uint64
 }
 
-func (c *reciprocalCache) Stats() (hit, miss uint64) {
+// NewCache returns a new ReciprocalCache.
+func NewCache() *ReciprocalCache{
+	return &ReciprocalCache{}
+}
+
+func (c *ReciprocalCache) Stats() (hit, miss uint64) {
 	return c.hit, c.miss
 }
 
@@ -69,11 +74,11 @@ func init() {
 		fixed_m[1] = 0x00000000ffffffff
 		fixed_m[0] = 0xffffffffffffffff
 
-		fixed_r = reciprocal(fixed_m)
+		fixed_r = reciprocal(fixed_m, nil)
 	}
 }
 
-func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
+func (cache *ReciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
 	if fixedModulus && m.Eq(&fixed_m) {
 		dest[0] = fixed_r[0]
 		dest[1] = fixed_r[1]
@@ -102,7 +107,7 @@ func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
 	return false
 }
 
-func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
+func (cache *ReciprocalCache) put(m Int, index uint64, mu [5]uint64) {
 	if cacheWays == 0 {
 		return
 	}
@@ -128,8 +133,6 @@ func (cache *reciprocalCache) put(m Int, index uint64, mu [5]uint64) {
 	cache.set[index].mod[w] = m
 	cache.set[index].inv[w] = mu
 }
-
-var cache reciprocalCache
 
 // Some utility functions
 
@@ -172,7 +175,7 @@ func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
 // - otherwise, the result is normalised to have non-zero most significant word
 // - starts with a 32-bit division, refines with newton-raphson iterations
 
-func reciprocal(m Int) (mu [5]uint64) {
+func reciprocal(m Int, cache *ReciprocalCache) (mu [5]uint64) {
 
 	s := leadingZeros(m)
 	p := 255 - s // floor(log_2(m)), m>0
@@ -197,10 +200,12 @@ func reciprocal(m Int) (mu [5]uint64) {
 	}
 
 	// Check for reciprocal in the cache
-
-	cacheIndex := (m[3] ^ m[2] ^ m[1] ^ m[0]) & cacheMask
-	if cache.has(m, cacheIndex, &mu) {
-		return mu
+	var cacheIndex uint64
+	if cache != nil{
+		cacheIndex = (m[3] ^ m[2] ^ m[1] ^ m[0]) & cacheMask
+	    if cache.has(m, cacheIndex, &mu) {
+			return mu
+		}
 	}
 
 	// Maximise division precision by left-aligning divisor
@@ -476,7 +481,9 @@ func reciprocal(m Int) (mu [5]uint64) {
 	}
 
 	// Store the reciprocal in the cache
-	cache.put(m, cacheIndex, mu)
+	if cache != nil{
+		cache.put(m, cacheIndex, mu)
+	}
 
 	return mu
 }

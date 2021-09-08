@@ -692,6 +692,18 @@ func BenchmarkMulMod(b *testing.B) {
 			}
 		}
 	}
+	cache := NewCache()
+	benchmarkMulModUint256Cache := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
+		iter := (b.N + numSamples - 1) / numSamples
+
+		for j := 0; j < numSamples; j++ {
+			x := factorsSamples[j]
+
+			for i := 0; i < iter; i++ {
+				x.MulModWithCache(&x, &factorsSamples[j], &modSamples[j], cache)
+			}
+		}
+	}
 	benchmarkMulModBig := func(b *testing.B, factorsSamples, modSamples *[numSamples]big.Int) {
 		iter := (b.N + numSamples - 1) / numSamples
 
@@ -705,17 +717,21 @@ func BenchmarkMulMod(b *testing.B) {
 		}
 	}
 
-	b.Run("small/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int32SamplesLt, &int32Samples) })
-	b.Run("mod64/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int64SamplesLt, &int64Samples) })
-	b.Run("mod128/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int128SamplesLt, &int128Samples) })
-	b.Run("mod192/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int192SamplesLt, &int192Samples) })
-	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256SamplesLt, &int256Samples) })
+	b.Run("small/uint256-nocache", func(b *testing.B) { benchmarkMulModUint256(b, &int32SamplesLt, &int32Samples) })
+	b.Run("mod64/uint256-nocache", func(b *testing.B) { benchmarkMulModUint256(b, &int64SamplesLt, &int64Samples) })
+	b.Run("mod128/uint256-nocache", func(b *testing.B) { benchmarkMulModUint256(b, &int128SamplesLt, &int128Samples) })
+	b.Run("mod192/uint256-nocache", func(b *testing.B) { benchmarkMulModUint256(b, &int192SamplesLt, &int192Samples) })
+	b.Run("mod256/uint256-nocache", func(b *testing.B) { benchmarkMulModUint256(b, &int256SamplesLt, &int256Samples) })
+	b.Run("small/uint256", func(b *testing.B) { benchmarkMulModUint256Cache(b, &int32SamplesLt, &int32Samples) })
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkMulModUint256Cache(b, &int64SamplesLt, &int64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkMulModUint256Cache(b, &int128SamplesLt, &int128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkMulModUint256Cache(b, &int192SamplesLt, &int192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256Cache(b, &int256SamplesLt, &int256Samples) })
 	b.Run("small/big", func(b *testing.B) { benchmarkMulModBig(b, &big32SamplesLt, &big32Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkMulModBig(b, &big64SamplesLt, &big64Samples) })
 	b.Run("mod128/big", func(b *testing.B) { benchmarkMulModBig(b, &big128SamplesLt, &big128Samples) })
 	b.Run("mod192/big", func(b *testing.B) { benchmarkMulModBig(b, &big192SamplesLt, &big192Samples) })
 	b.Run("mod256/big", func(b *testing.B) { benchmarkMulModBig(b, &big256SamplesLt, &big256Samples) })
-
 	if hits, misses := cache.Stats(); hits+misses != 0 {
 		fmt.Printf("Hits/Misses	%d/%d (hitrate %.03f%%)\n", hits, misses, 100*float64(hits)/float64(hits+misses))
 	}
