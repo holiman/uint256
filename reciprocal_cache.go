@@ -22,11 +22,6 @@ import (
 // cacheWays around 5. Note that cacheWays = 5+8n makes the set size an integer
 // number of 64-byte cachelines.
 //
-// If you want to disable the cache, set cacheIndexBits and cacheWays to 0
-//
-// If you want to have a hardcoded modulus with precomputation, set
-// fixedModulus = true and adjust the value stored in fixed_m. This can be
-// used with or without the regular cache.
 
 const (
 	cacheIndexBits = 8
@@ -34,8 +29,6 @@ const (
 
 	cacheSets = 1 << cacheIndexBits
 	cacheMask = cacheSets - 1
-
-	fixedModulus = true
 )
 
 type cacheSet struct {
