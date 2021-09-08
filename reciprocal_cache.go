@@ -45,13 +45,21 @@ type cacheSet struct {
 }
 
 type reciprocalCache struct {
-	set  [cacheSets]cacheSet
-	hit  uint64
-	miss uint64
+	set             [cacheSets]cacheSet
+	hit             uint64
+	miss            uint64
+	fixedModulus    *Int
+	fixedReciprocal [5]uint64
 }
 
 // NewCache returns a new reciprocalCache.
-func NewCache() *reciprocalCache {
+func NewCache(fixedModulus *Int) *reciprocalCache {
+	if fixedModulus != nil {
+		return &reciprocalCache{
+			fixedModulus:    fixedModulus,
+			fixedReciprocal: reciprocal(*fixedModulus, nil),
+		}
+	}
 	return &reciprocalCache{}
 }
 
@@ -60,30 +68,17 @@ func (c *reciprocalCache) Stats() (hit, miss uint64) {
 }
 
 var (
-	// Fixed modulus and its reciprocal
-	fixed_m Int
-	fixed_r [5]uint64
+	// FixedModulusCurveFoo is the fixed modulus for a curve.
+	FixedModulusCurveFoo, _ = FromHex("0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff")
 )
 
-func init() {
-	if fixedModulus {
-		// Initialise fixed modulus
-		fixed_m[3] = 0xffffffff00000001
-		fixed_m[2] = 0x0000000000000000
-		fixed_m[1] = 0x00000000ffffffff
-		fixed_m[0] = 0xffffffffffffffff
-
-		fixed_r = reciprocal(fixed_m, nil)
-	}
-}
-
 func (cache *reciprocalCache) has(m Int, index uint64, dest *[5]uint64) bool {
-	if fixedModulus && m.Eq(&fixed_m) {
-		dest[0] = fixed_r[0]
-		dest[1] = fixed_r[1]
-		dest[2] = fixed_r[2]
-		dest[3] = fixed_r[3]
-		dest[4] = fixed_r[4]
+	if cache.fixedModulus != nil && m.Eq(cache.fixedModulus) {
+		dest[0] = cache.fixedReciprocal[0]
+		dest[1] = cache.fixedReciprocal[1]
+		dest[2] = cache.fixedReciprocal[2]
+		dest[3] = cache.fixedReciprocal[3]
+		dest[4] = cache.fixedReciprocal[4]
 
 		return true
 	}

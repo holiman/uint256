@@ -692,7 +692,7 @@ func BenchmarkMulMod(b *testing.B) {
 			}
 		}
 	}
-	cache := NewCache()
+	cache := NewCache(nil)
 	benchmarkMulModUint256Cache := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
 		iter := (b.N + numSamples - 1) / numSamples
 
