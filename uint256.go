@@ -619,11 +619,11 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 // MulModWithCache calculates the modulo-m multiplication of x and y and
 // returns z, using a reciprocal cache if provided.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) MulModWithCache(x, y, m *Int, cache *ReciprocalCache) *Int {
+func (z *Int) MulModWithCache(x, y, m *Int, cache *reciprocalCache) *Int {
 	return z.mulModWithCache(x, y, m, cache)
 }
 
-func (z *Int) mulModWithCache(x, y, m *Int, cache *ReciprocalCache) *Int {
+func (z *Int) mulModWithCache(x, y, m *Int, cache *reciprocalCache) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
