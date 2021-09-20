@@ -47,7 +47,7 @@ func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
 // - reciprocal(1) = 2^320-1
 // - otherwise, the result is normalised to have non-zero most significant word
 // - starts with a 32-bit division, refines with newton-raphson iterations
-func reciprocal(m Int, cache *reciprocalCache) (mu [5]uint64) {
+func reciprocal(m Int) (mu [5]uint64) {
 
 	s := leadingZeros(m)
 	p := 255 - s // floor(log_2(m)), m>0
@@ -69,15 +69,6 @@ func reciprocal(m Int, cache *reciprocalCache) (mu [5]uint64) {
 			mu[0] = ^uint64(0)
 		}
 		return mu
-	}
-
-	// Check for reciprocal in the cache
-	var cacheIndex uint64
-	if cache != nil{
-		cacheIndex = (m[3] ^ m[2] ^ m[1] ^ m[0]) & cacheMask
-	    if cache.has(m, cacheIndex, &mu) {
-			return mu
-		}
 	}
 
 	// Maximise division precision by left-aligning divisor
@@ -352,18 +343,13 @@ func reciprocal(m Int, cache *reciprocalCache) (mu [5]uint64) {
 		mu = shiftright320(mu, uint((p & 63) - 1))
 	}
 
-	// Store the reciprocal in the cache
-	if cache != nil{
-		cache.put(m, cacheIndex, mu)
-	}
-
 	return mu
 }
 
 // reduce4 computes the least non-negative residue of x modulo m
 //
 // requires a four-word modulus (m[3] > 1) and its inverse (mu)
-func reduce4(x [8]uint64, m Int, mu [5]uint64) (z Int) {
+func reduce4(x [8]uint64, m *Int, mu [5]uint64) (z Int) {
 
 	// NB: Most variable names in the comments match the pseudocode for
 	// 	Barrett reduction in the Handbook of Applied Cryptography.

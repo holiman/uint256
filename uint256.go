@@ -613,24 +613,13 @@ func (z *Int) SMod(x, y *Int) *Int {
 // returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) MulMod(x, y, m *Int) *Int {
-	return z.mulModWithCache(x, y, m, nil)
-}
-
-// MulModWithCache calculates the modulo-m multiplication of x and y and
-// returns z, using a reciprocal cache if provided.
-// If m == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) MulModWithCache(x, y, m *Int, cache *reciprocalCache) *Int {
-	return z.mulModWithCache(x, y, m, cache)
-}
-
-func (z *Int) mulModWithCache(x, y, m *Int, cache *reciprocalCache) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
 	p := umul(x, y)
 
 	if m[3] != 0 {
-		mu := reciprocal(*m, cache)
+		mu := reciprocal(*m)
 		r := reduce4(p, *m, mu)
 		return z.Set(&r)
 	}
