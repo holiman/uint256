@@ -17,13 +17,13 @@ func leadingZeros(x *Int) (z int) {
 	z += bits.LeadingZeros64(x[0]); return z
 }
 
-func onesCount(x *Int) (z int) {
-	z =	bits.OnesCount64(x[0]) +
-		bits.OnesCount64(x[1]) +
-		bits.OnesCount64(x[2]) +
-		bits.OnesCount64(x[3])
-	return z
-}
+//func onesCount(x *Int) (z int) {
+//	z =	bits.OnesCount64(x[0]) +
+//		bits.OnesCount64(x[1]) +
+//		bits.OnesCount64(x[2]) +
+//		bits.OnesCount64(x[3])
+//	return z
+//}
 
 // shiftright320 shifts a 320-bit value 0-63 bits right
 // z = x >> (s % 64)
