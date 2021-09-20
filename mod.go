@@ -211,12 +211,6 @@ func reciprocal(m *Int) (mu [5]uint64) {
 	r3m, c := bits.Add64(t3m, t3m, c)
 	r3h, _ := bits.Add64(t3h, t3h, c)
 
-	if (r3h | r3m | r3l | (y[3]<<1)) == 0 {
-		r3h = ^uint64(0)
-		r3m = ^uint64(0)
-		r3l = ^uint64(0)
-	}
-
 	// Fourth iteration: 192 -> 320
 
 	// square r3
