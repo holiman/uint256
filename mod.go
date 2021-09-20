@@ -10,14 +10,14 @@ import (
 
 // Some utility functions
 
-func leadingZeros(x Int) (z int) {
+func leadingZeros(x *Int) (z int) {
 	z  = bits.LeadingZeros64(x[3]); if z <  64 { return z }
 	z += bits.LeadingZeros64(x[2]); if z < 128 { return z }
 	z += bits.LeadingZeros64(x[1]); if z < 192 { return z }
 	z += bits.LeadingZeros64(x[0]); return z
 }
 
-func onesCount(x Int) (z int) {
+func onesCount(x *Int) (z int) {
 	z =	bits.OnesCount64(x[0]) +
 		bits.OnesCount64(x[1]) +
 		bits.OnesCount64(x[2]) +
@@ -47,7 +47,7 @@ func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
 // - reciprocal(1) = 2^320-1
 // - otherwise, the result is normalised to have non-zero most significant word
 // - starts with a 32-bit division, refines with newton-raphson iterations
-func reciprocal(m Int) (mu [5]uint64) {
+func reciprocal(m *Int) (mu [5]uint64) {
 
 	s := leadingZeros(m)
 	p := 255 - s // floor(log_2(m)), m>0
@@ -78,7 +78,7 @@ func reciprocal(m Int) (mu [5]uint64) {
 		r0 uint32	// estimate of 2^31/y
 	)
 
-	y.Lsh(&m, uint(s))	// 1/2 < y < 1
+	y.Lsh(m, uint(s))	// 1/2 < y < 1
 
 	// Extract most significant 32 bits
 

@@ -30,7 +30,7 @@ func TestLeadingZeros(t *testing.T) {
 	}
 
 	for _, x := range testCases {
-		z := leadingZeros(x)
+		z := leadingZeros(&x)
 		if z >= 0 && z < 256 {
 			allZeros := new(Int).Rsh(&x, uint(256-z))
 			oneBit := new(Int).Rsh(&x, uint(255-z))

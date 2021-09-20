@@ -619,8 +619,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	p := umul(x, y)
 
 	if m[3] != 0 {
-		mu := reciprocal(*m)
-		r := reduce4(p, *m, mu)
+		mu := reciprocal(m)
+		r := reduce4(p, m, mu)
 		return z.Set(&r)
 	}
 
