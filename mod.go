@@ -49,25 +49,40 @@ func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
 // - starts with a 32-bit division, refines with newton-raphson iterations
 func reciprocal(m *Int) (mu [5]uint64) {
 
-	s := leadingZeros(m)
+	// Note: specialized for m[3] != 0
+
+	s := bits.LeadingZeros64(m[3]) // Replace with leadingZeros(m) for general case
 	p := 255 - s // floor(log_2(m)), m>0
 
 	// 0 or a power of 2?
 
-	if onesCount(m) <= 1 {
-		if s >= 255 { // m <= 1
-			mu[4] = -m[0]
-			mu[3] = -m[0]
-			mu[2] = -m[0]
-			mu[1] = -m[0]
-			mu[0] = -m[0]
-		} else {
+	ones := uint64(1) // m[3] is >= 1
+
+	// Check if at least one bit is set in m[2], m[1] or m[0],
+	// or at least two bits in m[3]
+	{
+		t := m[0] | m[1] | m[2]
+		u := m[3] & (m[3]-1)
+		ones += (t >> 32) + (t & 0xffffffff)
+		ones += (u >> 32) + (u & 0xffffffff)
+	}
+
+	if ones <= 1 { // replace with commented code below for general case
+
+//	if onesCount(m) <= 1 {
+//		if s >= 255 { // m <= 1
+//			mu[4] = -m[0]
+//			mu[3] = -m[0]
+//			mu[2] = -m[0]
+//			mu[1] = -m[0]
+//			mu[0] = -m[0]
+//		} else {
 			mu[4] = ^uint64(0) >> uint(p & 63)
 			mu[3] = ^uint64(0)
 			mu[2] = ^uint64(0)
 			mu[1] = ^uint64(0)
 			mu[0] = ^uint64(0)
-		}
+//		}
 		return mu
 	}
 
