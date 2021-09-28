@@ -58,18 +58,10 @@ func reciprocal(m *Int) (mu [5]uint64) {
 
 	// 0 or a power of 2?
 
-	ones := uint64(1) // m[3] is >= 1
-
 	// Check if at least one bit is set in m[2], m[1] or m[0],
 	// or at least two bits in m[3]
-	{
-		t := m[0] | m[1] | m[2]
-		u := m[3] & (m[3]-1)
-		ones += (t >> 32) + (t & 0xffffffff)
-		ones += (u >> 32) + (u & 0xffffffff)
-	}
 
-	if ones <= 1 { // replace with commented code below for general case
+	if m[0] | m[1] | m[2] | (m[3] & (m[3]-1)) == 0 { // replace with commented code below for general case
 
 //	if onesCount(m) <= 1 {
 //		if s >= 255 { // m <= 1
