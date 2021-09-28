@@ -27,21 +27,6 @@ func leadingZeros(x *Int) (z int) {
 //	return z
 //}
 
-// shiftright320 shifts a 320-bit value 0-63 bits right
-// z = x >> (s % 64)
-func shiftright320(x [5]uint64, s uint) (z [5]uint64) {
-	r := s % 64	// right shift
-	l := 64 - r	// left shift
-
-	z[0] = (x[0] >> r) | (x[1] << l)
-	z[1] = (x[1] >> r) | (x[2] << l)
-	z[2] = (x[2] >> r) | (x[3] << l)
-	z[3] = (x[3] >> r) | (x[4] << l)
-	z[4] = (x[4] >> r)
-
-	return z
-}
-
 // reciprocal computes a 320-bit value representing 1/m
 //
 // Notes:
@@ -318,12 +303,46 @@ func reciprocal(m *Int) (mu [5]uint64) {
 	_, b = bits.Sub64(0, q7, b)
 	_, b = bits.Sub64(uint64(1) << 62, q8, b)
 
+	// decrement the result
+	x0, t := bits.Sub64(r4l, 1, 0)
+	x1, t  = bits.Sub64(r4k, 0, t)
+	x2, t  = bits.Sub64(r4j, 0, t)
+	x3, t  = bits.Sub64(r4i, 0, t)
+	x4, _  = bits.Sub64(r4h, 0, t)
+
+	// commit the decrement if the subtraction underflowed (reciprocal was too large)
 	if b != 0 {
-		r4l, b	= bits.Sub64(r4l, 1, 0)
-		r4k, b	= bits.Sub64(r4k, 0, b)
-		r4j, b	= bits.Sub64(r4j, 0, b)
-		r4i, b	= bits.Sub64(r4i, 0, b)
-		r4h, _	= bits.Sub64(r4h, 0, b)
+		r4h, r4i, r4j, r4k, r4l = x4, x3, x2, x1, x0
+	}
+
+	// Shift to correct bit alignment, truncating excess bits
+
+	p = (p & 63) - 1
+
+	x0, c = bits.Add64(r4l, r4l, 0)
+	x1, c = bits.Add64(r4k, r4k, c)
+	x2, c = bits.Add64(r4j, r4j, c)
+	x3, c = bits.Add64(r4i, r4i, c)
+	x4, _ = bits.Add64(r4h, r4h, c)
+
+	if p < 0 {
+		r4h, r4i, r4j, r4k, r4l = x4, x3, x2, x1, x0
+		p = 0	// avoid negative shift below
+	}
+
+	{
+		r := uint(p)		// right shift
+		l := uint(64 - r)	// left shift
+
+		x0 = (r4l >> r) | (r4k << l)
+		x1 = (r4k >> r) | (r4j << l)
+		x2 = (r4j >> r) | (r4i << l)
+		x3 = (r4i >> r) | (r4h << l)
+		x4 = (r4h >> r)
+	}
+
+	if p > 0 {
+		r4h, r4i, r4j, r4k, r4l = x4, x3, x2, x1, x0
 	}
 
 	mu[0] = r4l
@@ -331,20 +350,6 @@ func reciprocal(m *Int) (mu [5]uint64) {
 	mu[2] = r4j
 	mu[3] = r4i
 	mu[4] = r4h
-
-	// Shift into appropriate bit alignment, truncating excess bits
-
-	switch (p & 63) - 1 {
-	case -1:
-		mu[0], c = bits.Add64(mu[0], mu[0], 0)
-		mu[1], c = bits.Add64(mu[1], mu[1], c)
-		mu[2], c = bits.Add64(mu[2], mu[2], c)
-		mu[3], c = bits.Add64(mu[3], mu[3], c)
-		mu[4], _ = bits.Add64(mu[4], mu[4], c)
-	case 0:
-	default:
-		mu = shiftright320(mu, uint((p & 63) - 1))
-	}
 
 	return mu
 }
