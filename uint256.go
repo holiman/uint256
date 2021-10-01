@@ -613,14 +613,14 @@ func (z *Int) SMod(x, y *Int) *Int {
 // and returns z, using the reciprocal of m provided as the mu parameter.
 // Use uint256.Reciprocal to calculate mu from m.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
-func (z *Int) MulModWithReciprocal(x, y, m *Int, mu [5]uint64) *Int {
+func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
 	p := umul(x, y)
 
 	if m[3] != 0 {
-		r := reduce4(p, m, mu)
+		r := reduce4(p, m, *mu)
 		return z.Set(&r)
 	}
 

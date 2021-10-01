@@ -695,7 +695,7 @@ func BenchmarkMulMod(b *testing.B) {
 			x := factorsSamples[j]
 
 			for i := 0; i < iter; i++ {
-				x.MulModWithReciprocal(&x, &factorsSamples[j], &modSamples[j], mu[j])
+				x.MulModWithReciprocal(&x, &factorsSamples[j], &modSamples[j], &mu[j])
 			}
 		}
 	}
