@@ -680,6 +680,25 @@ func BenchmarkAddMod(b *testing.B) {
 }
 
 func BenchmarkMulMod(b *testing.B) {
+	benchmarkMulModUint256R := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
+		iter := (b.N + numSamples - 1) / numSamples
+
+		var mu [numSamples][5]uint64
+
+		for i := 0; i < numSamples; i++ {
+			mu[i] = Reciprocal(&modSamples[i])
+		}
+
+		b.ResetTimer()
+
+		for j := 0; j < numSamples; j++ {
+			x := factorsSamples[j]
+
+			for i := 0; i < iter; i++ {
+				x.MulModWithReciprocal(&x, &factorsSamples[j], &modSamples[j], mu[j])
+			}
+		}
+	}
 	benchmarkMulModUint256 := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
 		iter := (b.N + numSamples - 1) / numSamples
 
@@ -709,6 +728,7 @@ func BenchmarkMulMod(b *testing.B) {
 	b.Run("mod128/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int128SamplesLt, &int128Samples) })
 	b.Run("mod192/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int192SamplesLt, &int192Samples) })
 	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256SamplesLt, &int256Samples) })
+	b.Run("mod256/uint256r", func(b *testing.B) { benchmarkMulModUint256R(b, &int256SamplesLt, &int256Samples) })
 	b.Run("small/big", func(b *testing.B) { benchmarkMulModBig(b, &big32SamplesLt, &big32Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkMulModBig(b, &big64SamplesLt, &big64Samples) })
 	b.Run("mod128/big", func(b *testing.B) { benchmarkMulModBig(b, &big128SamplesLt, &big128Samples) })

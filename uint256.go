@@ -609,6 +609,38 @@ func (z *Int) SMod(x, y *Int) *Int {
 	return z
 }
 
+// MulModWithReciprocal calculates the modulo-m multiplication of x and y
+// and returns z, using the reciprocal of m provided as the mu parameter.
+// Use uint256.Reciprocal to calculate mu from m.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
+func (z *Int) MulModWithReciprocal(x, y, m *Int, mu [5]uint64) *Int {
+	if x.IsZero() || y.IsZero() || m.IsZero() {
+		return z.Clear()
+	}
+	p := umul(x, y)
+
+	if m[3] != 0 {
+		r := reduce4(p, m, mu)
+		return z.Set(&r)
+	}
+
+	var (
+		pl Int
+		ph Int
+	)
+	copy(pl[:], p[:4])
+	copy(ph[:], p[4:])
+
+	// If the multiplication is within 256 bits use Mod().
+	if ph.IsZero() {
+		return z.Mod(&pl, m)
+	}
+
+	var quot [8]uint64
+	rem := udivrem(quot[:], p[:], m)
+	return z.Set(&rem)
+}
+
 // MulMod calculates the modulo-m multiplication of x and y and
 // returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
@@ -619,7 +651,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	p := umul(x, y)
 
 	if m[3] != 0 {
-		mu := reciprocal(m)
+		mu := Reciprocal(m)
 		r := reduce4(p, m, mu)
 		return z.Set(&r)
 	}

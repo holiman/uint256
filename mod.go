@@ -27,14 +27,14 @@ func leadingZeros(x *Int) (z int) {
 //	return z
 //}
 
-// reciprocal computes a 320-bit value representing 1/m
+// Reciprocal computes a 320-bit value representing 1/m
 //
 // Notes:
-// - reciprocal(0) = 0
-// - reciprocal(1) = 2^320-1
+// - Reciprocal(0) = 0
+// - Reciprocal(1) = 2^320-1
 // - otherwise, the result is normalised to have non-zero most significant word
 // - starts with a 32-bit division, refines with newton-raphson iterations
-func reciprocal(m *Int) (mu [5]uint64) {
+func Reciprocal(m *Int) (mu [5]uint64) {
 
 	// Note: specialized for m[3] != 0
 
