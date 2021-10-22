@@ -19,14 +19,6 @@ func leadingZeros(x *Int) (z int) {
 	return z
 }
 
-//func onesCount(x *Int) (z int) {
-//	z =	bits.OnesCount64(x[0]) +
-//		bits.OnesCount64(x[1]) +
-//		bits.OnesCount64(x[2]) +
-//		bits.OnesCount64(x[3])
-//	return z
-//}
-
 // Reciprocal computes a 320-bit value representing 1/m
 //
 // Notes:
@@ -46,22 +38,14 @@ func Reciprocal(m *Int) (mu [5]uint64) {
 	// Check if at least one bit is set in m[2], m[1] or m[0],
 	// or at least two bits in m[3]
 
-	if m[0] | m[1] | m[2] | (m[3] & (m[3]-1)) == 0 { // replace with commented code below for general case
+	if m[0] | m[1] | m[2] | (m[3] & (m[3]-1)) == 0 {
 
-//	if onesCount(m) <= 1 {
-//		if s >= 255 { // m <= 1
-//			mu[4] = -m[0]
-//			mu[3] = -m[0]
-//			mu[2] = -m[0]
-//			mu[1] = -m[0]
-//			mu[0] = -m[0]
-//		} else {
-			mu[4] = ^uint64(0) >> uint(p & 63)
-			mu[3] = ^uint64(0)
-			mu[2] = ^uint64(0)
-			mu[1] = ^uint64(0)
-			mu[0] = ^uint64(0)
-//		}
+		mu[4] = ^uint64(0) >> uint(p & 63)
+		mu[3] = ^uint64(0)
+		mu[2] = ^uint64(0)
+		mu[1] = ^uint64(0)
+		mu[0] = ^uint64(0)
+
 		return mu
 	}
 
