@@ -22,13 +22,14 @@ func leadingZeros(x *Int) (z int) {
 // Reciprocal computes a 320-bit value representing 1/m
 //
 // Notes:
-// - Reciprocal(0) = 0
-// - Reciprocal(1) = 2^320-1
-// - otherwise, the result is normalised to have non-zero most significant word
+// - specialized for m[3] != 0, hence limited to 2^192 <= m < 2^256
+// - returns zero if m[3] == 0
 // - starts with a 32-bit division, refines with newton-raphson iterations
 func Reciprocal(m *Int) (mu [5]uint64) {
 
-	// Note: specialized for m[3] != 0
+	if m[3] == 0 {
+		return mu
+	}
 
 	s := bits.LeadingZeros64(m[3]) // Replace with leadingZeros(m) for general case
 	p := 255 - s // floor(log_2(m)), m>0

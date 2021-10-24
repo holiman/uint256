@@ -400,17 +400,9 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
 		}
 
-		for f4[3] == 0 {
-			b4, f4, err = randNums()
-			if err != nil {
-				t.Fatalf("Error getting a random number: %v", err)
-			}
-		}
-
 		mu := Reciprocal(f4)
 
 		f1.MulModWithReciprocal(f2, f3, f4, &mu)
-		b1.Mod(big.NewInt(0).Mul(b2, b3), b4)
 
 		if !checkEq(b1, f1) {
 			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
