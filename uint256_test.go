@@ -400,9 +400,7 @@ func TestRandomMulMod(t *testing.T) {
 			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
 		}
 
-		mu := Reciprocal(f4)
-
-		f1.MulModWithReciprocal(f2, f3, f4, &mu)
+		f1.mulModWithReciprocalWrapper(f2, f3, f4)
 
 		if !checkEq(b1, f1) {
 			t.Fatalf("Expected equality:\nf2= %x\nf3= %x\nf4= %x\n[ op ]==\nf = %x\nb = %x\n", f2, f3, f4, f1, b1)
@@ -1067,6 +1065,11 @@ func mulMod(result, x, y, mod *big.Int) *big.Int {
 	return result.Mod(result.Mul(x, y), mod)
 }
 
+func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
+	mu := Reciprocal(mod)
+	return z.MulModWithReciprocal(x, y, mod, &mu)
+}
+
 func referenceExp(base, exponent *big.Int) *big.Int {
 	// TODO: Maybe use the Exp() procedure from above?
 	res := new(big.Int)
@@ -1322,6 +1325,14 @@ func TestTernOp(t *testing.T) {
 	})
 	t.Run("MulMod", func(t *testing.T) {
 		proc(t, (*Int).MulMod, func(z, x, y, m *big.Int) *big.Int {
+			if m.Sign() == 0 {
+				return z.SetUint64(0)
+			}
+			return mulMod(z, x, y, m)
+		})
+	})
+	t.Run("MulModWithReciprocal", func(t *testing.T) {
+		proc(t, (*Int).mulModWithReciprocalWrapper, func(z, x, y, m *big.Int) *big.Int {
 			if m.Sign() == 0 {
 				return z.SetUint64(0)
 			}
