@@ -195,10 +195,43 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
+
+	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
+	// This is always the case when x and y are already reduced modulo such m.
+
+	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
+		var (
+			s, t     Int
+			overflow bool
+		)
+
+		s = *x
+		if _, overflow = s.SubOverflow(&s, m); overflow {
+			s = *x
+		}
+
+		t = *y
+		if _, overflow = t.SubOverflow(&t, m); overflow {
+			t = *y
+		}
+
+		if _, overflow = s.AddOverflow(&s, &t); overflow {
+			s.Sub(&s, m)
+		}
+
+		t = s
+		if _, overflow = s.SubOverflow(&s, m); overflow {
+			s = t
+		}
+
+		*z = s
+		return z
+	}
+
 	if m.IsZero() {
 		return z.Clear()
 	}
-	if z == m { // z is an alias for m  // TODO: Understand why needed and add tests for all "division" methods.
+	if z == m { // z is an alias for m and will be overwritten by AddOverflow before m is read
 		m = m.Clone()
 	}
 	if _, overflow := z.AddOverflow(x, y); overflow {
@@ -576,6 +609,38 @@ func (z *Int) SMod(x, y *Int) *Int {
 	return z
 }
 
+// MulModWithReciprocal calculates the modulo-m multiplication of x and y
+// and returns z, using the reciprocal of m provided as the mu parameter.
+// Use uint256.Reciprocal to calculate mu from m.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
+func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
+	if x.IsZero() || y.IsZero() || m.IsZero() {
+		return z.Clear()
+	}
+	p := umul(x, y)
+
+	if m[3] != 0 {
+		r := reduce4(p, m, *mu)
+		return z.Set(&r)
+	}
+
+	var (
+		pl Int
+		ph Int
+	)
+	copy(pl[:], p[:4])
+	copy(ph[:], p[4:])
+
+	// If the multiplication is within 256 bits use Mod().
+	if ph.IsZero() {
+		return z.Mod(&pl, m)
+	}
+
+	var quot [8]uint64
+	rem := udivrem(quot[:], p[:], m)
+	return z.Set(&rem)
+}
+
 // MulMod calculates the modulo-m multiplication of x and y and
 // returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
@@ -584,6 +649,13 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		return z.Clear()
 	}
 	p := umul(x, y)
+
+	if m[3] != 0 {
+		mu := Reciprocal(m)
+		r := reduce4(p, m, mu)
+		return z.Set(&r)
+	}
+
 	var (
 		pl Int
 		ph Int
