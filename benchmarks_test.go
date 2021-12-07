@@ -259,6 +259,31 @@ func BenchmarkSquare(bench *testing.B) {
 	bench.Run("single/big", benchmarkBig)
 }
 
+func BenchmarkSqrt(bench *testing.B) {
+	benchmarkUint256 := func(bench *testing.B) {
+		bench.ReportAllocs()
+		a := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+		result := new(Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			result.Sqrt(a)
+		}
+	}
+	benchmarkBig := func(bench *testing.B) {
+		bench.ReportAllocs()
+		a := new(big.Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+		result := new(big.Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			result.Sqrt(a)
+		}
+	}
+	bench.Run("single/uint256", benchmarkUint256)
+	bench.Run("single/big", benchmarkBig)
+}
+
 func benchmark_And_Big(bench *testing.B) {
 	b1 := big.NewInt(0).SetBytes(hex2Bytes("0123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 	b2 := big.NewInt(0).SetBytes(hex2Bytes("0123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))

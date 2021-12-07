@@ -24,6 +24,9 @@ const (
 	opMulmod
 )
 
+type opUnaryArgFunc func(*Int, *Int) *Int
+type bigUnaryArgFunc func(*big.Int, *big.Int) *big.Int
+
 type opDualArgFunc func(*Int, *Int, *Int) *Int
 type bigDualArgFunc func(*big.Int, *big.Int, *big.Int) *big.Int
 
@@ -40,6 +43,40 @@ func crash(op interface{}, msg string, args ...Int) {
 	}
 	panic(fmt.Sprintf("%s\nfor %s (%s:%d)\n%v",
 		msg, fnName, fnFile, fnLine, strings.Join(strArgs, "\n")))
+}
+
+func checkUnaryOp(op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
+	origX := x
+	var result Int
+	ret := op(&result, &x)
+	if ret != &result {
+		crash(op, "returned not the pointer receiver", x)
+	}
+	if x != origX {
+		crash(op, "argument modified", x)
+	}
+	expected, _ := FromBig(bigOp(new(big.Int), x.ToBig()))
+	if result != *expected {
+		crash(op, "unexpected result", x)
+	}
+	// Test again when the receiver is not zero.
+	var garbage Int
+	garbage.Sub(&garbage, NewInt(1))
+	ret = op(&garbage, &x)
+	if ret != &garbage {
+		crash(op, "returned not the pointer receiver", x)
+	}
+	if garbage != *expected {
+		crash(op, "unexpected result", x)
+	}
+	// Test again with the receiver aliasing arguments.
+	ret = op(&x, &x)
+	if ret != &x {
+		crash(op, "returned not the pointer receiver", x)
+	}
+	if x != *expected {
+		crash(op, "unexpected result", x)
+	}
 }
 
 func checkDualArgOp(op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
@@ -166,7 +203,16 @@ func checkThreeArgOp(op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
 }
 
 func Fuzz(data []byte) int {
+	if len(data) < 32 {
+		return 0
+	} else {
+
+		return fuzzUnaryOp(data)
+	}
+
 	switch len(data) {
+	case 32:
+		return fuzzUnaryOp(data)
 	case 64:
 		return fuzzBinaryOp(data)
 	case 96:
@@ -174,6 +220,14 @@ func Fuzz(data []byte) int {
 	}
 	return -1
 }
+
+func fuzzUnaryOp(data []byte) int {
+	var x Int
+	x.SetBytes(data[0:32])
+	checkUnaryOp((*Int).Sqrt, (*big.Int).Sqrt, x)
+	return 1
+}
+
 func fuzzBinaryOp(data []byte) int {
 	var x, y Int
 	x.SetBytes(data[0:32])
