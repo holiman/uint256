@@ -1217,9 +1217,8 @@ func (z *Int) Sqrt(x *Int) *Int {
 		return z.Set(x)
 	}
 	var (
-		z1   = &Int{1, 0, 0, 0}
-		z2   = &Int{}
-		a, b uint64
+		z1 = &Int{1, 0, 0, 0}
+		z2 = &Int{}
 	)
 	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
 	z1 = z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
@@ -1227,9 +1226,9 @@ func (z *Int) Sqrt(x *Int) *Int {
 		z2 = z2.Div(x, z1)
 		z2 = z2.Add(z2, z1)
 		{ //z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
-			a = z2[3] << 63
+			a := z2[3] << 63
 			z2[3] = z2[3] >> 1
-			b = z2[2] << 63
+			b := z2[2] << 63
 			z2[2] = (z2[2] >> 1) | a
 			a = z2[1] << 63
 			z2[1] = (z2[1] >> 1) | b
