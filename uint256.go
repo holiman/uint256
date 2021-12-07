@@ -1209,3 +1209,37 @@ func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 	}
 	return z
 }
+
+// Sqrt sets z to ⌊√x⌋, the largest integer such that z² ≤ x, and returns z.
+func (z *Int) Sqrt(x *Int) *Int {
+	// This implementation of Sqrt is based on big.Int (see math/big/nat.go).
+	if x.LtUint64(2) {
+		return z.Set(x)
+	}
+	var (
+		z1 = &Int{1, 0, 0, 0}
+		z2 = &Int{}
+	)
+	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
+	z1 = z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
+	for {
+		z2 = z2.Div(x, z1)
+		z2 = z2.Add(z2, z1)
+		{ //z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
+			a := z2[3] << 63
+			z2[3] = z2[3] >> 1
+			b := z2[2] << 63
+			z2[2] = (z2[2] >> 1) | a
+			a = z2[1] << 63
+			z2[1] = (z2[1] >> 1) | b
+			z2[0] = (z2[0] >> 1) | a
+		}
+		// end of inlined bitshift
+
+		if z2.Cmp(z1) >= 0 {
+			// z1 is answer.
+			return z.Set(z1)
+		}
+		z1, z2 = z2, z1
+	}
+}

@@ -20,6 +20,9 @@ var (
 	unTestCases = []string{
 		"0",
 		"1",
+		"0x80000000000000000000000000000000",
+		"0x80000000000000010000000000000000",
+		"0x80000000000000000000000000000001",
 		"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5",
 		"0x8000000000000000000000000000000000000000000000000000000000000000",
 		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
@@ -352,6 +355,17 @@ func TestRandomSMod(t *testing.T) {
 		},
 		func(b1, b2, b3 *big.Int) {
 			SMod(b1, b2, b3)
+		},
+	)
+}
+
+func TestRandomSqrt(t *testing.T) {
+	testRandomOp(t,
+		func(f1, f2, f3 *Int) {
+			f1.Sqrt(f2)
+		},
+		func(b1, b2, b3 *big.Int) {
+			b1.Sqrt(b2)
 		},
 	)
 }
@@ -1141,6 +1155,7 @@ func TestUnOp(t *testing.T) {
 
 	t.Run("Not", func(t *testing.T) { proc(t, (*Int).Not, (*big.Int).Not) })
 	t.Run("Neg", func(t *testing.T) { proc(t, (*Int).Neg, (*big.Int).Neg) })
+	t.Run("Sqrt", func(t *testing.T) { proc(t, (*Int).Sqrt, (*big.Int).Sqrt) })
 }
 
 func TestBinOp(t *testing.T) {
