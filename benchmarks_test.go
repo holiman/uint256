@@ -842,3 +842,34 @@ func Benchmark_DecodeHex(b *testing.B) {
 	b.Run("large/uint256", func(b *testing.B) { hexDecodeU256(b, &int256Samples) })
 	b.Run("large/big", func(b *testing.B) { hexDecodeBig(b, &big256Samples) })
 }
+
+func BenchmarkMulDivOverflow(bench *testing.B) {
+
+	//TODO: use samples
+
+	benchmarkUint256 := func(bench *testing.B) {
+		fa := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		fb := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		fc := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+		result := new(Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			result.MulDivOverflow(fa, fb, fc)
+		}
+	}
+	benchmarkBig := func(bench *testing.B) {
+		a := new(big.Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		b := new(big.Int).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		c := new(big.Int).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+
+		result := new(big.Int)
+		bench.ResetTimer()
+		for i := 0; i < bench.N; i++ {
+			U256(result.Div(result.Mul(a, b), c))
+		}
+	}
+
+	bench.Run("single/uint256", benchmarkUint256)
+	bench.Run("single/big", benchmarkBig)
+}

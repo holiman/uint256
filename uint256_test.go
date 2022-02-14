@@ -728,6 +728,38 @@ func TestRandomMulMod(t *testing.T) {
 	}
 }
 
+func TestRandomMulModOverflow(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		b1, f1, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b2, f2, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		b3, f3, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		f1a, f2a, f3a := f1.Clone(), f2.Clone(), f3.Clone()
+
+		_, overflow := f1.MulDivOverflow(f1, f2, f3)
+		if b3.BitLen() == 0 {
+			b1.SetInt64(0)
+		} else {
+			b1.Div(b1.Mul(b1, b2), b3)
+		}
+
+		if err := checkOverflow(b1, f1, overflow); err != nil {
+			t.Fatal(err)
+		}
+		if eq := checkEq(b1, f1); !eq {
+			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\nf3= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f3a, f1, b1)
+		}
+	}
+}
+
 func S256(x *big.Int) *big.Int {
 	if x.Cmp(bigtt255) < 0 {
 		return x
