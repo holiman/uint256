@@ -843,33 +843,41 @@ func Benchmark_DecodeHex(b *testing.B) {
 	b.Run("large/big", func(b *testing.B) { hexDecodeBig(b, &big256Samples) })
 }
 
-func BenchmarkMulDivOverflow(bench *testing.B) {
+func BenchmarkMulDivOverflow(b *testing.B) {
+	benchmarkUint256 := func(b *testing.B, factorsSamples, muldivSamples *[numSamples]Int) {
+		iter := (b.N + numSamples - 1) / numSamples
 
-	//TODO: use samples
+		for j := 0; j < numSamples; j++ {
+			x := factorsSamples[j]
 
-	benchmarkUint256 := func(bench *testing.B) {
-		fa := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-		fb := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-		fc := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-
-		result := new(Int)
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			result.MulDivOverflow(fa, fb, fc)
-		}
-	}
-	benchmarkBig := func(bench *testing.B) {
-		a := new(big.Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-		b := new(big.Int).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-		c := new(big.Int).SetBytes(hex2Bytes("f123456789abcdefaaaaaa9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
-
-		result := new(big.Int)
-		bench.ResetTimer()
-		for i := 0; i < bench.N; i++ {
-			U256(result.Div(result.Mul(a, b), c))
+			for i := 0; i < iter; i++ {
+				x.MulDivOverflow(&x, &factorsSamples[j], &muldivSamples[j])
+			}
 		}
 	}
 
-	bench.Run("single/uint256", benchmarkUint256)
-	bench.Run("single/big", benchmarkBig)
+	benchmarkBig := func(b *testing.B, factorsSamples, muldivSamples *[numSamples]big.Int) {
+		iter := (b.N + numSamples - 1) / numSamples
+
+		for j := 0; j < numSamples; j++ {
+			x := factorsSamples[j]
+
+			for i := 0; i < iter; i++ {
+				x.Mul(&x, &factorsSamples[j])
+				x.Mod(&x, &muldivSamples[j])
+			}
+		}
+	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkUint256(b, &int32SamplesLt, &int32Samples) })
+	b.Run("div64/uint256", func(b *testing.B) { benchmarkUint256(b, &int64SamplesLt, &int64Samples) })
+	b.Run("div128/uint256", func(b *testing.B) { benchmarkUint256(b, &int128SamplesLt, &int128Samples) })
+	b.Run("div192/uint256", func(b *testing.B) { benchmarkUint256(b, &int192SamplesLt, &int192Samples) })
+	b.Run("div256/uint256", func(b *testing.B) { benchmarkUint256(b, &int256SamplesLt, &int256Samples) })
+	b.Run("small/big", func(b *testing.B) { benchmarkBig(b, &big32SamplesLt, &big32Samples) })
+	b.Run("div64/big", func(b *testing.B) { benchmarkBig(b, &big64SamplesLt, &big64Samples) })
+	b.Run("div128/big", func(b *testing.B) { benchmarkBig(b, &big128SamplesLt, &big128Samples) })
+	b.Run("div192/big", func(b *testing.B) { benchmarkBig(b, &big192SamplesLt, &big192Samples) })
+	b.Run("div256/big", func(b *testing.B) { benchmarkBig(b, &big256SamplesLt, &big256Samples) })
+
 }
