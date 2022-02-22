@@ -728,7 +728,7 @@ func TestRandomMulMod(t *testing.T) {
 	}
 }
 
-func TestRandomMulModOverflow(t *testing.T) {
+func TestRandomMulDivOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b1, f1, err := randNums()
 		if err != nil {
