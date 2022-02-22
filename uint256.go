@@ -681,15 +681,10 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	}
 	p := umul(x, y)
 
-	var (
-		pl Int
-		ph Int
-	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
-
 	// If the multiplication is within 256 bits use Div().
-	if ph.IsZero() {
+	if (p[4] | p[5] | p[6] | p[7]) == 0 {
+		var pl Int
+		copy(pl[:], p[:4])
 		return z.Div(&pl, d), false
 	}
 
