@@ -676,7 +676,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 // MulDivOverflow calculates (x*y)/d with full precision, returns z and whether overflow occurred.
 // computes 512-bit multiplication and 512 by 256 division.
 func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
-	if d.IsZero() {
+	if x.IsZero() || y.IsZero() || d.IsZero() {
 		return z.Clear(), false
 	}
 	p := umul(x, y)
