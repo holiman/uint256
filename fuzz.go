@@ -299,7 +299,7 @@ func fuzzTernaryOp(data []byte) int {
 	{ // addMod
 		checkThreeArgOp(intAddMod, bigAddMod, x, y, z)
 	}
-	{ // addMod
+	{ // mulDiv
 		checkThreeArgOp(intMulDiv, bigMulDiv, x, y, z)
 	}
 	return 1
