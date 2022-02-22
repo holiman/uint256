@@ -864,7 +864,7 @@ func BenchmarkMulDivOverflow(b *testing.B) {
 
 			for i := 0; i < iter; i++ {
 				x.Mul(&x, &factorsSamples[j])
-				x.Mod(&x, &muldivSamples[j])
+				x.Div(&x, &muldivSamples[j])
 			}
 		}
 	}
