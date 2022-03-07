@@ -681,13 +681,6 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	}
 	p := umul(x, y)
 
-	// If the multiplication is within 256 bits use Div().
-	if (p[4] | p[5] | p[6] | p[7]) == 0 {
-		var pl Int
-		copy(pl[:], p[:4])
-		return z.Div(&pl, d), false
-	}
-
 	var quot [8]uint64
 	udivrem(quot[:], p[:], d)
 
