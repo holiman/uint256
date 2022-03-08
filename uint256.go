@@ -673,7 +673,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	return z.Set(&rem)
 }
 
-// MulDivOverflow calculates (x*y)/d with full precision, returns z and whether overflow occurred.
+// MulDivOverflow calculates (x*y)/d with full precision, returns z and whether overflow occurred in multiply process (result does not fit to 256-bit).
 // computes 512-bit multiplication and 512 by 256 division.
 func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	if x.IsZero() || y.IsZero() || d.IsZero() {
