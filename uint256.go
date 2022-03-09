@@ -689,10 +689,6 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 			return z.Clear(), false
 		}
 
-		if pl.Eq(d) {
-			return z.SetOne(), false
-		}
-
 		if pl.IsUint64() {
 			return z.SetUint64(pl.Uint64() / d.Uint64()), false
 		}
