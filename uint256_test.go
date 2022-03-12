@@ -73,6 +73,7 @@ var (
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
+		{"0x1ce97e1ab91a", "0x66aa0a5319bcf5cb4"}, // regression test for udivrem() where len(x) < len(y)
 	}
 
 	// A collection of interesting input values for ternary operators (addmod, mulmod).
@@ -259,6 +260,8 @@ func TestRandomBinOp(t *testing.T) {
 	t.Run("Mod", func(t *testing.T) { testRandomOp(t, (*Int).Mod, bigMod) })
 	t.Run("SDiv", func(t *testing.T) { testRandomOp(t, (*Int).SDiv, bigSDiv) })
 	t.Run("SMod", func(t *testing.T) { testRandomOp(t, (*Int).SMod, bigSMod) })
+	t.Run("udivrem/Div", func(t *testing.T) { testRandomOp(t, udivremDiv, bigDiv) })
+	t.Run("udivrem/Mod", func(t *testing.T) { testRandomOp(t, udivremMod, bigMod) })
 }
 
 func TestRandomMulOverflow(t *testing.T) {
@@ -293,6 +296,25 @@ func TestRandomSquare(t *testing.T) {
 			return b1.Mul(b1, b1)
 		},
 	)
+}
+
+// udivremDiv wraps udivrem and returns quotient
+func udivremDiv(z, x, y *Int) *Int {
+	var quot Int
+	if !y.IsZero() {
+		udivrem(quot[:], x[:], y)
+	}
+	return z.Set(&quot)
+}
+
+// udivremMod wraps udivrem and returns remainder
+func udivremMod(z, x, y *Int) *Int {
+	if y.IsZero() {
+		return z.Clear()
+	}
+	var quot Int
+	rem := udivrem(quot[:], x[:], y)
+	return z.Set(&rem)
 }
 
 func TestRandomSqrt(t *testing.T) {
@@ -714,6 +736,19 @@ func TestRandomSDiv(t *testing.T) {
 			t.Fatalf("Expected equality:\nf1  = %x\nf2  = %x\n\n\nabs1= %x\nabs2= %x\n[sdiv]==\nf   = %x\nbf  = %x\nb   = %x\n",
 				f1a, f2a, f1aAbs, f2aAbs, f1, bf, b)
 		}
+	}
+}
+
+func TestUdivremQuick(t *testing.T) {
+	//
+	u := []uint64{1, 0, 0, 0, 0}
+	d := Int{0, 1, 0, 0}
+	quot := []uint64{}
+	rem := udivrem(quot, u, &d)
+	expected := new(Int)
+	copy(expected[:], u)
+	if !rem.Eq(expected) {
+		t.Errorf("Wrong remainder: %x, expected %x", rem, expected)
 	}
 }
 
@@ -1176,6 +1211,8 @@ func TestBinOp(t *testing.T) {
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, bigMod) })
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, bigSDiv) })
 	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, bigSMod) })
+	t.Run("udivrem/Div", func(t *testing.T) { proc(t, udivremDiv, bigDiv) })
+	t.Run("udivrem/Mod", func(t *testing.T) { proc(t, udivremMod, bigMod) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, bigExp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
