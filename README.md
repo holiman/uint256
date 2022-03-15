@@ -13,7 +13,7 @@ Current benchmarks, with tests ending with `big` being the standard `big.Int` li
 
 ### Current status
 
-- As of 2020-03-18, `uint256` wins over big int every single case, often with orders of magnitude.
+- As of 2020-03-18, `uint256` wins over `math/big` in every single case, often with orders of magnitude.
 - And as of release `0.1.0`, the `uint256` library is alloc-free. 
 - With the `1.0.0` release, it also has `100%` test coverage. 
  
