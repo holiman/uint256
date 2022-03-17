@@ -173,7 +173,7 @@ func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
 	return true
 }
 
-func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int), bigintFunc func(a, b, c *big.Int)) {
+func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int) *Int, bigintFunc func(a, b, c *big.Int) *big.Int) {
 	for i := 0; i < 10000; i++ {
 		b1, f1, err := randNums()
 		if err != nil {
@@ -251,38 +251,14 @@ func TestRandomSubOverflow(t *testing.T) {
 	}
 }
 
-func TestRandomSub(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.Sub(f2, f3)
-		},
-		func(b1, b2, b3 *big.Int) {
-			b1.Sub(b2, b3)
-		},
-	)
-}
-
-func TestRandomAdd(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.Add(f2, f3)
-		},
-		func(b1, b2, b3 *big.Int) {
-			b1.Add(b2, b3)
-		},
-	)
-}
-
-func TestRandomMul(t *testing.T) {
-
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.Mul(f2, f3)
-		},
-		func(b1, b2, b3 *big.Int) {
-			b1.Mul(b2, b3)
-		},
-	)
+func TestRandomBinOp(t *testing.T) {
+	t.Run("Add", func(t *testing.T) { testRandomOp(t, (*Int).Add, (*big.Int).Add) })
+	t.Run("Sub", func(t *testing.T) { testRandomOp(t, (*Int).Sub, (*big.Int).Sub) })
+	t.Run("Mul", func(t *testing.T) { testRandomOp(t, (*Int).Mul, (*big.Int).Mul) })
+	t.Run("Div", func(t *testing.T) { testRandomOp(t, (*Int).Div, bigDiv) })
+	t.Run("Mod", func(t *testing.T) { testRandomOp(t, (*Int).Mod, bigMod) })
+	t.Run("SDiv", func(t *testing.T) { testRandomOp(t, (*Int).SDiv, bigSDiv) })
+	t.Run("SMod", func(t *testing.T) { testRandomOp(t, (*Int).SMod, bigSMod) })
 }
 
 func TestRandomMulOverflow(t *testing.T) {
@@ -309,63 +285,23 @@ func TestRandomMulOverflow(t *testing.T) {
 
 func TestRandomSquare(t *testing.T) {
 	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
+		func(f1, f2, f3 *Int) *Int {
 			f1.squared()
+			return f1
 		},
-		func(b1, b2, b3 *big.Int) {
-			b1.Mul(b1, b1)
-		},
-	)
-}
-
-func TestRandomDiv(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.Div(f2, f3)
-		},
-		func(b1, b2, b3 *big.Int) {
-			if b3.Sign() == 0 {
-				b1.SetUint64(0)
-			} else {
-				b1.Div(b2, b3)
-			}
-		},
-	)
-}
-
-func TestRandomMod(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.Mod(f2, f3)
-		},
-		func(b1, b2, b3 *big.Int) {
-			if b3.Sign() == 0 {
-				b1.SetUint64(0)
-			} else {
-				b1.Mod(b2, b3)
-			}
-		},
-	)
-}
-
-func TestRandomSMod(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.SMod(f2, f3)
-		},
-		func(b1, b2, b3 *big.Int) {
-			SMod(b1, b2, b3)
+		func(b1, b2, b3 *big.Int) *big.Int {
+			return b1.Mul(b1, b1)
 		},
 	)
 }
 
 func TestRandomSqrt(t *testing.T) {
 	testRandomOp(t,
-		func(f1, f2, f3 *Int) {
-			f1.Sqrt(f2)
+		func(f1, f2, f3 *Int) *Int {
+			return f1.Sqrt(f2)
 		},
-		func(b1, b2, b3 *big.Int) {
-			b1.Sqrt(b2)
+		func(b1, b2, b3 *big.Int) *big.Int {
+			return b1.Sqrt(b2)
 		},
 	)
 }
@@ -742,7 +678,7 @@ func TestRandomAbs(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		U256(b)
+		u256(b)
 		b2 := S256(big.NewInt(0).Set(b))
 		b2.Abs(b2)
 		f1a := new(Int).Abs(f1)
@@ -764,20 +700,15 @@ func TestRandomSDiv(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		U256(b)
-		U256(b2)
+		u256(b)
+		u256(b2)
 
 		f1a, f2a := f1.Clone(), f2.Clone()
 
 		f1aAbs, f2aAbs := new(Int).Abs(f1), new(Int).Abs(f2)
 
 		f1.SDiv(f1, f2)
-		if b2.BitLen() == 0 {
-			// zero
-			b = big.NewInt(0)
-		} else {
-			b = SDiv(b, b, b2)
-		}
+		b = bigSDiv(b, b, b2)
 		if eq := checkEq(b, f1); !eq {
 			bf, _ := FromBig(b)
 			t.Fatalf("Expected equality:\nf1  = %x\nf2  = %x\n\n\nabs1= %x\nabs2= %x\n[sdiv]==\nf   = %x\nbf  = %x\nb   = %x\n",
@@ -967,7 +898,7 @@ func TestAddSubUint64(t *testing.T) {
 		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
 		arg, _ := FromBig(bigArg)
 		{ // SubUint64
-			want, _ := FromBig(U256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			want, _ := FromBig(u256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
 			have := new(Int).SetAllOne().SubUint64(arg, tc.n)
 			if !have.Eq(want) {
 				t.Logf("args: %s, %d\n", tc.arg, tc.n)
@@ -977,7 +908,7 @@ func TestAddSubUint64(t *testing.T) {
 			}
 		}
 		{ // AddUint64
-			want, _ := FromBig(U256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
+			want, _ := FromBig(u256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
 			have := new(Int).AddUint64(arg, tc.n)
 			if !have.Eq(want) {
 				t.Logf("args: %s, %d\n", tc.arg, tc.n)
@@ -1015,29 +946,46 @@ var (
 	tt256m1 = new(big.Int).Sub(bigtt256, big.NewInt(1))
 )
 
-// U256 encodes as a 256 bit two's complement number. This operation is destructive.
-func U256(x *big.Int) *big.Int {
+// u256 encodes as a 256 bit two's complement number. This operation is destructive.
+func u256(x *big.Int) *big.Int {
 	return x.And(x, tt256m1)
 }
 
-// Exp implements exponentiation by squaring.
+// bigExp implements exponentiation by squaring.
 // The result is truncated to 256 bits.
-func Exp(result, base, exponent *big.Int) *big.Int {
+func bigExp(result, base, exponent *big.Int) *big.Int {
 	result.SetUint64(1)
 
 	for _, word := range exponent.Bits() {
 		for i := 0; i < wordBits; i++ {
 			if word&1 == 1 {
-				U256(result.Mul(result, base))
+				u256(result.Mul(result, base))
 			}
-			U256(base.Mul(base, base))
+			u256(base.Mul(base, base))
 			word >>= 1
 		}
 	}
 	return result
 }
 
-func SDiv(result, x, y *big.Int) *big.Int {
+// bigDiv implements uint256/EVM compatible division for big.Int: returns 0 when dividing by 0
+func bigDiv(z, x, y *big.Int) *big.Int {
+	if y.Sign() == 0 {
+		return z.SetUint64(0)
+	}
+	return z.Div(x, y)
+}
+
+// bigMod implements uint256/EVM compatible mod for big.Int: returns 0 when dividing by 0
+func bigMod(z, x, y *big.Int) *big.Int {
+	if y.Sign() == 0 {
+		return z.SetUint64(0)
+	}
+	return z.Mod(x, y)
+}
+
+// bigSDiv implements EVM-compatible SDIV operation on big.Int
+func bigSDiv(result, x, y *big.Int) *big.Int {
 	if y.Sign() == 0 {
 		return result.SetUint64(0)
 	}
@@ -1055,7 +1003,8 @@ func SDiv(result, x, y *big.Int) *big.Int {
 	return result
 }
 
-func SMod(result, x, y *big.Int) *big.Int {
+// bigSMod implements EVM-compatible SMOD operation on big.Int
+func bigSMod(result, x, y *big.Int) *big.Int {
 	if y.Sign() == 0 {
 		return result.SetUint64(0)
 	}
@@ -1068,14 +1017,20 @@ func SMod(result, x, y *big.Int) *big.Int {
 	if neg {
 		result.Neg(result)
 	}
-	return U256(result)
+	return u256(result)
 }
 
-func addMod(result, x, y, mod *big.Int) *big.Int {
+func bigAddMod(result, x, y, mod *big.Int) *big.Int {
+	if mod.Sign() == 0 {
+		return result.SetUint64(0)
+	}
 	return result.Mod(result.Add(x, y), mod)
 }
 
-func mulMod(result, x, y, mod *big.Int) *big.Int {
+func bigMulMod(result, x, y, mod *big.Int) *big.Int {
+	if mod.Sign() == 0 {
+		return result.SetUint64(0)
+	}
 	return result.Mod(result.Mul(x, y), mod)
 }
 
@@ -1107,7 +1062,7 @@ func TestRandomExp(t *testing.T) {
 			t.Fatal("FromBig(exp) overflow")
 		}
 
-		b_res := Exp(new(big.Int), b_base, b_exp)
+		b_res := bigExp(new(big.Int), b_base, b_exp)
 		if eq := checkEq(b_res, f_res); !eq {
 			bf, _ := FromBig(b_res)
 			t.Fatalf("Expected equality:\nbase= %x\nexp = %x\n[ ^ ]==\nf = %x\nbf= %x\nb = %x\n", basecopy, expcopy, f_res, bf, b_res)
@@ -1217,25 +1172,11 @@ func TestBinOp(t *testing.T) {
 	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
 	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
 	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
-	t.Run("Div", func(t *testing.T) {
-		proc(t, (*Int).Div, func(z, x, y *big.Int) *big.Int {
-			if y.Sign() == 0 {
-				return z.SetUint64(0)
-			}
-			return z.Div(x, y)
-		})
-	})
-	t.Run("Mod", func(t *testing.T) {
-		proc(t, (*Int).Mod, func(z, x, y *big.Int) *big.Int {
-			if y.Sign() == 0 {
-				return z.SetUint64(0)
-			}
-			return z.Mod(x, y)
-		})
-	})
-	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, SDiv) })
-	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, SMod) })
-	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, Exp) })
+	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, bigDiv) })
+	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, bigMod) })
+	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, bigSDiv) })
+	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, bigSMod) })
+	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, bigExp) })
 
 	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
 	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
@@ -1330,30 +1271,9 @@ func TestTernOp(t *testing.T) {
 			}
 		}
 	}
-	t.Run("AddMod", func(t *testing.T) {
-		proc(t, (*Int).AddMod, func(z, x, y, m *big.Int) *big.Int {
-			if m.Sign() == 0 {
-				return z.SetUint64(0)
-			}
-			return addMod(z, x, y, m)
-		})
-	})
-	t.Run("MulMod", func(t *testing.T) {
-		proc(t, (*Int).MulMod, func(z, x, y, m *big.Int) *big.Int {
-			if m.Sign() == 0 {
-				return z.SetUint64(0)
-			}
-			return mulMod(z, x, y, m)
-		})
-	})
-	t.Run("MulModWithReciprocal", func(t *testing.T) {
-		proc(t, (*Int).mulModWithReciprocalWrapper, func(z, x, y, m *big.Int) *big.Int {
-			if m.Sign() == 0 {
-				return z.SetUint64(0)
-			}
-			return mulMod(z, x, y, m)
-		})
-	})
+	t.Run("AddMod", func(t *testing.T) { proc(t, (*Int).AddMod, bigAddMod) })
+	t.Run("MulMod", func(t *testing.T) { proc(t, (*Int).MulMod, bigMulMod) })
+	t.Run("MulModWithReciprocal", func(t *testing.T) { proc(t, (*Int).mulModWithReciprocalWrapper, bigMulMod) })
 }
 
 func TestCmpOp(t *testing.T) {
