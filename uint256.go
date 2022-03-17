@@ -234,13 +234,15 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	if z == m { // z is an alias for m and will be overwritten by AddOverflow before m is read
 		m = m.Clone()
 	}
-	if _, overflow := z.AddOverflow(x, y); overflow {
-		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
-		var quot [5]uint64
-		rem := udivrem(quot[:], sum[:], m)
-		return z.Set(&rem)
+	_, overflow := z.AddOverflow(x, y)
+	o := uint64(0)
+	if overflow {
+		o = 1
 	}
-	return z.Mod(z, m)
+	sum := [5]uint64{z[0], z[1], z[2], z[3], o}
+	var quot [5]uint64
+	rem := udivrem(quot[:], sum[:], m)
+	return z.Set(&rem)
 }
 
 // AddUint64 sets z to x + y, where y is a uint64, and returns z
@@ -542,19 +544,9 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 // Div sets z to the quotient x/y for returns z.
 // If y == 0, z is set to 0
 func (z *Int) Div(x, y *Int) *Int {
-	if y.IsZero() || y.Gt(x) {
+	if y.IsZero() {
 		return z.Clear()
 	}
-	if x.Eq(y) {
-		return z.SetOne()
-	}
-	// Shortcut some cases
-	if x.IsUint64() {
-		return z.SetUint64(x.Uint64() / y.Uint64())
-	}
-
-	// At this point, we know
-	// x/y ; x > y > 0
 
 	var quot Int
 	udivrem(quot[:], x[:], y)
@@ -659,18 +651,6 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		mu := Reciprocal(m)
 		r := reduce4(p, m, mu)
 		return z.Set(&r)
-	}
-
-	var (
-		pl Int
-		ph Int
-	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
-
-	// If the multiplication is within 256 bits use Mod().
-	if ph.IsZero() {
-		return z.Mod(&pl, m)
 	}
 
 	var quot [8]uint64
