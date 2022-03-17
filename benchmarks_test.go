@@ -198,7 +198,7 @@ func BenchmarkMul(bench *testing.B) {
 		result := new(big.Int)
 		bench.ResetTimer()
 		for i := 0; i < bench.N; i++ {
-			U256(result.Mul(a, b))
+			u256(result.Mul(a, b))
 		}
 	}
 
@@ -226,7 +226,7 @@ func BenchmarkMulOverflow(bench *testing.B) {
 		result := new(big.Int)
 		bench.ResetTimer()
 		for i := 0; i < bench.N; i++ {
-			U256(result.Mul(a, b))
+			u256(result.Mul(a, b))
 		}
 	}
 
@@ -251,7 +251,7 @@ func BenchmarkSquare(bench *testing.B) {
 		result := new(big.Int)
 		bench.ResetTimer()
 		for i := 0; i < bench.N; i++ {
-			U256(result.Mul(a, a))
+			u256(result.Mul(a, a))
 		}
 	}
 
@@ -543,7 +543,7 @@ func benchmark_Exp_Big(bench *testing.B) {
 	result := new(big.Int)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		Exp(result, base, exp)
+		bigExp(result, base, exp)
 		base.Set(orig)
 	}
 }
@@ -576,7 +576,7 @@ func benchmark_ExpSmall_Big(bench *testing.B) {
 	result := new(big.Int)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
-		Exp(result, base, exp)
+		bigExp(result, base, exp)
 		base.Set(orig)
 	}
 }
@@ -768,7 +768,7 @@ func benchmark_SdivLarge_Big(bench *testing.B) {
 	bench.ResetTimer()
 
 	for i := 0; i < bench.N; i++ {
-		U256(SDiv(new(big.Int), a, b))
+		u256(bigSDiv(new(big.Int), a, b))
 	}
 }
 
