@@ -686,19 +686,6 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	}
 	p := umul(x, y)
 
-	if (p[4] | p[5] | p[6] | p[7]) == 0 {
-		var pl Int
-		copy(pl[:], p[:4])
-
-		if d.Gt(&pl) {
-			return z.Clear(), false
-		}
-
-		if pl.IsUint64() {
-			return z.SetUint64(pl.Uint64() / d.Uint64()), false
-		}
-	}
-
 	var quot [8]uint64
 	udivrem(quot[:], p[:], d)
 
