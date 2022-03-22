@@ -508,6 +508,11 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 		}
 	}
 
+	if uLen < dLen {
+		copy(rem[:], u)
+		return rem
+	}
+
 	var unStorage [9]uint64
 	un := unStorage[:uLen+1]
 	un[uLen] = u[uLen-1] >> (64 - shift)
