@@ -205,19 +205,16 @@ func checkThreeArgOp(op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
 func Fuzz(data []byte) int {
 	if len(data) < 32 {
 		return 0
-	} else {
-
-		return fuzzUnaryOp(data)
 	}
-
-	switch len(data) {
-	case 32:
-		return fuzzUnaryOp(data)
-	case 64:
-		return fuzzBinaryOp(data)
-	case 96:
-		return fuzzTernaryOp(data)
+	switch {
+	case len(data) < 64:
+		return fuzzUnaryOp(data) // needs 32 byte
+	case len(data) < 96:
+		return fuzzBinaryOp(data) // needs 64 byte
+	case len(data) < 128:
+		return fuzzTernaryOp(data) // needs 96 byte
 	}
+	// Too large input
 	return -1
 }
 
@@ -277,6 +274,16 @@ func intAddMod(f1, f2, f3, f4 *Int) *Int {
 	return f1.AddMod(f2, f3, f4)
 }
 
+func bigMulDiv(b1, b2, b3, b4 *big.Int) *big.Int {
+	b1.Mul(b2, b3)
+	return b1.Div(b1, b4)
+}
+
+func intMulDiv(f1, f2, f3, f4 *Int) *Int {
+	f1.MulDivOverflow(f2, f3, f4)
+	return f1
+}
+
 func fuzzTernaryOp(data []byte) int {
 	var x, y, z Int
 	x.SetBytes(data[:32])
@@ -291,6 +298,9 @@ func fuzzTernaryOp(data []byte) int {
 	}
 	{ // addMod
 		checkThreeArgOp(intAddMod, bigAddMod, x, y, z)
+	}
+	{ // mulDiv
+		checkThreeArgOp(intMulDiv, bigMulDiv, x, y, z)
 	}
 	return 1
 }
