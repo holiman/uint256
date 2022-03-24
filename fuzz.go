@@ -215,7 +215,7 @@ func Fuzz(data []byte) int {
 		return fuzzTernaryOp(data) // needs 96 byte
 	}
 	// Too large input
-	return 0
+	return -1
 }
 
 func fuzzUnaryOp(data []byte) int {
