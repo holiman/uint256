@@ -35,9 +35,9 @@ jobs:
           arch: "amd64"
       - test:
           arch: "386"
-      - run:
-          name: "Codecov upload"
-          command: bash <(curl -s https://codecov.io/bash)
+#      - run:
+#          name: "Codecov upload"
+#          command: bash <(curl -s https://codecov.io/bash)
       - restore_cache:
           keys:
             - corpus-v2
