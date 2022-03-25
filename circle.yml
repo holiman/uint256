@@ -46,12 +46,18 @@ jobs:
           command: |
             go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
             go-fuzz-build
-            timeout --preserve-status --signal INT 1m go-fuzz -procs=2
+            timeout --preserve-status --signal INT 1m go-fuzz -dumpcover -procs=2
             test ! "$(ls crashers)"
       - save_cache:
           key: corpus-v2-{{ epoch }}
           paths:
             - corpus
+      - run:
+          name: "Codecov upload (fuzzing)"
+          command: |
+            rm coverage-*.txt
+            mv coverprofile coverage-fuzz.txt
+            bash <(curl -s https://codecov.io/bash) -F fuzz -n fuzzing
       - run:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
