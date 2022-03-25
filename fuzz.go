@@ -203,18 +203,15 @@ func checkThreeArgOp(op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
 }
 
 func Fuzz(data []byte) int {
-	if len(data) < 32 {
-		return 0
-	}
-	switch {
-	case len(data) < 64:
+	switch len(data) {
+	case 32:
 		return fuzzUnaryOp(data) // needs 32 byte
-	case len(data) < 96:
+	case 64:
 		return fuzzBinaryOp(data) // needs 64 byte
-	case len(data) < 128:
+	case 96:
 		return fuzzTernaryOp(data) // needs 96 byte
 	}
-	// Too large input
+	// Invalid input length
 	return -1
 }
 
