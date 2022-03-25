@@ -588,8 +588,20 @@ func (z *Int) Mod(x, y *Int) *Int {
 	}
 
 	var quot Int
-	rem := udivrem(quot[:], x[:], y)
-	return z.Set(&rem)
+	*z = udivrem(quot[:], x[:], y)
+	return z
+}
+
+// DivMod sets z to the quotient x div y and m to the modulus x mod y and returns the pair (z, m) for y != 0.
+// If y == 0, both z and m are set to 0 (OBS: differs from the big.Int)
+func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
+	if y.IsZero() {
+		return z.Clear(), m.Clear()
+	}
+	var quot Int
+	*m = udivrem(quot[:], x[:], y)
+	*z = quot
+	return z, m
 }
 
 // SMod interprets x and y as two's complement signed integers,

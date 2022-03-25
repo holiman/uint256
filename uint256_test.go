@@ -260,6 +260,8 @@ func TestRandomBinOp(t *testing.T) {
 	t.Run("Mod", func(t *testing.T) { testRandomOp(t, (*Int).Mod, bigMod) })
 	t.Run("SDiv", func(t *testing.T) { testRandomOp(t, (*Int).SDiv, bigSDiv) })
 	t.Run("SMod", func(t *testing.T) { testRandomOp(t, (*Int).SMod, bigSMod) })
+	t.Run("DivMod/Div", func(t *testing.T) { testRandomOp(t, divModDiv, bigDiv) })
+	t.Run("DivMod/Mod", func(t *testing.T) { testRandomOp(t, divModMod, bigMod) })
 	t.Run("udivrem/Div", func(t *testing.T) { testRandomOp(t, udivremDiv, bigDiv) })
 	t.Run("udivrem/Mod", func(t *testing.T) { testRandomOp(t, udivremMod, bigMod) })
 }
@@ -296,6 +298,19 @@ func TestRandomSquare(t *testing.T) {
 			return b1.Mul(b1, b1)
 		},
 	)
+}
+
+// divModDiv wraps DivMod and returns quotient only
+func divModDiv(z, x, y *Int) *Int {
+	var m Int
+	z.DivMod(x, y, &m)
+	return z
+}
+
+// divModMod wraps DivMod and returns modulus only
+func divModMod(z, x, y *Int) *Int {
+	new(Int).DivMod(x, y, z)
+	return z
 }
 
 // udivremDiv wraps udivrem and returns quotient
@@ -1243,6 +1258,8 @@ func TestBinOp(t *testing.T) {
 	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, bigMod) })
 	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, bigSDiv) })
 	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, bigSMod) })
+	t.Run("DivMod/Div", func(t *testing.T) { proc(t, divModDiv, bigDiv) })
+	t.Run("DivMod/Mod", func(t *testing.T) { proc(t, divModMod, bigMod) })
 	t.Run("udivrem/Div", func(t *testing.T) { proc(t, udivremDiv, bigDiv) })
 	t.Run("udivrem/Mod", func(t *testing.T) { proc(t, udivremMod, bigMod) })
 	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, bigExp) })
