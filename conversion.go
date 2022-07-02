@@ -29,14 +29,14 @@ func (z *Int) ToBig() *big.Int {
 	b := new(big.Int)
 	switch maxWords { // Compile-time check.
 	case 4: // 64-bit architectures.
-		words := [4]big.Word{big.Word(z[0]), big.Word(z[1]), big.Word(z[2]), big.Word(z[3])}
+		words := [4]big.Word{big.Word(z.value[0]), big.Word(z.value[1]), big.Word(z.value[2]), big.Word(z.value[3])}
 		b.SetBits(words[:])
 	case 8: // 32-bit architectures.
 		words := [8]big.Word{
-			big.Word(z[0]), big.Word(z[0] >> 32),
-			big.Word(z[1]), big.Word(z[1] >> 32),
-			big.Word(z[2]), big.Word(z[2] >> 32),
-			big.Word(z[3]), big.Word(z[3] >> 32),
+			big.Word(z.value[0]), big.Word(z.value[0] >> 32),
+			big.Word(z.value[1]), big.Word(z.value[1] >> 32),
+			big.Word(z.value[2]), big.Word(z.value[2] >> 32),
+			big.Word(z.value[3]), big.Word(z.value[3] >> 32),
 		}
 		b.SetBits(words[:])
 	}
@@ -71,8 +71,8 @@ func (z *Int) fromHex(hex string) error {
 			if nib == badNibble {
 				return ErrSyntax
 			}
-			z[i] = z[i] << 4
-			z[i] += uint64(nib)
+			z.value[i] = z.value[i] << 4
+			z.value[i] += uint64(nib)
 		}
 		end = start
 	}
@@ -105,13 +105,13 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 	switch maxWords { // Compile-time check.
 	case 4: // 64-bit architectures.
 		if len(words) > 0 {
-			z[0] = uint64(words[0])
+			z.value[0] = uint64(words[0])
 			if len(words) > 1 {
-				z[1] = uint64(words[1])
+				z.value[1] = uint64(words[1])
 				if len(words) > 2 {
-					z[2] = uint64(words[2])
+					z.value[2] = uint64(words[2])
 					if len(words) > 3 {
-						z[3] = uint64(words[3])
+						z.value[3] = uint64(words[3])
 					}
 				}
 			}
@@ -123,9 +123,9 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 		}
 		for i := 0; i < numWords; i++ {
 			if i%2 == 0 {
-				z[i/2] = uint64(words[i])
+				z.value[i/2] = uint64(words[i])
 			} else {
-				z[i/2] |= uint64(words[i]) << 32
+				z.value[i/2] |= uint64(words[i]) << 32
 			}
 		}
 	}
@@ -155,266 +155,266 @@ func (z *Int) Format(s fmt.State, ch rune) {
 // SetBytes8 is identical to SetBytes(in[:8]), but panics is input is too short
 func (z *Int) SetBytes8(in []byte) *Int {
 	_ = in[7] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = binary.BigEndian.Uint64(in[0:8])
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = binary.BigEndian.Uint64(in[0:8])
 	return z
 }
 
 // SetBytes16 is identical to SetBytes(in[:16]), but panics is input is too short
 func (z *Int) SetBytes16(in []byte) *Int {
 	_ = in[15] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = binary.BigEndian.Uint64(in[0:8])
-	z[0] = binary.BigEndian.Uint64(in[8:16])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = binary.BigEndian.Uint64(in[0:8])
+	z.value[0] = binary.BigEndian.Uint64(in[8:16])
 	return z
 }
 
 // SetBytes16 is identical to SetBytes(in[:24]), but panics is input is too short
 func (z *Int) SetBytes24(in []byte) *Int {
 	_ = in[23] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = binary.BigEndian.Uint64(in[0:8])
-	z[1] = binary.BigEndian.Uint64(in[8:16])
-	z[0] = binary.BigEndian.Uint64(in[16:24])
+	z.value[3] = 0
+	z.value[2] = binary.BigEndian.Uint64(in[0:8])
+	z.value[1] = binary.BigEndian.Uint64(in[8:16])
+	z.value[0] = binary.BigEndian.Uint64(in[16:24])
 	return z
 }
 
 func (z *Int) SetBytes32(in []byte) *Int {
 	_ = in[31] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = binary.BigEndian.Uint64(in[0:8])
-	z[2] = binary.BigEndian.Uint64(in[8:16])
-	z[1] = binary.BigEndian.Uint64(in[16:24])
-	z[0] = binary.BigEndian.Uint64(in[24:32])
+	z.value[3] = binary.BigEndian.Uint64(in[0:8])
+	z.value[2] = binary.BigEndian.Uint64(in[8:16])
+	z.value[1] = binary.BigEndian.Uint64(in[16:24])
+	z.value[0] = binary.BigEndian.Uint64(in[24:32])
 	return z
 }
 
 func (z *Int) SetBytes1(in []byte) *Int {
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = uint64(in[0])
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = uint64(in[0])
 	return z
 }
 
 func (z *Int) SetBytes9(in []byte) *Int {
 	_ = in[8] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = uint64(in[0])
-	z[0] = binary.BigEndian.Uint64(in[1:9])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = uint64(in[0])
+	z.value[0] = binary.BigEndian.Uint64(in[1:9])
 	return z
 }
 
 func (z *Int) SetBytes17(in []byte) *Int {
 	_ = in[16] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = uint64(in[0])
-	z[1] = binary.BigEndian.Uint64(in[1:9])
-	z[0] = binary.BigEndian.Uint64(in[9:17])
+	z.value[3] = 0
+	z.value[2] = uint64(in[0])
+	z.value[1] = binary.BigEndian.Uint64(in[1:9])
+	z.value[0] = binary.BigEndian.Uint64(in[9:17])
 	return z
 }
 
 func (z *Int) SetBytes25(in []byte) *Int {
 	_ = in[24] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = uint64(in[0])
-	z[2] = binary.BigEndian.Uint64(in[1:9])
-	z[1] = binary.BigEndian.Uint64(in[9:17])
-	z[0] = binary.BigEndian.Uint64(in[17:25])
+	z.value[3] = uint64(in[0])
+	z.value[2] = binary.BigEndian.Uint64(in[1:9])
+	z.value[1] = binary.BigEndian.Uint64(in[9:17])
+	z.value[0] = binary.BigEndian.Uint64(in[17:25])
 	return z
 }
 
 func (z *Int) SetBytes2(in []byte) *Int {
 	_ = in[1] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = uint64(binary.BigEndian.Uint16(in[0:2]))
 	return z
 }
 
 func (z *Int) SetBytes10(in []byte) *Int {
 	_ = in[9] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = uint64(binary.BigEndian.Uint16(in[0:2]))
-	z[0] = binary.BigEndian.Uint64(in[2:10])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	z.value[0] = binary.BigEndian.Uint64(in[2:10])
 	return z
 }
 
 func (z *Int) SetBytes18(in []byte) *Int {
 	_ = in[17] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = uint64(binary.BigEndian.Uint16(in[0:2]))
-	z[1] = binary.BigEndian.Uint64(in[2:10])
-	z[0] = binary.BigEndian.Uint64(in[10:18])
+	z.value[3] = 0
+	z.value[2] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	z.value[1] = binary.BigEndian.Uint64(in[2:10])
+	z.value[0] = binary.BigEndian.Uint64(in[10:18])
 	return z
 }
 
 func (z *Int) SetBytes26(in []byte) *Int {
 	_ = in[25] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = uint64(binary.BigEndian.Uint16(in[0:2]))
-	z[2] = binary.BigEndian.Uint64(in[2:10])
-	z[1] = binary.BigEndian.Uint64(in[10:18])
-	z[0] = binary.BigEndian.Uint64(in[18:26])
+	z.value[3] = uint64(binary.BigEndian.Uint16(in[0:2]))
+	z.value[2] = binary.BigEndian.Uint64(in[2:10])
+	z.value[1] = binary.BigEndian.Uint64(in[10:18])
+	z.value[0] = binary.BigEndian.Uint64(in[18:26])
 	return z
 }
 
 func (z *Int) SetBytes3(in []byte) *Int {
 	_ = in[2] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
 	return z
 }
 
 func (z *Int) SetBytes11(in []byte) *Int {
 	_ = in[10] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
-	z[0] = binary.BigEndian.Uint64(in[3:11])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	z.value[0] = binary.BigEndian.Uint64(in[3:11])
 	return z
 }
 
 func (z *Int) SetBytes19(in []byte) *Int {
 	_ = in[18] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
-	z[1] = binary.BigEndian.Uint64(in[3:11])
-	z[0] = binary.BigEndian.Uint64(in[11:19])
+	z.value[3] = 0
+	z.value[2] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	z.value[1] = binary.BigEndian.Uint64(in[3:11])
+	z.value[0] = binary.BigEndian.Uint64(in[11:19])
 	return z
 }
 
 func (z *Int) SetBytes27(in []byte) *Int {
 	_ = in[26] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
-	z[2] = binary.BigEndian.Uint64(in[3:11])
-	z[1] = binary.BigEndian.Uint64(in[11:19])
-	z[0] = binary.BigEndian.Uint64(in[19:27])
+	z.value[3] = uint64(binary.BigEndian.Uint16(in[1:3])) | uint64(in[0])<<16
+	z.value[2] = binary.BigEndian.Uint64(in[3:11])
+	z.value[1] = binary.BigEndian.Uint64(in[11:19])
+	z.value[0] = binary.BigEndian.Uint64(in[19:27])
 	return z
 }
 
 func (z *Int) SetBytes4(in []byte) *Int {
 	_ = in[3] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = uint64(binary.BigEndian.Uint32(in[0:4]))
 	return z
 }
 
 func (z *Int) SetBytes12(in []byte) *Int {
 	_ = in[11] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = uint64(binary.BigEndian.Uint32(in[0:4]))
-	z[0] = binary.BigEndian.Uint64(in[4:12])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	z.value[0] = binary.BigEndian.Uint64(in[4:12])
 	return z
 }
 
 func (z *Int) SetBytes20(in []byte) *Int {
 	_ = in[19] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = uint64(binary.BigEndian.Uint32(in[0:4]))
-	z[1] = binary.BigEndian.Uint64(in[4:12])
-	z[0] = binary.BigEndian.Uint64(in[12:20])
+	z.value[3] = 0
+	z.value[2] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	z.value[1] = binary.BigEndian.Uint64(in[4:12])
+	z.value[0] = binary.BigEndian.Uint64(in[12:20])
 	return z
 }
 
 func (z *Int) SetBytes28(in []byte) *Int {
 	_ = in[27] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = uint64(binary.BigEndian.Uint32(in[0:4]))
-	z[2] = binary.BigEndian.Uint64(in[4:12])
-	z[1] = binary.BigEndian.Uint64(in[12:20])
-	z[0] = binary.BigEndian.Uint64(in[20:28])
+	z.value[3] = uint64(binary.BigEndian.Uint32(in[0:4]))
+	z.value[2] = binary.BigEndian.Uint64(in[4:12])
+	z.value[1] = binary.BigEndian.Uint64(in[12:20])
+	z.value[0] = binary.BigEndian.Uint64(in[20:28])
 	return z
 }
 
 func (z *Int) SetBytes5(in []byte) *Int {
 	_ = in[4] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = bigEndianUint40(in[0:5])
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = bigEndianUint40(in[0:5])
 	return z
 }
 
 func (z *Int) SetBytes13(in []byte) *Int {
 	_ = in[12] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = bigEndianUint40(in[0:5])
-	z[0] = binary.BigEndian.Uint64(in[5:13])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = bigEndianUint40(in[0:5])
+	z.value[0] = binary.BigEndian.Uint64(in[5:13])
 	return z
 }
 
 func (z *Int) SetBytes21(in []byte) *Int {
 	_ = in[20] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = bigEndianUint40(in[0:5])
-	z[1] = binary.BigEndian.Uint64(in[5:13])
-	z[0] = binary.BigEndian.Uint64(in[13:21])
+	z.value[3] = 0
+	z.value[2] = bigEndianUint40(in[0:5])
+	z.value[1] = binary.BigEndian.Uint64(in[5:13])
+	z.value[0] = binary.BigEndian.Uint64(in[13:21])
 	return z
 }
 
 func (z *Int) SetBytes29(in []byte) *Int {
 	_ = in[23] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = bigEndianUint40(in[0:5])
-	z[2] = binary.BigEndian.Uint64(in[5:13])
-	z[1] = binary.BigEndian.Uint64(in[13:21])
-	z[0] = binary.BigEndian.Uint64(in[21:29])
+	z.value[3] = bigEndianUint40(in[0:5])
+	z.value[2] = binary.BigEndian.Uint64(in[5:13])
+	z.value[1] = binary.BigEndian.Uint64(in[13:21])
+	z.value[0] = binary.BigEndian.Uint64(in[21:29])
 	return z
 }
 
 func (z *Int) SetBytes6(in []byte) *Int {
 	_ = in[5] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = bigEndianUint48(in[0:6])
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = bigEndianUint48(in[0:6])
 	return z
 }
 
 func (z *Int) SetBytes14(in []byte) *Int {
 	_ = in[13] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = bigEndianUint48(in[0:6])
-	z[0] = binary.BigEndian.Uint64(in[6:14])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = bigEndianUint48(in[0:6])
+	z.value[0] = binary.BigEndian.Uint64(in[6:14])
 	return z
 }
 
 func (z *Int) SetBytes22(in []byte) *Int {
 	_ = in[21] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = bigEndianUint48(in[0:6])
-	z[1] = binary.BigEndian.Uint64(in[6:14])
-	z[0] = binary.BigEndian.Uint64(in[14:22])
+	z.value[3] = 0
+	z.value[2] = bigEndianUint48(in[0:6])
+	z.value[1] = binary.BigEndian.Uint64(in[6:14])
+	z.value[0] = binary.BigEndian.Uint64(in[14:22])
 	return z
 }
 
 func (z *Int) SetBytes30(in []byte) *Int {
 	_ = in[29] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = bigEndianUint48(in[0:6])
-	z[2] = binary.BigEndian.Uint64(in[6:14])
-	z[1] = binary.BigEndian.Uint64(in[14:22])
-	z[0] = binary.BigEndian.Uint64(in[22:30])
+	z.value[3] = bigEndianUint48(in[0:6])
+	z.value[2] = binary.BigEndian.Uint64(in[6:14])
+	z.value[1] = binary.BigEndian.Uint64(in[14:22])
+	z.value[0] = binary.BigEndian.Uint64(in[22:30])
 	return z
 }
 
 func (z *Int) SetBytes7(in []byte) *Int {
 	_ = in[6] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2], z[1] = 0, 0, 0
-	z[0] = bigEndianUint56(in[0:7])
+	z.value[3], z.value[2], z.value[1] = 0, 0, 0
+	z.value[0] = bigEndianUint56(in[0:7])
 	return z
 }
 
 func (z *Int) SetBytes15(in []byte) *Int {
 	_ = in[14] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3], z[2] = 0, 0
-	z[1] = bigEndianUint56(in[0:7])
-	z[0] = binary.BigEndian.Uint64(in[7:15])
+	z.value[3], z.value[2] = 0, 0
+	z.value[1] = bigEndianUint56(in[0:7])
+	z.value[0] = binary.BigEndian.Uint64(in[7:15])
 	return z
 }
 
 func (z *Int) SetBytes23(in []byte) *Int {
 	_ = in[22] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = 0
-	z[2] = bigEndianUint56(in[0:7])
-	z[1] = binary.BigEndian.Uint64(in[7:15])
-	z[0] = binary.BigEndian.Uint64(in[15:23])
+	z.value[3] = 0
+	z.value[2] = bigEndianUint56(in[0:7])
+	z.value[1] = binary.BigEndian.Uint64(in[7:15])
+	z.value[0] = binary.BigEndian.Uint64(in[15:23])
 	return z
 }
 
 func (z *Int) SetBytes31(in []byte) *Int {
 	_ = in[30] // bounds check hint to compiler; see golang.org/issue/14808
-	z[3] = bigEndianUint56(in[0:7])
-	z[2] = binary.BigEndian.Uint64(in[7:15])
-	z[1] = binary.BigEndian.Uint64(in[15:23])
-	z[0] = binary.BigEndian.Uint64(in[23:31])
+	z.value[3] = bigEndianUint56(in[0:7])
+	z.value[2] = binary.BigEndian.Uint64(in[7:15])
+	z.value[1] = binary.BigEndian.Uint64(in[15:23])
+	z.value[0] = binary.BigEndian.Uint64(in[23:31])
 	return z
 }
 
@@ -451,15 +451,15 @@ func (z *Int) EncodeRLP(w io.Writer) error {
 		return err
 	}
 	if nBits <= 7 {
-		_, err := w.Write([]byte{byte(z[0])})
+		_, err := w.Write([]byte{byte(z.value[0])})
 		return err
 	}
 	nBytes := byte((nBits + 7) / 8)
 	var b [33]byte
-	binary.BigEndian.PutUint64(b[1:9], z[3])
-	binary.BigEndian.PutUint64(b[9:17], z[2])
-	binary.BigEndian.PutUint64(b[17:25], z[1])
-	binary.BigEndian.PutUint64(b[25:33], z[0])
+	binary.BigEndian.PutUint64(b[1:9], z.value[3])
+	binary.BigEndian.PutUint64(b[9:17], z.value[2])
+	binary.BigEndian.PutUint64(b[17:25], z.value[1])
+	binary.BigEndian.PutUint64(b[25:33], z.value[0])
 	b[32-nBytes] = 0x80 + nBytes
 	_, err := w.Write(b[32-nBytes:])
 	return err
@@ -503,22 +503,22 @@ func (z *Int) Hex() string {
 	zWord := (nibbles - 1) / 16
 	for i := zWord; i >= 0; i-- {
 		off := (3 - i) * 16
-		output[off+2] = hextable[byte(z[i]>>60)&0xf]
-		output[off+3] = hextable[byte(z[i]>>56)&0xf]
-		output[off+4] = hextable[byte(z[i]>>52)&0xf]
-		output[off+5] = hextable[byte(z[i]>>48)&0xf]
-		output[off+6] = hextable[byte(z[i]>>44)&0xf]
-		output[off+7] = hextable[byte(z[i]>>40)&0xf]
-		output[off+8] = hextable[byte(z[i]>>36)&0xf]
-		output[off+9] = hextable[byte(z[i]>>32)&0xf]
-		output[off+10] = hextable[byte(z[i]>>28)&0xf]
-		output[off+11] = hextable[byte(z[i]>>24)&0xf]
-		output[off+12] = hextable[byte(z[i]>>20)&0xf]
-		output[off+13] = hextable[byte(z[i]>>16)&0xf]
-		output[off+14] = hextable[byte(z[i]>>12)&0xf]
-		output[off+15] = hextable[byte(z[i]>>8)&0xf]
-		output[off+16] = hextable[byte(z[i]>>4)&0xf]
-		output[off+17] = hextable[byte(z[i]&0xF)&0xf]
+		output[off+2] = hextable[byte(z.value[i]>>60)&0xf]
+		output[off+3] = hextable[byte(z.value[i]>>56)&0xf]
+		output[off+4] = hextable[byte(z.value[i]>>52)&0xf]
+		output[off+5] = hextable[byte(z.value[i]>>48)&0xf]
+		output[off+6] = hextable[byte(z.value[i]>>44)&0xf]
+		output[off+7] = hextable[byte(z.value[i]>>40)&0xf]
+		output[off+8] = hextable[byte(z.value[i]>>36)&0xf]
+		output[off+9] = hextable[byte(z.value[i]>>32)&0xf]
+		output[off+10] = hextable[byte(z.value[i]>>28)&0xf]
+		output[off+11] = hextable[byte(z.value[i]>>24)&0xf]
+		output[off+12] = hextable[byte(z.value[i]>>20)&0xf]
+		output[off+13] = hextable[byte(z.value[i]>>16)&0xf]
+		output[off+14] = hextable[byte(z.value[i]>>12)&0xf]
+		output[off+15] = hextable[byte(z.value[i]>>8)&0xf]
+		output[off+16] = hextable[byte(z.value[i]>>4)&0xf]
+		output[off+17] = hextable[byte(z.value[i]&0xF)&0xf]
 	}
 	output[64-nibbles] = '0'
 	output[65-nibbles] = 'x'

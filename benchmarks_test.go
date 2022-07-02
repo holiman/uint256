@@ -45,7 +45,7 @@ func initSamples() bool {
 	newRandInt := func(numWords int) Int {
 		var z Int
 		for i := 0; i < numWords; i++ {
-			z[i] = rnd.Uint64()
+			z.value[i] = rnd.Uint64()
 		}
 		return z
 	}
@@ -66,8 +66,8 @@ func initSamples() bool {
 		if g.Lt(&l) {
 			g, l = l, g
 		}
-		if g[0] == 0 {
-			g[0]++
+		if g.value[0] == 0 {
+			g.value[0]++
 		}
 		int64Samples[i] = g
 		big64Samples[i] = *int64Samples[i].ToBig()
@@ -79,8 +79,8 @@ func initSamples() bool {
 		if g.Lt(&l) {
 			g, l = l, g
 		}
-		if g[1] == 0 {
-			g[1]++
+		if g.value[1] == 0 {
+			g.value[1]++
 		}
 		int128Samples[i] = g
 		big128Samples[i] = *int128Samples[i].ToBig()
@@ -92,8 +92,8 @@ func initSamples() bool {
 		if g.Lt(&l) {
 			g, l = l, g
 		}
-		if g[2] == 0 {
-			g[2]++
+		if g.value[2] == 0 {
+			g.value[2]++
 		}
 		int192Samples[i] = g
 		big192Samples[i] = *int192Samples[i].ToBig()
@@ -105,8 +105,8 @@ func initSamples() bool {
 		if g.Lt(&l) {
 			g, l = l, g
 		}
-		if g[3] == 0 {
-			g[3]++
+		if g.value[3] == 0 {
+			g.value[3]++
 		}
 		int256Samples[i] = g
 		big256Samples[i] = *int256Samples[i].ToBig()

@@ -7,26 +7,26 @@ package uint256
 import "testing"
 
 func TestLeadingZeros(t *testing.T) {
-	one := Int{1, 0, 0, 0}
+	one := Int{value: [4]uint64{1, 0, 0, 0}, tainted: false}
 
 	testCases := []Int{
-		Int{0, 0, 0, 0},
-		Int{1, 0, 0, 0},
-		Int{0x7fffffffffffffff, 0, 0, 0},
-		Int{0x8000000000000000, 0, 0, 0},
-		Int{0xffffffffffffffff, 0, 0, 0},
-		Int{0, 1, 0, 0},
-		Int{0, 0x7fffffffffffffff, 0, 0},
-		Int{0, 0x8000000000000000, 0, 0},
-		Int{0, 0xffffffffffffffff, 0, 0},
-		Int{0, 0, 1, 0},
-		Int{0, 0, 0x7fffffffffffffff, 0},
-		Int{0, 0, 0x8000000000000000, 0},
-		Int{0, 0, 0xffffffffffffffff, 0},
-		Int{0, 0, 0, 1},
-		Int{0, 0, 0, 0x7fffffffffffffff},
-		Int{0, 0, 0, 0x8000000000000000},
-		Int{0, 0, 0, 0xffffffffffffffff},
+		Int{value: [4]uint64{0, 0, 0, 0}, tainted: false},
+		Int{value: [4]uint64{1, 0, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0x7fffffffffffffff, 0, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0x8000000000000000, 0, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0xffffffffffffffff, 0, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0, 1, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0x7fffffffffffffff, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0x8000000000000000, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0xffffffffffffffff, 0, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0, 1, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0x7fffffffffffffff, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0x8000000000000000, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0xffffffffffffffff, 0}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0, 1}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0, 0x7fffffffffffffff}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0, 0x8000000000000000}, tainted: false},
+		Int{value: [4]uint64{0, 0, 0, 0xffffffffffffffff}, tainted: false},
 	}
 
 	for _, x := range testCases {
@@ -42,6 +42,6 @@ func TestLeadingZeros(t *testing.T) {
 				continue
 			}
 		}
-		t.Errorf("wrong leading zeros %d of %x", z, x)
+		t.Errorf("wrong leading zeros %d of %x", z, x.value)
 	}
 }

@@ -317,7 +317,7 @@ func divModMod(z, x, y *Int) *Int {
 func udivremDiv(z, x, y *Int) *Int {
 	var quot Int
 	if !y.IsZero() {
-		udivrem(quot[:], x[:], y)
+		udivrem(quot.value[:], x.value[:], y)
 	}
 	return z.Set(&quot)
 }
@@ -328,7 +328,7 @@ func udivremMod(z, x, y *Int) *Int {
 		return z.Clear()
 	}
 	var quot Int
-	rem := udivrem(quot[:], x[:], y)
+	rem := udivrem(quot.value[:], x.value[:], y)
 	return z.Set(&rem)
 }
 
@@ -396,7 +396,7 @@ func TestRandomMulMod(t *testing.T) {
 
 	// Tests related to powers of 2
 
-	f_minusone := &Int{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}
+	f_minusone := &Int{value: [4]uint64{^uint64(0), ^uint64(0), ^uint64(0), ^uint64(0)}, tainted: false}
 
 	b_one := big.NewInt(1)
 	b_minusone := big.NewInt(0)
@@ -789,13 +789,13 @@ func TestRandomSDiv(t *testing.T) {
 func TestUdivremQuick(t *testing.T) {
 	//
 	u := []uint64{1, 0, 0, 0, 0}
-	d := Int{0, 1, 0, 0}
+	d := Int{value: [4]uint64{0, 1, 0, 0}, tainted: false}
 	quot := []uint64{}
 	rem := udivrem(quot, u, &d)
 	expected := new(Int)
-	copy(expected[:], u)
+	copy(expected.value[:], u)
 	if !rem.Eq(expected) {
-		t.Errorf("Wrong remainder: %x, expected %x", rem, expected)
+		t.Errorf("Wrong remainder: %x, expected %x", rem.value, expected.value)
 	}
 }
 
@@ -1427,23 +1427,23 @@ func TestCmpOp(t *testing.T) {
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
 func TestFixedExpReusedArgs(t *testing.T) {
-	f2 := Int{2, 0, 0, 0}
+	f2 := Int{value: [4]uint64{2, 0, 0, 0}, tainted: false}
 	f2.Exp(&f2, &f2)
 	requireEq(t, big.NewInt(2*2), &f2, "")
 
 	// TODO: This is tested in TestBinOp().
-	f3 := Int{3, 0, 0, 0}
-	f4 := Int{4, 0, 0, 0}
+	f3 := Int{value: [4]uint64{3, 0, 0, 0}, tainted: false}
+	f4 := Int{value: [4]uint64{4, 0, 0, 0}, tainted: false}
 	f3.Exp(&f4, &f3)
 	requireEq(t, big.NewInt(4*4*4), &f3, "")
 
 	// TODO: This is tested in TestBinOp().
-	f5 := Int{5, 0, 0, 0}
-	f6 := Int{6, 0, 0, 0}
+	f5 := Int{value: [4]uint64{5, 0, 0, 0}, tainted: false}
+	f6 := Int{value: [4]uint64{6, 0, 0, 0}, tainted: false}
 	f6.Exp(&f6, &f5)
 	requireEq(t, big.NewInt(6*6*6*6*6), &f6, "")
 
-	f3 = Int{3, 0, 0, 0}
+	f3 = Int{value: [4]uint64{3, 0, 0, 0}, tainted: false}
 	fr := new(Int).Exp(&f3, &f3)
 	requireEq(t, big.NewInt(3*3*3), fr, "")
 }
