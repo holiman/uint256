@@ -258,7 +258,7 @@ func fuzzBinaryOp(data []byte) int {
 	return 1
 }
 
-func bigMulMod(b1, b2, b3, b4 *big.Int) *big.Int {
+func bigintMulMod(b1, b2, b3, b4 *big.Int) *big.Int {
 	return b1.Mod(big.NewInt(0).Mul(b2, b3), b4)
 }
 
@@ -266,7 +266,7 @@ func intMulMod(f1, f2, f3, f4 *Int) *Int {
 	return f1.MulMod(f2, f3, f4)
 }
 
-func bigAddMod(b1, b2, b3, b4 *big.Int) *big.Int {
+func bigintAddMod(b1, b2, b3, b4 *big.Int) *big.Int {
 	return b1.Mod(big.NewInt(0).Add(b2, b3), b4)
 }
 
@@ -274,7 +274,7 @@ func intAddMod(f1, f2, f3, f4 *Int) *Int {
 	return f1.AddMod(f2, f3, f4)
 }
 
-func bigMulDiv(b1, b2, b3, b4 *big.Int) *big.Int {
+func bigintMulDiv(b1, b2, b3, b4 *big.Int) *big.Int {
 	b1.Mul(b2, b3)
 	return b1.Div(b1, b4)
 }
@@ -294,13 +294,13 @@ func fuzzTernaryOp(data []byte) int {
 	}
 
 	{ // mulMod
-		checkThreeArgOp(intMulMod, bigMulMod, x, y, z)
+		checkThreeArgOp(intMulMod, bigintMulMod, x, y, z)
 	}
 	{ // addMod
-		checkThreeArgOp(intAddMod, bigAddMod, x, y, z)
+		checkThreeArgOp(intAddMod, bigintAddMod, x, y, z)
 	}
 	{ // mulDiv
-		checkThreeArgOp(intMulDiv, bigMulDiv, x, y, z)
+		checkThreeArgOp(intMulDiv, bigintMulDiv, x, y, z)
 	}
 	return 1
 }
