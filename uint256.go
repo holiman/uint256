@@ -201,11 +201,11 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 
 	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
 		var gteC1, gteC2 uint64
-        tmpX := Int{}
-        tmpY := Int{}
-        res := Int{}
+		tmpX := Int{}
+		tmpY := Int{}
+		res := Int{}
 
-        // reduce x/y modulo m if they are gte m
+		// reduce x/y modulo m if they are gte m
 		tmpX[0], gteC1 = bits.Sub64(x[0], m[0], gteC1)
 		tmpX[1], gteC1 = bits.Sub64(x[1], m[1], gteC1)
 		tmpX[2], gteC1 = bits.Sub64(x[2], m[2], gteC1)
@@ -216,12 +216,12 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		tmpY[2], gteC2 = bits.Sub64(y[2], m[2], gteC2)
 		tmpY[3], gteC2 = bits.Sub64(y[3], m[3], gteC2)
 
-        if gteC1 == 0 {
-            x = &tmpX
-        }
-        if gteC2 == 0 {
-            y = &tmpY
-        }
+		if gteC1 == 0 {
+			x = &tmpX
+		}
+		if gteC2 == 0 {
+			y = &tmpY
+		}
 
 		var c1 uint64 = 0
 		var c2 uint64 = 0
@@ -239,11 +239,11 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 
 		// final sub was unnecessary
 		if c1 == 0 && c2 != 0 {
-            copy((*z)[:], res[:])
-            return z
+			copy((*z)[:], res[:])
+			return z
 		}
 
-        copy((*z)[:], tmp[:])
+		copy((*z)[:], tmp[:])
 		return z
 	}
 
