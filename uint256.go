@@ -200,31 +200,50 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	// This is always the case when x and y are already reduced modulo such m.
 
 	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
-		var (
-			s, t     Int
-			overflow bool
-		)
+		var gteC1, gteC2 uint64
+        tmpX := Int{}
+        tmpY := Int{}
+        res := Int{}
 
-		s = *x
-		if _, overflow = s.SubOverflow(&s, m); overflow {
-			s = *x
+        // reduce x/y modulo m if they are gte m
+		tmpX[0], gteC1 = bits.Sub64(x[0], m[0], gteC1)
+		tmpX[1], gteC1 = bits.Sub64(x[1], m[1], gteC1)
+		tmpX[2], gteC1 = bits.Sub64(x[2], m[2], gteC1)
+		tmpX[3], gteC1 = bits.Sub64(x[3], m[3], gteC1)
+
+		tmpY[0], gteC2 = bits.Sub64(y[0], m[0], gteC2)
+		tmpY[1], gteC2 = bits.Sub64(y[1], m[1], gteC2)
+		tmpY[2], gteC2 = bits.Sub64(y[2], m[2], gteC2)
+		tmpY[3], gteC2 = bits.Sub64(y[3], m[3], gteC2)
+
+        if gteC1 == 0 {
+            x = &tmpX
+        }
+        if gteC2 == 0 {
+            y = &tmpY
+        }
+
+		var c1 uint64 = 0
+		var c2 uint64 = 0
+		tmp := Int{}
+
+		res[0], c1 = bits.Add64(x[0], y[0], c1)
+		res[1], c1 = bits.Add64(x[1], y[1], c1)
+		res[2], c1 = bits.Add64(x[2], y[2], c1)
+		res[3], c1 = bits.Add64(x[3], y[3], c1)
+
+		tmp[0], c2 = bits.Sub64(res[0], m[0], c2)
+		tmp[1], c2 = bits.Sub64(res[1], m[1], c2)
+		tmp[2], c2 = bits.Sub64(res[2], m[2], c2)
+		tmp[3], c2 = bits.Sub64(res[3], m[3], c2)
+
+		// final sub was unnecessary
+		if c1 == 0 && c2 != 0 {
+            copy((*z)[:], res[:])
+            return z
 		}
 
-		t = *y
-		if _, overflow = t.SubOverflow(&t, m); overflow {
-			t = *y
-		}
-
-		if _, overflow = s.AddOverflow(&s, &t); overflow {
-			s.Sub(&s, m)
-		}
-
-		t = s
-		if _, overflow = s.SubOverflow(&s, m); overflow {
-			s = t
-		}
-
-		*z = s
+        copy((*z)[:], tmp[:])
 		return z
 	}
 
