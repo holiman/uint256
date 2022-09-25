@@ -2,6 +2,7 @@ package uint256
 
 import (
 	"errors"
+	"math/big"
 	"testing"
 )
 
@@ -36,6 +37,49 @@ func TestStringScanBase10(t *testing.T) {
 			}
 		}
 	}
+}
+
+func BenchmarkStringBase10BigInt(b *testing.B) {
+	val := new(big.Int)
+	bytearr := twoPow256
+	b.Run("generic", func(b *testing.B) {
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			val.SetString(bytearr[:2], 10)
+			val.SetString(bytearr[:4], 10)
+			val.SetString(bytearr[:6], 10)
+			val.SetString(bytearr[:8], 10)
+			val.SetString(bytearr[:16], 10)
+			val.SetString(bytearr[:12], 10)
+			val.SetString(bytearr[:14], 10)
+			val.SetString(bytearr[:16], 10)
+			val.SetString(bytearr[:18], 10)
+			val.SetString(bytearr[:20], 10)
+			val.SetString(bytearr[:22], 10)
+			val.SetString(bytearr[:24], 10)
+			val.SetString(bytearr[:26], 10)
+			val.SetString(bytearr[:28], 10)
+			val.SetString(bytearr[:30], 10)
+			val.SetString(bytearr[:32], 10)
+			val.SetString(bytearr[:34], 10)
+			val.SetString(bytearr[:36], 10)
+			val.SetString(bytearr[:38], 10)
+			val.SetString(bytearr[:40], 10)
+			val.SetString(bytearr[:42], 10)
+			val.SetString(bytearr[:44], 10)
+			val.SetString(bytearr[:46], 10)
+			val.SetString(bytearr[:48], 10)
+			val.SetString(bytearr[:50], 10)
+			val.SetString(bytearr[:52], 10)
+			val.SetString(bytearr[:54], 10)
+			val.SetString(bytearr[:56], 10)
+			val.SetString(bytearr[:58], 10)
+			val.SetString(bytearr[:60], 10)
+			val.SetString(bytearr[:62], 10)
+			val.SetString(bytearr[:64], 10)
+		}
+	})
 }
 
 func BenchmarkStringBase10(b *testing.B) {
@@ -80,7 +124,6 @@ func BenchmarkStringBase10(b *testing.B) {
 		}
 	})
 }
-
 func BenchmarkStringBase16(b *testing.B) {
 	val := new(Int)
 	bytearr := "aaaa12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031bbbb"
