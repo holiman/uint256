@@ -5,6 +5,7 @@
 package uint256
 
 import (
+	"database/sql/driver"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -98,6 +99,9 @@ func (z *Int) UnmarshalText(input []byte) error {
 // SetFromBig converts a big.Int to Int and sets the value to z.
 // TODO: Ensure we have sufficient testing, esp for negative bigints.
 func (z *Int) SetFromBig(b *big.Int) bool {
+	if b == nil {
+		return true
+	}
 	z.Clear()
 	words := b.Bits()
 	overflow := len(words) > maxWords
@@ -147,7 +151,6 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 // specification of minimum digits precision, output field
 // width, space or zero padding, and '-' for left or right
 // justification.
-//
 func (z *Int) Format(s fmt.State, ch rune) {
 	z.ToBig().Format(s, ch)
 }
@@ -523,6 +526,29 @@ func (z *Int) Hex() string {
 	output[64-nibbles] = '0'
 	output[65-nibbles] = 'x'
 	return string(output[64-nibbles:])
+}
+
+// Scan implements the database/sql Scanner interface.
+// It decodes a string, because that is what postgres uses for its numeric type
+func (dst *Int) Scan(src interface{}) error {
+	if src == nil {
+		*dst = Int{}
+	}
+
+	switch src := src.(type) {
+	case string:
+		return dst.SetString(src, 0)
+	case []byte:
+		return dst.SetString(string(src), 0)
+	}
+
+	return fmt.Errorf("cannot scan %T", src)
+}
+
+// Value implements the database/sql/driver Valuer interface.
+// It encodes a string, because that is what postgres uses for its numeric type
+func (src Int) Value() (driver.Value, error) {
+	return string(src.ToBig().String()) + "e0", nil
 }
 
 var (
