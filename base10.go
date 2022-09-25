@@ -50,7 +50,7 @@ func (z *Int) fromBase10Long(bs string) error {
 	z[1] = 0
 	z[2] = 0
 	z[3] = 0
-	if len(bs) == 0 {
+	if bs == "" {
 		return nil
 	}
 	iv := 19
