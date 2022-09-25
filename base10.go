@@ -56,7 +56,7 @@ func (z *Int) fromBase10Long(bs string) error {
 	iv := 19
 	c := 0
 	if len(bs) >= (iv * 4) {
-		nm, err := strconv.Atoi(bs[c:(c + iv)])
+		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		c = c + iv
 	}
 	if len(bs) >= (iv * 3) {
-		nm, err := strconv.Atoi(bs[c:(c + iv)])
+		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		c = c + iv
 	}
 	if len(bs) >= (iv * 2) {
-		nm, err := strconv.Atoi(bs[c:(c + iv)])
+		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
 		if err != nil {
 			return err
 		}
@@ -80,7 +80,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		c = c + iv
 	}
 	if len(bs) >= (iv * 1) {
-		nm, err := strconv.Atoi(bs[c:(c + iv)])
+		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
 		if err != nil {
 			return err
 		}
@@ -90,7 +90,7 @@ func (z *Int) fromBase10Long(bs string) error {
 	if len(bs) == c {
 		return nil
 	}
-	nm, err := strconv.Atoi(bs[c:])
+	nm, err := strconv.ParseUint(bs[c:], 10, 64)
 	if err != nil {
 		return err
 	}
