@@ -112,10 +112,10 @@ func (z *Int) UnmarshalText(input []byte) error {
 // SetFromBig converts a big.Int to Int and sets the value to z.
 // TODO: Ensure we have sufficient testing, esp for negative bigints.
 func (z *Int) SetFromBig(b *big.Int) bool {
+	z.Clear()
 	if b == nil {
 		return true
 	}
-	z.Clear()
 	words := b.Bits()
 	overflow := len(words) > maxWords
 
