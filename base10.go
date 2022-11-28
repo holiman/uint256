@@ -58,12 +58,12 @@ func (z *Int) FromBase10(s string) (err error) {
 	return ErrBig256Range
 }
 
-var scaleTable10 [78]*Int
+var scaleTable10 [78]Int
 
 func init() {
 	for k := range scaleTable10 {
-		scaleTable10[k] = new(Int)
-		scaleTable10[k] = scaleTable10[k].Exp(NewInt(10), NewInt(uint64(k)))
+		scaleTable10[k] = Int{}
+		scaleTable10[k].Exp(NewInt(10), NewInt(uint64(k)))
 	}
 }
 
@@ -82,7 +82,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		if err != nil {
 			return ErrSyntaxBase10
 		}
-		z.Add(z, new(Int).Mul(scaleTable10[len(bs)-iv], NewInt(uint64(nm))))
+		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-iv], NewInt(uint64(nm))))
 		c = c + iv
 	}
 	if len(bs) >= (iv * 3) {
@@ -90,7 +90,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		if err != nil {
 			return ErrSyntaxBase10
 		}
-		z.Add(z, new(Int).Mul(scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
+		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
 		c = c + iv
 	}
 	if len(bs) >= (iv * 2) {
@@ -98,7 +98,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		if err != nil {
 			return ErrSyntaxBase10
 		}
-		z.Add(z, new(Int).Mul(scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
+		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
 		c = c + iv
 	}
 	if len(bs) >= (iv * 1) {
@@ -106,7 +106,7 @@ func (z *Int) fromBase10Long(bs string) error {
 		if err != nil {
 			return ErrSyntaxBase10
 		}
-		z.Add(z, new(Int).Mul(scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
+		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
 		c = c + iv
 	}
 	if len(bs) == c {
