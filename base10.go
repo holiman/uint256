@@ -62,7 +62,6 @@ var scaleTable10 [78]Int
 
 func init() {
 	for k := range scaleTable10 {
-		scaleTable10[k] = Int{}
 		scaleTable10[k].Exp(NewInt(10), NewInt(uint64(k)))
 	}
 }
