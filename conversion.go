@@ -5,8 +5,11 @@
 package uint256
 
 import (
+	"database/sql"
 	"database/sql/driver"
+	"encoding"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +26,16 @@ const (
 	// 32-bit and 64-bit architectures.
 	_ uint = -(maxWords & (maxWords - 1)) // maxWords is power of two.
 	_ uint = -(maxWords & ^(4 | 8))       // maxWords is 4 or 8.
+)
+
+// Compile time interface checks
+var (
+	_ driver.Value             = (*Int)(nil)
+	_ sql.Scanner              = (*Int)(nil)
+	_ encoding.TextMarshaler   = (*Int)(nil)
+	_ encoding.TextUnmarshaler = (*Int)(nil)
+	_ json.Marshaler           = (*Int)(nil)
+	_ json.Unmarshaler         = (*Int)(nil)
 )
 
 // ToBig returns a big.Int version of z.
@@ -473,6 +486,11 @@ func (z *Int) MarshalText() ([]byte, error) {
 	return []byte(z.Hex()), nil
 }
 
+// MarshalJSON implements json.Marshaler.
+func (z *Int) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + z.Hex() + `"`), nil
+}
+
 // UnmarshalJSON implements json.Unmarshaler.
 func (z *Int) UnmarshalJSON(input []byte) error {
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
@@ -537,23 +555,30 @@ func (dst *Int) Scan(src interface{}) error {
 
 	switch src := src.(type) {
 	case string:
-		return dst.SetString(src, 0)
+		_, ok := dst.SetString(src, 0)
+		if !ok {
+			return fmt.Errorf("cannot scan %T", src)
+		}
 	case []byte:
-		return dst.SetString(string(src), 0)
+		_, ok := dst.SetString(string(src), 0)
+		if !ok {
+			return fmt.Errorf("cannot scan %T", src)
+		}
 	}
 
 	return fmt.Errorf("cannot scan %T", src)
 }
 
 // Value implements the database/sql/driver Valuer interface.
-// It encodes a string, because that is what postgres uses for its numeric type
+// It encodes a string with an e0 suffix, telling postgresql that it is of the numeric/decimal type.
 func (src Int) Value() (driver.Value, error) {
-	return string(src.ToBig().String()) + "e0", nil
+	return src.ToBig().String() + "e0", nil
 }
 
 var (
 	ErrEmptyString   = errors.New("empty hex string")
 	ErrSyntax        = errors.New("invalid hex string")
+	ErrSyntaxBase10  = errors.New("invalid base 10 string")
 	ErrMissingPrefix = errors.New("hex string without 0x prefix")
 	ErrEmptyNumber   = errors.New("hex string \"0x\"")
 	ErrLeadingZero   = errors.New("hex number with leading zero digits")

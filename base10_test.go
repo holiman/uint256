@@ -2,6 +2,7 @@ package uint256
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"testing"
 )
@@ -12,17 +13,29 @@ func TestStringScanBase10(t *testing.T) {
 	type testCase struct {
 		i   string
 		err error
+		val string
 	}
 
 	cases := []testCase{
-		{i: twoPow256 + "1", err: ErrBig256Range},
-		{i: "2" + twoPow256[1:], err: ErrBig256Range},
-		{i: twoPow256[1:]},
+		{i: twoPow256Sub1 + "1", err: ErrBig256Range},
+		{i: "2" + twoPow256Sub1[1:], err: ErrBig256Range},
+		{i: twoPow256Sub1[1:]},
 		{i: twoPow128},
 		{i: twoPow128 + "1"},
 		{i: twoPow128[1:]},
 		{i: twoPow64 + "1"},
 		{i: twoPow64[1:]},
+		{i: "banana", err: ErrSyntaxBase10},
+		{i: "0xab", err: ErrSyntaxBase10},
+		{i: "ab", err: ErrSyntaxBase10},
+		{i: "0"},
+		{i: "000", val: "0"},
+		{i: "010", val: "10"},
+		{i: "01", val: "1"},
+		{i: "-0", err: ErrSyntaxBase10},
+		{i: "-10", err: ErrSyntaxBase10},
+		{i: "115792089237316195423570985008687907853269984665640564039457584007913129639936", err: ErrBig256Range},
+		{i: "115792089237316195423570985008687907853269984665640564039457584007913129639935"},
 	}
 
 	for _, v := range cases {
@@ -32,16 +45,101 @@ func TestStringScanBase10(t *testing.T) {
 		}
 		if err == nil {
 			got := z.ToBig().String()
-			if got != v.i {
+			want := v.i
+			if v.val != "" {
+				want = v.val
+			}
+			if got != want {
 				t.Errorf("expect val %s, got %s", v.i, got)
 			}
 		}
 	}
 }
 
+func FuzzBase10StringCompare(f *testing.F) {
+	bi := new(big.Int)
+	z := new(Int)
+	max256 := new(Int)
+	max256.FromBase10(twoPow256Sub1)
+	testcase := []string{
+		twoPow256Sub1 + "1",
+		"2" + twoPow256Sub1[1:],
+		twoPow256Sub1,
+		twoPow128,
+		twoPow128,
+		twoPow128,
+		twoPow64,
+		twoPow64,
+		"banana",
+		"0xab",
+		"ab",
+		"0",
+		"000",
+		"010",
+		"01",
+		"-0",
+		"-10",
+		"115792089237316195423570985008687907853269984665640564039457584007913129639936",
+		"115792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"apple",
+		"04112401274120741204712xxxxxz00",
+		"0x10101011010",
+		"熊熊熊熊熊熊熊熊",
+	}
+	for _, tc := range testcase {
+		f.Add(tc)
+	}
+	f.Fuzz(func(t *testing.T, orig string) {
+		err := z.FromBase10(orig)
+		val, ok := bi.SetString(orig, 10)
+		// if fail, make sure that we failed too
+		if !ok {
+			if err == nil {
+				t.Errorf("expected base 10 parse to fail: %s", orig)
+			}
+			return
+		}
+		// if its negative number, we should err
+		if len(orig) > 0 && (orig[0] == '-') {
+			if !errors.Is(err, ErrSyntaxBase10) {
+				t.Errorf("should have errored at negative number: %s", orig)
+			}
+			return
+		}
+		// if its too large, ignore it also
+		if val.Cmp(max256.ToBig()) > 0 {
+			return
+		}
+		// so here, if it errors, it means that we failed
+		if err != nil {
+			t.Errorf("should have parsed %s to %s, but err'd instead", orig, val.String())
+			return
+		}
+		// otherwise, make sure that the values are equal
+		if z.ToBig().Cmp(bi) != 0 {
+			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Base10())
+			return
+		}
+		// make sure that bigint base 10 string is equal to base10 string
+		if z.Base10() != bi.String() {
+			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Base10())
+			return
+		}
+		value, err := z.Value()
+		if err != nil {
+			t.Errorf("fail to Value() %s, got err %s", val, err)
+			return
+		}
+		if z.Base10()+"e0" != fmt.Sprint(value) {
+			t.Errorf("value of %s did not match base 10 encoding %s", value, z.Base10())
+			return
+		}
+	})
+}
+
 func BenchmarkStringBase10BigInt(b *testing.B) {
 	val := new(big.Int)
-	bytearr := twoPow256
+	bytearr := twoPow256Sub1
 	b.Run("generic", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -84,7 +182,7 @@ func BenchmarkStringBase10BigInt(b *testing.B) {
 
 func BenchmarkStringBase10(b *testing.B) {
 	val := new(Int)
-	bytearr := twoPow256
+	bytearr := twoPow256Sub1
 	b.Run("generic", func(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
