@@ -113,9 +113,6 @@ func (z *Int) UnmarshalText(input []byte) error {
 // TODO: Ensure we have sufficient testing, esp for negative bigints.
 func (z *Int) SetFromBig(b *big.Int) bool {
 	z.Clear()
-	if b == nil {
-		return true
-	}
 	words := b.Bits()
 	overflow := len(words) > maxWords
 
