@@ -556,11 +556,13 @@ func (dst *Int) Scan(src interface{}) error {
 		if !ok {
 			return fmt.Errorf("cannot scan %T", src)
 		}
+		return nil
 	case []byte:
 		_, ok := dst.SetString(string(src), 0)
 		if !ok {
 			return fmt.Errorf("cannot scan %T", src)
 		}
+		return nil
 	}
 
 	return fmt.Errorf("cannot scan %T", src)
