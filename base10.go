@@ -70,17 +70,13 @@ func (z *Int) SetFromBase10(s string) (err error) {
 	return ErrBig256Range
 }
 
-// scaleTable10 contains the 10-exponents,
-// 0: 10 ^ 0
-// 1: 10 ^ 1
-// ..
-// 77: 10 ^ 77
-var scaleTable10 [78]Int
-
-func init() {
-	for k := range scaleTable10 {
-		scaleTable10[k].Exp(NewInt(10), NewInt(uint64(k)))
-	}
+// multipliers holds the values that are needed for fromBase10Long
+var multipliers = [5]*Int{
+	nil,                                 // represents first round, no multiplication needed
+	&Int{10000000000000000000, 0, 0, 0}, // 10 ^ 19
+	&Int{687399551400673280, 5421010862427522170, 0, 0},                     // 10 ^ 38
+	&Int{5332261958806667264, 17004971331911604867, 2938735877055718769, 0}, // 10 ^ 57
+	&Int{0, 8607968719199866880, 532749306367912313, 1593091911132452277},   // 10 ^ 76
 }
 
 // fromBase10Long is a helper function to only ever be called via SetFromBase10
@@ -89,52 +85,42 @@ func init() {
 func (z *Int) fromBase10Long(bs string) error {
 	// first clear the input
 	z.Clear()
-	// if the input value is empty string, just do nothing. effectively, empty string sets to 0
-	if bs == "" {
-		return nil
-	}
 	// the maximum value of uint64 is 18446744073709551615, which is 20 characters
 	// one less means that a string of 19 9's is always within the uint64 limit
-	const cutLength = 19
-	// cutStart tracks the current position of the string that we are in
-	cutStart := 0
-	// startPoint is equal to the length of string / cutLength
-	startPoint := len(bs) / cutLength
-	// start iterating from startPoint to 1.
-	// a uint256 sized string can be divided into startPoint+1 integers of up to 19 characters.
-	// however, the last number will always be below 19 characters, so i=0 is dealt with as special case
-	for i := startPoint; i >= 1; i-- {
-		// check if the length of the string is larger than cutLength * i
-		if len(bs) < (cutLength * i) {
-			continue
+	var (
+		num       uint64
+		err       error
+		remaining = len(bs)
+	)
+	// We proceed in steps of 19 characters (nibbles), from least significant to most significant.
+	// This means that the first (up to) 19 characters do not need to be multiplied.
+	// In the second iteration, our slice of 19 characters needs to be multipleied
+	// by a factor of 10^19. Et cetera.
+
+	for i, mult := range multipliers {
+		if remaining <= 0 {
+			return nil // Done
+		} else if remaining > 19 {
+			num, err = strconv.ParseUint(bs[remaining-19:remaining], 10, 64)
+		} else {
+			// Final round
+			num, err = strconv.ParseUint(bs, 10, 64)
 		}
-		// cut the string from the cutStart to the cutLength.
-		nm, err := strconv.ParseUint(bs[cutStart:(cutStart+cutLength)], 10, 64)
 		if err != nil {
-			return ErrSyntaxBase10
+			return err
 		}
-		// create a new int with that number as the value
-		base := NewInt(nm)
-		// pointer to the exponent. We need to multiply our number by 10^(len-cutStart-cutLength)
-		// len-cutStart-cutLength is index of the last character in our cutset, counting from the right.
-		exp := &scaleTable10[len(bs)-cutStart-cutLength]
 		// add that number to our running total
-		z.Add(z, base.Mul(exp, base))
-		// increase the cut start point, since we have now read from cutStart to cutStart + length
-		cutStart = cutStart + cutLength
+		if i != 0 {
+			base := NewInt(num)
+			z.Add(z, base.Mul(base, mult))
+		} else {
+			z.SetUint64(num)
+		}
+		// Chop off another 19 characters
+		if remaining > 19 {
+			bs = bs[0 : remaining-19]
+		}
+		remaining -= 19
 	}
-	// if we have read every character of the string, we are done, and can return
-	// this is a short circuit that we can do if the length of the string is a multiple of 19
-	if len(bs) == cutStart {
-		return nil
-	}
-	// finally, there are a remaining set of characters.
-	// SetFromBase10 already did the check that this remaining cutset, after 4 cuts, will be lower than 19 charactes
-	nm, err := strconv.ParseUint(bs[cutStart:], 10, 64)
-	if err != nil {
-		return ErrSyntaxBase10
-	}
-	// and add it! no need to multiply by 10^0
-	z.AddUint64(z, uint64(nm))
 	return nil
 }

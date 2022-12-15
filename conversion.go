@@ -577,7 +577,6 @@ func (src Int) Value() (driver.Value, error) {
 var (
 	ErrEmptyString   = errors.New("empty hex string")
 	ErrSyntax        = errors.New("invalid hex string")
-	ErrSyntaxBase10  = errors.New("invalid base 10 string")
 	ErrMissingPrefix = errors.New("hex string without 0x prefix")
 	ErrEmptyNumber   = errors.New("hex string \"0x\"")
 	ErrLeadingZero   = errors.New("hex number with leading zero digits")

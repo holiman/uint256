@@ -4,54 +4,53 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"testing"
 )
 
 func TestStringScanBase10(t *testing.T) {
 	z := new(Int)
-
 	type testCase struct {
-		i   string
-		err error
-		val string
+		input string
+		err   error
 	}
-
-	cases := []testCase{
-		{i: twoPow256Sub1 + "1", err: ErrBig256Range},
-		{i: "2" + twoPow256Sub1[1:], err: ErrBig256Range},
-		{i: twoPow256Sub1[1:]},
-		{i: twoPow128},
-		{i: twoPow128 + "1"},
-		{i: twoPow128[1:]},
-		{i: twoPow64 + "1"},
-		{i: twoPow64[1:]},
-		{i: "banana", err: ErrSyntaxBase10},
-		{i: "0xab", err: ErrSyntaxBase10},
-		{i: "ab", err: ErrSyntaxBase10},
-		{i: "0"},
-		{i: "000", val: "0"},
-		{i: "010", val: "10"},
-		{i: "01", val: "1"},
-		{i: "-0", err: ErrSyntaxBase10},
-		{i: "-10", err: ErrSyntaxBase10},
-		{i: "115792089237316195423570985008687907853269984665640564039457584007913129639936", err: ErrBig256Range},
-		{i: "115792089237316195423570985008687907853269984665640564039457584007913129639935"},
-	}
-
-	for _, v := range cases {
-		err := z.SetFromBase10(v.i)
-		if !errors.Is(err, v.err) {
-			t.Errorf("expect err %s, got %s", v.err, err)
+	for i, tc := range []testCase{
+		{input: twoPow256Sub1 + "1", err: ErrBig256Range},
+		{input: "2" + twoPow256Sub1[1:], err: ErrBig256Range},
+		{input: twoPow256Sub1[1:]},
+		{input: twoPow128},
+		{input: twoPow128 + "1"},
+		{input: twoPow128[1:]},
+		{input: twoPow64 + "1"},
+		{input: twoPow64[1:]},
+		{input: "banana", err: strconv.ErrSyntax},
+		{input: "0xab", err: strconv.ErrSyntax},
+		{input: "ab", err: strconv.ErrSyntax},
+		{input: "0"},
+		{input: "000"},
+		{input: "010"},
+		{input: "01"},
+		{input: "-0", err: strconv.ErrSyntax},
+		{input: "-10", err: strconv.ErrSyntax},
+		{input: "115792089237316195423570985008687907853269984665640564039457584007913129639936", err: ErrBig256Range},
+		{input: "115792089237316195423570985008687907853269984665640564039457584007913129639935"},
+	} {
+		z.SetAllOne() // Set to ensure all bits are cleared after
+		err := z.SetFromBase10(tc.input)
+		if !errors.Is(err, tc.err) {
+			t.Errorf("test %d, input %v: want err %s, have %s", i, tc.input, tc.err, err)
 		}
-		if err == nil {
-			got := z.ToBig().String()
-			want := v.i
-			if v.val != "" {
-				want = v.val
-			}
-			if got != want {
-				t.Errorf("expect val %s, got %s", v.i, got)
-			}
+		if err != nil {
+			continue
+		}
+		var want string
+		if w, ok := big.NewInt(0).SetString(tc.input, 10); !ok {
+			panic(fmt.Sprintf("test %d error", i))
+		} else {
+			want = w.String()
+		}
+		if have := z.ToBig().String(); have != want {
+			t.Errorf("test %d: input %v,  want %v: have %s", i, tc.input, want, have)
 		}
 	}
 }
@@ -101,7 +100,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 		}
 		// if its negative number, we should err
 		if len(orig) > 0 && (orig[0] == '-') {
-			if !errors.Is(err, ErrSyntaxBase10) {
+			if !errors.Is(err, strconv.ErrSyntax) {
 				t.Errorf("should have errored at negative number: %s", orig)
 			}
 			return
