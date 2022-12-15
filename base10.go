@@ -16,6 +16,12 @@ func (z *Int) Base10() string {
 
 // SetString implements a subset of (*big.Int).SetString
 // ok will be true iff i == nil
+// The SetString method on uint256.Int differs from big.Int when it comes to
+// base 16, since uint256.Int is stricter, requiring:
+// - 0x or 0X prefix
+// - Non-empty string after prefix
+// - No leading zeroes
+// The base10 version allows leading zeroes.
 func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
 	switch base {
 	case 0:
@@ -26,20 +32,17 @@ func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
 			}
 			return z, true
 		}
-		err := z.SetFromBase10(s)
-		if err != nil {
+		if err := z.SetFromBase10(s); err != nil {
 			return nil, false
 		}
 		return z, true
 	case 10:
-		err := z.SetFromBase10(s)
-		if err != nil {
+		if err := z.SetFromBase10(s); err != nil {
 			return nil, false
 		}
 		return z, true
 	case 16:
-		err := z.fromHex(s)
-		if err != nil {
+		if err := z.fromHex(s); err != nil {
 			return nil, false
 		}
 		return z, true

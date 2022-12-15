@@ -88,6 +88,13 @@ func FuzzBase10StringCompare(f *testing.F) {
 		"04112401274120741204712xxxxxz00",
 		"0x10101011010",
 		"熊熊熊熊熊熊熊熊",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"-0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"-0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"0x10000000000000000000000000000000000000000000000000000000000000000",
+		"+0x10000000000000000000000000000000000000000000000000000000000000000",
+		"+0x00000000000000000000000000000000000000000000000000000000000000000",
+		"-0x00000000000000000000000000000000000000000000000000000000000000000",
 	} {
 		f.Add(tc)
 	}
@@ -97,33 +104,32 @@ func FuzzBase10StringCompare(f *testing.F) {
 			z         = new(Int)
 			max256, _ = FromBase10(twoPow256Sub1)
 		)
-		err := z.SetFromBase10(orig)
-		val, ok := bi.SetString(orig, 10)
-		// if fail, make sure that we failed too
-		if !ok {
-			if err == nil {
-				t.Errorf("expected base 10 parse to fail: %s", orig)
+		z, haveOk := z.SetString(orig, 10)
+		bi, wantOk := bi.SetString(orig, 10)
+		// if bigint parsing fail, make sure that we failed too
+		if !wantOk {
+			if haveOk {
+				t.Errorf("parsing status, want ok=%v, have ok=%v. Input: %s", haveOk, wantOk, orig)
 			}
 			return
 		}
-		// if its negative number, we should err
+		// if its a negative number, we should err
 		if len(orig) > 0 && (orig[0] == '-') {
-			// We may error either on too large OR negative
-			if err == nil {
+			if haveOk {
 				t.Errorf("should have errored at negative number: %s", orig)
 			}
 			return
 		}
 		// if its too large, ignore it also
-		if val.Cmp(max256.ToBig()) > 0 {
-			if !errors.Is(err, ErrBig256Range) {
+		if bi.Cmp(max256.ToBig()) > 0 {
+			if haveOk {
 				t.Errorf("should have errored at number overflow: %s", orig)
 			}
 			return
 		}
-		// so here, if it errors, it means that we failed
-		if err != nil {
-			t.Errorf("should have parsed %s to %s, but err'd instead", orig, val.String())
+		// No more reasons not to succeed
+		if !haveOk {
+			t.Errorf("should have parsed %s to %s, but errored instead", orig, bi.String())
 			return
 		}
 		// otherwise, make sure that the values are equal
@@ -138,7 +144,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 		}
 		value, err := z.Value()
 		if err != nil {
-			t.Errorf("fail to Value() %s, got err %s", val, err)
+			t.Errorf("fail to Value() %s, got err %s", bi, err)
 			return
 		}
 		if z.Base10()+"e0" != fmt.Sprint(value) {
