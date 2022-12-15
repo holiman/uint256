@@ -92,6 +92,7 @@ workflows:
   version: 2
   uint256:
     jobs:
+      - go119
       - go118
       - bigendian:
           requires:
