@@ -70,10 +70,10 @@ func (z *Int) SetFromBase10(s string) (err error) {
 	return ErrBig256Range
 }
 
-// scaleTable10 contains the 10-exponents, 
+// scaleTable10 contains the 10-exponents,
 // 0: 10 ^ 0
 // 1: 10 ^ 1
-// .. 
+// ..
 // 77: 10 ^ 77
 var scaleTable10 [78]Int
 
@@ -103,22 +103,23 @@ func (z *Int) fromBase10Long(bs string) error {
 	// however, the last number will always be below 19 characters, so i=0 is dealt with as special case
 	for i := 4; i >= 1; i-- {
 		// check if the length of the string is larger than cutLength * i
-		if len(bs) >= (cutLength * i) {
-			// cut the string from the cutStart to the cutLength.
-			nm, err := strconv.ParseUint(bs[cutStart:(cutStart+cutLength)], 10, 64)
-			if err != nil {
-				return ErrSyntaxBase10
-			}
-			// create a new int with that number as the value
-			base := NewInt(nm)
-			// pointer to the exponent. We need to multiply our number by 10^(len-cutStart-cutLength)
-			// len-cutStart-cutLength is index of the last character in our cutset, counting from the right.
-			exp := &scaleTable10[len(bs)-cutStart-cutLength]
-			// add that number to our running total
-			z.Add(z, base.Mul(exp, base))
-			// increase the cut start point, since we have now read from cutStart to cutStart + length
-			cutStart = cutStart + cutLength
+		if len(bs) < (cutLength * i) {
+			continue
 		}
+		// cut the string from the cutStart to the cutLength.
+		nm, err := strconv.ParseUint(bs[cutStart:(cutStart+cutLength)], 10, 64)
+		if err != nil {
+			return ErrSyntaxBase10
+		}
+		// create a new int with that number as the value
+		base := NewInt(nm)
+		// pointer to the exponent. We need to multiply our number by 10^(len-cutStart-cutLength)
+		// len-cutStart-cutLength is index of the last character in our cutset, counting from the right.
+		exp := &scaleTable10[len(bs)-cutStart-cutLength]
+		// add that number to our running total
+		z.Add(z, base.Mul(exp, base))
+		// increase the cut start point, since we have now read from cutStart to cutStart + length
+		cutStart = cutStart + cutLength
 	}
 	// if we have read every character of the string, we are done, and can return
 	// this is a short circuit that we can do if the length of the string is a multiple of 19
