@@ -101,7 +101,7 @@ func (z *Int) fromBase10Long(bs string) error {
 	// startPoint is equal to the length of string / cutLength
 	startPoint := len(bs) / cutLength
 	// start iterating from startPoint to 1.
-	// which can be divided into 5 integers of up to 19 characters.
+	// a uint256 sized string can be divided into startPoint+1 integers of up to 19 characters.
 	// however, the last number will always be below 19 characters, so i=0 is dealt with as special case
 	for i := startPoint; i >= 1; i-- {
 		// check if the length of the string is larger than cutLength * i
