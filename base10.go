@@ -1,6 +1,7 @@
 package uint256
 
 import (
+	"io"
 	"strconv"
 	"strings"
 )
@@ -58,6 +59,21 @@ func FromBase10(hex string) (*Int, error) {
 
 // SetFromBase10 sets z from the given string, interpreted as a decimal number.
 func (z *Int) SetFromBase10(s string) (err error) {
+	// Remove max one leading +
+	if len(s) > 0 && s[0] == '+' {
+		s = s[1:]
+	}
+	// Remove any number of leading zeroes
+	if len(s) > 0 && s[0] == '0' {
+		var i int
+		var c rune
+		for i, c = range s {
+			if c != '0' {
+				break
+			}
+		}
+		s = s[i:]
+	}
 	if len(s) < len(twoPow256Sub1) {
 		return z.fromBase10Long(s)
 	}
@@ -92,11 +108,13 @@ func (z *Int) fromBase10Long(bs string) error {
 		err       error
 		remaining = len(bs)
 	)
+	if remaining == 0 {
+		return io.EOF
+	}
 	// We proceed in steps of 19 characters (nibbles), from least significant to most significant.
 	// This means that the first (up to) 19 characters do not need to be multiplied.
 	// In the second iteration, our slice of 19 characters needs to be multipleied
 	// by a factor of 10^19. Et cetera.
-
 	for i, mult := range multipliers {
 		if remaining <= 0 {
 			return nil // Done

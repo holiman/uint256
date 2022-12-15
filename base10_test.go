@@ -3,6 +3,7 @@ package uint256
 import (
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"strconv"
 	"testing"
@@ -15,9 +16,12 @@ func TestStringScanBase10(t *testing.T) {
 		err   error
 	}
 	for i, tc := range []testCase{
+		{input: "0000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+		{input: "-000000000000000000000000000000000000000000000000000000000000000000000000000000"},
 		{input: twoPow256Sub1 + "1", err: ErrBig256Range},
 		{input: "2" + twoPow256Sub1[1:], err: ErrBig256Range},
 		{input: twoPow256Sub1[1:]},
+		{input: "+" + twoPow256Sub1},
 		{input: twoPow128},
 		{input: twoPow128 + "1"},
 		{input: twoPow128[1:]},
@@ -27,7 +31,9 @@ func TestStringScanBase10(t *testing.T) {
 		{input: "0xab", err: strconv.ErrSyntax},
 		{input: "ab", err: strconv.ErrSyntax},
 		{input: "0"},
+		{input: "", err: io.EOF},
 		{input: "000"},
+		{input: "+000"},
 		{input: "010"},
 		{input: "01"},
 		{input: "-0", err: strconv.ErrSyntax},
@@ -56,11 +62,7 @@ func TestStringScanBase10(t *testing.T) {
 }
 
 func FuzzBase10StringCompare(f *testing.F) {
-	var (
-		bi        = new(big.Int)
-		z         = new(Int)
-		max256, _ = FromBase10(twoPow256Sub1)
-	)
+
 	for _, tc := range []string{
 		twoPow256Sub1 + "1",
 		"2" + twoPow256Sub1[1:],
@@ -78,6 +80,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 		"010",
 		"01",
 		"-0",
+		"+0",
 		"-10",
 		"115792089237316195423570985008687907853269984665640564039457584007913129639936",
 		"115792089237316195423570985008687907853269984665640564039457584007913129639935",
@@ -89,6 +92,11 @@ func FuzzBase10StringCompare(f *testing.F) {
 		f.Add(tc)
 	}
 	f.Fuzz(func(t *testing.T, orig string) {
+		var (
+			bi        = new(big.Int)
+			z         = new(Int)
+			max256, _ = FromBase10(twoPow256Sub1)
+		)
 		err := z.SetFromBase10(orig)
 		val, ok := bi.SetString(orig, 10)
 		// if fail, make sure that we failed too
@@ -100,7 +108,8 @@ func FuzzBase10StringCompare(f *testing.F) {
 		}
 		// if its negative number, we should err
 		if len(orig) > 0 && (orig[0] == '-') {
-			if !errors.Is(err, strconv.ErrSyntax) {
+			// We may error either on too large OR negative
+			if err == nil {
 				t.Errorf("should have errored at negative number: %s", orig)
 			}
 			return
