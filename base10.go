@@ -83,7 +83,7 @@ func init() {
 	}
 }
 
-// helper function to only ever be called via SetFromBase10
+// fromBase10Long is a helper function to only ever be called via SetFromBase10
 // this function takes a string and chunks it up, calling ParseUint on it up to 5 times
 // these chunks are then multiplied by the proper power of 10, then added together.
 func (z *Int) fromBase10Long(bs string) error {
