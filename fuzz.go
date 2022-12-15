@@ -304,3 +304,58 @@ func fuzzTernaryOp(data []byte) int {
 	}
 	return 1
 }
+
+func FuzzSetString(data []byte) int {
+	if len(data) > 512 {
+		// Too large, makes no sense
+		return -1
+	}
+	var (
+		orig = string(data)
+		bi   = new(big.Int)
+		z    = new(Int)
+	)
+	z, haveOk := z.SetString(orig, 10)
+	bi, wantOk := bi.SetString(orig, 10)
+	// if bigint parsing fail, make sure that we failed too
+	if !wantOk {
+		if haveOk {
+			panic(fmt.Sprintf("parsing status, want ok=%v, have ok=%v. Input: %s", haveOk, wantOk, orig))
+		}
+		return 1
+	}
+	// if its a negative number, we should err
+	if len(orig) > 0 && (orig[0] == '-') {
+		if haveOk {
+			panic(fmt.Sprintf("should have errored at negative number: %s", orig))
+		}
+		return 1
+	}
+	// if its too large, ignore it also
+	if bi.BitLen() > 256 {
+		if haveOk {
+			panic(fmt.Sprintf("should have errored at number overflow: %s", orig))
+		}
+		return 1
+	}
+	// No more reasons not to succeed
+	if !haveOk {
+		panic(fmt.Sprintf("should have parsed '%s' to '%s', but errored instead", orig, bi.String()))
+	}
+	// otherwise, make sure that the values are equal
+	if z.ToBig().Cmp(bi) != 0 {
+		panic(fmt.Sprintf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Dec()))
+	}
+	// make sure that bigint base 10 string is equal to base10 string
+	if z.Dec() != bi.String() {
+		panic(fmt.Sprintf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Dec()))
+	}
+	value, err := z.Value()
+	if err != nil {
+		panic(fmt.Sprintf("fail to Value() %s, got err %s", bi, err))
+	}
+	if z.Dec()+"e0" != fmt.Sprint(value) {
+		panic(fmt.Sprintf("value of %s did not match base 10 encoding %s", value, z.Dec()))
+	}
+	return 1
+}

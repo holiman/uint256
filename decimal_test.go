@@ -1,3 +1,7 @@
+// uint256: Fixed size 256-bit math library
+// Copyright 2020 uint256 Authors
+// SPDX-License-Identifier: BSD-3-Clause
+
 package uint256
 
 import (
@@ -9,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestStringScanBase10(t *testing.T) {
+func TestStringScanDecimal(t *testing.T) {
 	z := new(Int)
 	type testCase struct {
 		input string
@@ -17,7 +21,7 @@ func TestStringScanBase10(t *testing.T) {
 	}
 	for i, tc := range []testCase{
 		{input: "0000000000000000000000000000000000000000000000000000000000000000000000000000000"},
-		{input: "-000000000000000000000000000000000000000000000000000000000000000000000000000000"},
+		{input: "-000000000000000000000000000000000000000000000000000000000000000000000000000000", err: ErrBig256Range},
 		{input: twoPow256Sub1 + "1", err: ErrBig256Range},
 		{input: "2" + twoPow256Sub1[1:], err: ErrBig256Range},
 		{input: twoPow256Sub1[1:]},
@@ -42,7 +46,7 @@ func TestStringScanBase10(t *testing.T) {
 		{input: "115792089237316195423570985008687907853269984665640564039457584007913129639935"},
 	} {
 		z.SetAllOne() // Set to ensure all bits are cleared after
-		err := z.SetFromBase10(tc.input)
+		err := z.SetFromDecimal(tc.input)
 		if !errors.Is(err, tc.err) {
 			t.Errorf("test %d, input %v: want err %s, have %s", i, tc.input, tc.err, err)
 		}
@@ -100,9 +104,8 @@ func FuzzBase10StringCompare(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, orig string) {
 		var (
-			bi        = new(big.Int)
-			z         = new(Int)
-			max256, _ = FromBase10(twoPow256Sub1)
+			bi = new(big.Int)
+			z  = new(Int)
 		)
 		z, haveOk := z.SetString(orig, 10)
 		bi, wantOk := bi.SetString(orig, 10)
@@ -121,7 +124,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 			return
 		}
 		// if its too large, ignore it also
-		if bi.Cmp(max256.ToBig()) > 0 {
+		if bi.BitLen() > 256 {
 			if haveOk {
 				t.Errorf("should have errored at number overflow: %s", orig)
 			}
@@ -134,12 +137,12 @@ func FuzzBase10StringCompare(f *testing.F) {
 		}
 		// otherwise, make sure that the values are equal
 		if z.ToBig().Cmp(bi) != 0 {
-			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Base10())
+			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Dec())
 			return
 		}
 		// make sure that bigint base 10 string is equal to base10 string
-		if z.Base10() != bi.String() {
-			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Base10())
+		if z.Dec() != bi.String() {
+			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Dec())
 			return
 		}
 		value, err := z.Value()
@@ -147,8 +150,8 @@ func FuzzBase10StringCompare(f *testing.F) {
 			t.Errorf("fail to Value() %s, got err %s", bi, err)
 			return
 		}
-		if z.Base10()+"e0" != fmt.Sprint(value) {
-			t.Errorf("value of %s did not match base 10 encoding %s", value, z.Base10())
+		if z.Dec()+"e0" != fmt.Sprint(value) {
+			t.Errorf("value of %s did not match base 10 encoding %s", value, z.Dec())
 			return
 		}
 	})

@@ -1,3 +1,7 @@
+// uint256: Fixed size 256-bit math library
+// Copyright 2020 uint256 Authors
+// SPDX-License-Identifier: BSD-3-Clause
+
 package uint256
 
 import (
@@ -10,7 +14,7 @@ const twoPow256Sub1 = "115792089237316195423570985008687907853269984665640564039
 const twoPow128 = "340282366920938463463374607431768211456"
 const twoPow64 = "18446744073709551616"
 
-func (z *Int) Base10() string {
+func (z *Int) Dec() string {
 	return z.ToBig().String()
 }
 
@@ -32,12 +36,12 @@ func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
 			}
 			return z, true
 		}
-		if err := z.SetFromBase10(s); err != nil {
+		if err := z.SetFromDecimal(s); err != nil {
 			return nil, false
 		}
 		return z, true
 	case 10:
-		if err := z.SetFromBase10(s); err != nil {
+		if err := z.SetFromDecimal(s); err != nil {
 			return nil, false
 		}
 		return z, true
@@ -50,18 +54,18 @@ func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
 	return nil, false
 }
 
-// FromBase10 is a convenience-constructor to create an Int from a
+// FromDecimal is a convenience-constructor to create an Int from a
 // decimal (base 10) string. Numbers larger than 256 bits are not accepted.
-func FromBase10(hex string) (*Int, error) {
+func FromDecimal(hex string) (*Int, error) {
 	var z Int
-	if err := z.SetFromBase10(hex); err != nil {
+	if err := z.SetFromDecimal(hex); err != nil {
 		return nil, err
 	}
 	return &z, nil
 }
 
-// SetFromBase10 sets z from the given string, interpreted as a decimal number.
-func (z *Int) SetFromBase10(s string) (err error) {
+// SetFromDecimal sets z from the given string, interpreted as a decimal number.
+func (z *Int) SetFromDecimal(s string) (err error) {
 	// Remove max one leading +
 	if len(s) > 0 && s[0] == '+' {
 		s = s[1:]
@@ -78,18 +82,18 @@ func (z *Int) SetFromBase10(s string) (err error) {
 		s = s[i:]
 	}
 	if len(s) < len(twoPow256Sub1) {
-		return z.fromBase10Long(s)
+		return z.fromDecimal(s)
 	}
 	if len(s) == len(twoPow256Sub1) {
 		if s > twoPow256Sub1 {
 			return ErrBig256Range
 		}
-		return z.fromBase10Long(s)
+		return z.fromDecimal(s)
 	}
 	return ErrBig256Range
 }
 
-// multipliers holds the values that are needed for fromBase10Long
+// multipliers holds the values that are needed for fromDecimal
 var multipliers = [5]*Int{
 	nil,                                 // represents first round, no multiplication needed
 	&Int{10000000000000000000, 0, 0, 0}, // 10 ^ 19
@@ -98,10 +102,10 @@ var multipliers = [5]*Int{
 	&Int{0, 8607968719199866880, 532749306367912313, 1593091911132452277},   // 10 ^ 76
 }
 
-// fromBase10Long is a helper function to only ever be called via SetFromBase10
+// fromDecimal is a helper function to only ever be called via SetFromDecimal
 // this function takes a string and chunks it up, calling ParseUint on it up to 5 times
 // these chunks are then multiplied by the proper power of 10, then added together.
-func (z *Int) fromBase10Long(bs string) error {
+func (z *Int) fromDecimal(bs string) error {
 	// first clear the input
 	z.Clear()
 	// the maximum value of uint64 is 18446744073709551615, which is 20 characters
