@@ -95,13 +95,15 @@ func (z *Int) fromBase10Long(bs string) error {
 	}
 	// the maximum value of uint64 is 18446744073709551615, which is 20 characters
 	// one less means that a string of 19 9's is always within the uint64 limit
-	cutLength := 19
+	const cutLength = 19
 	// cutStart tracks the current position of the string that we are in
 	cutStart := 0
-	// start iterating from 4 to 1. This is because the maximum value of uint256 is 78 characters,
+	// startPoint is equal to the length of string / cutLength
+	startPoint := len(bs) / cutLength
+	// start iterating from startPoint to 1.
 	// which can be divided into 5 integers of up to 19 characters.
 	// however, the last number will always be below 19 characters, so i=0 is dealt with as special case
-	for i := 4; i >= 1; i-- {
+	for i := startPoint; i >= 1; i-- {
 		// check if the length of the string is larger than cutLength * i
 		if len(bs) < (cutLength * i) {
 			continue
