@@ -39,7 +39,7 @@ func TestStringScanBase10(t *testing.T) {
 	}
 
 	for _, v := range cases {
-		err := z.FromBase10(v.i)
+		err := z.SetFromBase10(v.i)
 		if !errors.Is(err, v.err) {
 			t.Errorf("expect err %s, got %s", v.err, err)
 		}
@@ -57,11 +57,12 @@ func TestStringScanBase10(t *testing.T) {
 }
 
 func FuzzBase10StringCompare(f *testing.F) {
-	bi := new(big.Int)
-	z := new(Int)
-	max256 := new(Int)
-	max256.FromBase10(twoPow256Sub1)
-	testcase := []string{
+	var (
+		bi        = new(big.Int)
+		z         = new(Int)
+		max256, _ = FromBase10(twoPow256Sub1)
+	)
+	for _, tc := range []string{
 		twoPow256Sub1 + "1",
 		"2" + twoPow256Sub1[1:],
 		twoPow256Sub1,
@@ -85,12 +86,11 @@ func FuzzBase10StringCompare(f *testing.F) {
 		"04112401274120741204712xxxxxz00",
 		"0x10101011010",
 		"熊熊熊熊熊熊熊熊",
-	}
-	for _, tc := range testcase {
+	} {
 		f.Add(tc)
 	}
 	f.Fuzz(func(t *testing.T, orig string) {
-		err := z.FromBase10(orig)
+		err := z.SetFromBase10(orig)
 		val, ok := bi.SetString(orig, 10)
 		// if fail, make sure that we failed too
 		if !ok {

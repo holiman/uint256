@@ -25,13 +25,13 @@ func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
 			}
 			return z, true
 		}
-		err := z.FromBase10(s)
+		err := z.SetFromBase10(s)
 		if err != nil {
 			return nil, false
 		}
 		return z, true
 	case 10:
-		err := z.FromBase10(s)
+		err := z.SetFromBase10(s)
 		if err != nil {
 			return nil, false
 		}
@@ -45,7 +45,19 @@ func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
 	}
 	return nil, false
 }
-func (z *Int) FromBase10(s string) (err error) {
+
+// FromBase10 is a convenience-constructor to create an Int from a
+// decimal (base 10) string. Numbers larger than 256 bits are not accepted.
+func FromBase10(hex string) (*Int, error) {
+	var z Int
+	if err := z.SetFromBase10(hex); err != nil {
+		return nil, err
+	}
+	return &z, nil
+}
+
+// SetFromBase10 sets z from the given string, interpreted as a decimal number.
+func (z *Int) SetFromBase10(s string) (err error) {
 	if len(s) < len(twoPow256Sub1) {
 		return z.fromBase10Long(s)
 	}
@@ -67,10 +79,7 @@ func init() {
 }
 
 func (z *Int) fromBase10Long(bs string) error {
-	z[0] = 0
-	z[1] = 0
-	z[2] = 0
-	z[3] = 0
+	z.Clear()
 	if bs == "" {
 		return nil
 	}
