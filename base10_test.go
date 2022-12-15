@@ -109,7 +109,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 		// if its too large, ignore it also
 		if val.Cmp(max256.ToBig()) > 0 {
 			if !errors.Is(err, ErrBig256Range) {
-				t.Errorf("should have errored at negative number: %s", orig)
+				t.Errorf("should have errored at number overflow: %s", orig)
 			}
 			return
 		}
