@@ -70,6 +70,11 @@ func (z *Int) SetFromBase10(s string) (err error) {
 	return ErrBig256Range
 }
 
+// scaleTable10 contains the 10-exponents, 
+// 0: 10 ^ 0
+// 1: 10 ^ 1
+// .. 
+// 77: 10 ^ 77
 var scaleTable10 [78]Int
 
 func init() {
