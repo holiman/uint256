@@ -78,52 +78,55 @@ func init() {
 	}
 }
 
+// helper function to only ever be called via SetFromBase10
+// this function takes a string and chunks it up, calling ParseUint on it up to 5 times
+// these chunks are then multiplied by the proper power of 10, then added together.
 func (z *Int) fromBase10Long(bs string) error {
+	// first clear the input
 	z.Clear()
+	// if the input value is empty string, just do nothing. effectively, empty string sets to 0
 	if bs == "" {
 		return nil
 	}
-	iv := 19
-	c := 0
-	if len(bs) >= (iv * 4) {
-		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
-		if err != nil {
-			return ErrSyntaxBase10
+	// the maximum value of uint64 is 18446744073709551615, which is 20 characters
+	// one less means that a string of 19 9's is always within the uint64 limit
+	cutLength := 19
+	// cutStart tracks the current position of the string that we are in
+	cutStart := 0
+	// start iterating from 4 to 1. This is because the maximum value of uint256 is 78 characters,
+	// which can be divided into 5 integers of up to 19 characters.
+	// however, the last number will always be below 19 characters, so i=0 is dealt with as special case
+	for i := 4; i >= 1; i-- {
+		// check if the length of the string is larger than cutLength * i
+		if len(bs) >= (cutLength * i) {
+			// cut the string from the cutStart to the cutLength.
+			nm, err := strconv.ParseUint(bs[cutStart:(cutStart+cutLength)], 10, 64)
+			if err != nil {
+				return ErrSyntaxBase10
+			}
+			// create a new int with that number as the value
+			base := NewInt(nm)
+			// pointer to the exponent. We need to multiply our number by 10^(len-cutStart-cutLength)
+			// len-cutStart-cutLength is index of the last character in our cutset, counting from the right.
+			exp := &scaleTable10[len(bs)-cutStart-cutLength]
+			// add that number to our running total
+			z.Add(z, base.Mul(exp, base))
+			// increase the cut start point, since we have now read from cutStart to cutStart + length
+			cutStart = cutStart + cutLength
 		}
-		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-iv], NewInt(uint64(nm))))
-		c = c + iv
 	}
-	if len(bs) >= (iv * 3) {
-		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
-		if err != nil {
-			return ErrSyntaxBase10
-		}
-		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
-		c = c + iv
-	}
-	if len(bs) >= (iv * 2) {
-		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
-		if err != nil {
-			return ErrSyntaxBase10
-		}
-		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
-		c = c + iv
-	}
-	if len(bs) >= (iv * 1) {
-		nm, err := strconv.ParseUint(bs[c:(c+iv)], 10, 64)
-		if err != nil {
-			return ErrSyntaxBase10
-		}
-		z.Add(z, new(Int).Mul(&scaleTable10[len(bs)-c-iv], NewInt(uint64(nm))))
-		c = c + iv
-	}
-	if len(bs) == c {
+	// if we have read every character of the string, we are done, and can return
+	// this is a short circuit that we can do if the length of the string is a multiple of 19
+	if len(bs) == cutStart {
 		return nil
 	}
-	nm, err := strconv.ParseUint(bs[c:], 10, 64)
+	// finally, there are a remaining set of characters.
+	// SetFromBase10 already did the check that this remaining cutset, after 4 cuts, will be lower than 19 charactes
+	nm, err := strconv.ParseUint(bs[cutStart:], 10, 64)
 	if err != nil {
 		return ErrSyntaxBase10
 	}
+	// and add it! no need to multiply by 10^0
 	z.AddUint64(z, uint64(nm))
 	return nil
 }
