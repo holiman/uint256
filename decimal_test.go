@@ -10,6 +10,11 @@ import (
 	"testing"
 )
 
+const (
+	twoPow64  = "18446744073709551616"
+	twoPow128 = "340282366920938463463374607431768211456"
+)
+
 // Test SetFromDecimal
 func testSetFromDec(tc string) error {
 	a := new(Int).SetAllOne()
