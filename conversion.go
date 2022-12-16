@@ -68,6 +68,7 @@ func FromBig(b *big.Int) (*Int, bool) {
 // SetFromDecimal sets z from the given string, interpreted as a decimal number.
 // OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 16) method.
 // Notable differences:
+// - This method _require_ "0x" or "0X" prefix.
 // - This method does not accept zero-prefixed hex, e.g. "0x0001"
 // - This method does not accept underscore input, e.g. "100_000",
 // - This method does not accept negative zero as valid, e.g "-0x0",

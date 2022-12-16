@@ -10,11 +10,6 @@ import (
 	"testing"
 )
 
-const (
-	twoPow64  = "18446744073709551616"
-	twoPow128 = "340282366920938463463374607431768211456"
-)
-
 // Test SetFromDecimal
 func testSetFromDec(tc string) error {
 	a := new(Int).SetAllOne()
@@ -116,7 +111,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 	})
 }
 
-func BenchmarkStringBase10(b *testing.B) {
+func BenchmarkFromDecimalString(b *testing.B) {
 	input := twoPow256Sub1
 
 	b.Run("bigint", func(b *testing.B) {
@@ -125,7 +120,9 @@ func BenchmarkStringBase10(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			for j := 1; j < len(input); j++ {
-				val.SetString(input[:j], 10)
+				if _, ok := val.SetString(input[:j], 10); !ok {
+					b.Fatalf("Error on %v", string(input[:j]))
+				}
 			}
 		}
 	})
@@ -136,21 +133,25 @@ func BenchmarkStringBase10(b *testing.B) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			for j := 1; j < len(input); j++ {
-				val.SetFromDecimal(input[:j])
+				if err := val.SetFromDecimal(input[:j]); err != nil {
+					b.Fatalf("%v: %v", err, string(input[:j]))
+				}
 			}
 		}
 	})
 }
 
-func BenchmarkStringBase16(b *testing.B) {
-	input := "aaaa12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031bbbb"
+func BenchmarkFromHexString(b *testing.B) {
+	input := "0xf131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303"
 	b.Run("bigint", func(b *testing.B) {
 		val := new(big.Int)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			for j := 1; j < len(input); j++ {
-				val.SetString(input[:j], 16)
+			for j := 3; j < len(input); j++ {
+				if _, ok := val.SetString(input[:j], 0); !ok {
+					b.Fatalf("Error on %v", string(input[:j]))
+				}
 			}
 		}
 	})
@@ -159,8 +160,10 @@ func BenchmarkStringBase16(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			for j := 1; j < len(input); j++ {
-				val.SetFromHex(input[:j])
+			for j := 3; j < len(input); j++ {
+				if err := val.SetFromHex(input[:j]); err != nil {
+					b.Fatalf("%v: %v", err, string(input[:j]))
+				}
 			}
 		}
 	})
