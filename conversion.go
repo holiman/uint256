@@ -65,6 +65,18 @@ func FromBig(b *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
+// SetFromDecimal sets z from the given string, interpreted as a decimal number.
+// OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 16) method.
+// Notable differences:
+// - This method does not accept zero-prefixed hex, e.g. "0x0001"
+// - This method does not accept underscore input, e.g. "100_000",
+// - This method does not accept negative zero as valid, e.g "-0x0",
+//   - (this method does not accept any negative input as valid)
+func (z *Int) SetFromHex(hex string) error {
+	z.Clear()
+	return z.fromHex(hex)
+}
+
 // fromHex is the internal implementation of parsing a hex-string.
 func (z *Int) fromHex(hex string) error {
 	if err := checkNumberS(hex); err != nil {
@@ -549,22 +561,12 @@ func (dst *Int) Scan(src interface{}) error {
 	if src == nil {
 		*dst = Int{}
 	}
-
 	switch src := src.(type) {
 	case string:
-		_, ok := dst.SetString(src, 0)
-		if !ok {
-			return fmt.Errorf("cannot scan %T", src)
-		}
-		return nil
+		return dst.SetFromDecimal(src)
 	case []byte:
-		_, ok := dst.SetString(string(src), 0)
-		if !ok {
-			return fmt.Errorf("cannot scan %T", src)
-		}
-		return nil
+		return dst.SetFromDecimal(string(src))
 	}
-
 	return fmt.Errorf("cannot scan %T", src)
 }
 
