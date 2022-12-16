@@ -84,6 +84,42 @@ func testSetFromBase0(tc string) error {
 	return nil
 }
 
+// Test SetString base 10
+func testSetFromBase10(tc string) error {
+	a := new(Int).SetAllOne()
+	a, haveOk := a.SetString(tc, 10)
+	// If input is negative, we should eror
+	if len(tc) > 0 && tc[0] == '-' {
+		if haveOk {
+			return fmt.Errorf("want error on negative input")
+		}
+		return nil
+	}
+	// Need to compare with big.Int
+	bigA, ok := big.NewInt(0).SetString(tc, 10)
+	if !ok {
+		if haveOk {
+			return fmt.Errorf("want error")
+		}
+		return nil // both agree that input is bad
+	}
+	if bigA.BitLen() > 256 {
+		if haveOk {
+			return fmt.Errorf("want error (bitlen > 256)")
+		}
+		return nil
+	}
+	if !haveOk {
+		return fmt.Errorf("want no err, have err")
+	}
+	want := bigA.String()
+	have := a.Dec()
+	if want != have {
+		return fmt.Errorf("want %v, have %v", want, have)
+	}
+	return nil
+}
+
 func TestStringScan(t *testing.T) {
 	for i, tc := range []string{
 		"0000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -96,13 +132,17 @@ func TestStringScan(t *testing.T) {
 		"+115792089237316195423570985008687907853269984665640564039457584007913129639935",
 		"115792089237316195423570985008687907853269984665640564039457584007913129639936",
 		"115792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"+0b00000000000000000000000000000000000000000000000000000000000000010",
 		"340282366920938463463374607431768211456",
 		"3402823669209384634633746074317682114561",
+		"+3402823669209384634633746074317682114561",
+		"+-3402823669209384634633746074317682114561",
 		"40282366920938463463374607431768211456",
 		"00000000000000000000000097",
 		"184467440737095516161",
 		"8446744073709551616",
 		"banana",
+		"+0x10",
 		"000",
 		"+000",
 		"010",
@@ -122,6 +162,9 @@ func TestStringScan(t *testing.T) {
 			t.Errorf("test %d, input '%s', SetFromDecimal err: %v", i, tc, err)
 		}
 		if err := testSetFromBase0(tc); err != nil {
+			t.Errorf("test %d, input '%s', SetString(..,0) err: %v", i, tc, err)
+		}
+		if err := testSetFromBase10(tc); err != nil {
 			t.Errorf("test %d, input '%s', SetString(..,0) err: %v", i, tc, err)
 		}
 		// TODO test SetString(.., 16)
@@ -165,57 +208,18 @@ func FuzzBase10StringCompare(f *testing.F) {
 	} {
 		f.Add(tc)
 	}
-	f.Fuzz(func(t *testing.T, orig string) {
-		var (
-			bi = new(big.Int)
-			z  = new(Int)
-		)
-		z, haveOk := z.SetString(orig, 10)
-		bi, wantOk := bi.SetString(orig, 10)
-		// if bigint parsing fail, make sure that we failed too
-		if !wantOk {
-			if haveOk {
-				t.Errorf("parsing status, want ok=%v, have ok=%v. Input: %s", haveOk, wantOk, orig)
-			}
-			return
+	f.Fuzz(func(t *testing.T, tc string) {
+		if err := testSetFromDec(tc); err != nil {
+			t.Errorf("input '%s', SetFromDecimal err: %v", tc, err)
 		}
-		// if its a negative number, we should err
-		if len(orig) > 0 && (orig[0] == '-') {
-			if haveOk {
-				t.Errorf("should have errored at negative number: %s", orig)
-			}
-			return
-		}
-		// if its too large, ignore it also
-		if bi.BitLen() > 256 {
-			if haveOk {
-				t.Errorf("should have errored at number overflow: %s", orig)
-			}
-			return
-		}
-		// No more reasons not to succeed
-		if !haveOk {
-			t.Errorf("should have parsed %s to %s, but errored instead", orig, bi.String())
-			return
-		}
-		// otherwise, make sure that the values are equal
-		if z.ToBig().Cmp(bi) != 0 {
-			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Dec())
-			return
-		}
-		// make sure that bigint base 10 string is equal to base10 string
-		if z.Dec() != bi.String() {
-			t.Errorf("should have parsed %s to %s, but got %s", orig, bi.String(), z.Dec())
-			return
-		}
-		value, err := z.Value()
-		if err != nil {
-			t.Errorf("fail to Value() %s, got err %s", bi, err)
-			return
-		}
-		if z.Dec()+"e0" != fmt.Sprint(value) {
-			t.Errorf("value of %s did not match base 10 encoding %s", value, z.Dec())
-			return
+		// Our base16 parsing differs, so inputs like this would be rejected
+		// where big.Int accepts them:
+		// +0x00000000000000000000000000000000000000000000000000000000000000000
+		//if err := testSetFromBase0(tc); err != nil {
+		//	t.Errorf("input '%s', SetString(..,0) err: %v", tc, err)
+		//}
+		if err := testSetFromBase10(tc); err != nil {
+			t.Errorf("input '%s', SetString(..,0) err: %v", tc, err)
 		}
 	})
 }
@@ -346,4 +350,12 @@ func BenchmarkStringBase16(b *testing.B) {
 			val.SetString(bytearr[:32], 16)
 		}
 	})
+}
+
+func TestFoo(t *testing.T) {
+	s := "+0b00000000000000000000000000000000000000000000000000000000000000010"
+	b, ok := new(big.Int).SetString(s, 0)
+	fmt.Printf("b: %v, ok : %v\n", b, ok)
+	z, ok := new(Int).SetString(s, 0)
+	fmt.Printf("z: %v, ok : %v\n", z, ok)
 }
