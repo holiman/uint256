@@ -30,7 +30,7 @@ const (
 
 // Compile time interface checks
 var (
-	_ driver.Value             = (*Int)(nil)
+	_ driver.Valuer            = (*Int)(nil)
 	_ sql.Scanner              = (*Int)(nil)
 	_ encoding.TextMarshaler   = (*Int)(nil)
 	_ encoding.TextUnmarshaler = (*Int)(nil)
@@ -70,7 +70,6 @@ func (z *Int) fromHex(hex string) error {
 	if err := checkNumberS(hex); err != nil {
 		return err
 	}
-
 	if len(hex) > 66 {
 		return ErrBig256Range
 	}
@@ -106,6 +105,7 @@ func FromHex(hex string) (*Int, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (z *Int) UnmarshalText(input []byte) error {
+	z.Clear()
 	return z.fromHex(string(input))
 }
 

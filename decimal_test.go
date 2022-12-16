@@ -5,63 +5,121 @@
 package uint256
 
 import (
-	"errors"
 	"fmt"
-	"io"
 	"math/big"
-	"strconv"
 	"testing"
 )
 
-func TestStringScanDecimal(t *testing.T) {
-	z := new(Int)
-	type testCase struct {
-		input string
-		err   error
+// Test SetFromDecimal
+func testSetFromDec(tc string) error {
+	a := new(Int).SetAllOne()
+	err := a.SetFromDecimal(tc)
+	// If input is negative, we should eror
+	if len(tc) > 0 && tc[0] == '-' {
+		if err == nil {
+			return fmt.Errorf("want error on negative input")
+		}
+		return nil
 	}
-	for i, tc := range []testCase{
-		{input: "0000000000000000000000000000000000000000000000000000000000000000000000000000000"},
-		{input: "-000000000000000000000000000000000000000000000000000000000000000000000000000000", err: ErrBig256Range},
-		{input: twoPow256Sub1 + "1", err: ErrBig256Range},
-		{input: "2" + twoPow256Sub1[1:], err: ErrBig256Range},
-		{input: twoPow256Sub1[1:]},
-		{input: "+" + twoPow256Sub1},
-		{input: twoPow128},
-		{input: twoPow128 + "1"},
-		{input: twoPow128[1:]},
-		{input: twoPow64 + "1"},
-		{input: twoPow64[1:]},
-		{input: "banana", err: strconv.ErrSyntax},
-		{input: "0xab", err: strconv.ErrSyntax},
-		{input: "ab", err: strconv.ErrSyntax},
-		{input: "0"},
-		{input: "", err: io.EOF},
-		{input: "000"},
-		{input: "+000"},
-		{input: "010"},
-		{input: "01"},
-		{input: "-0", err: strconv.ErrSyntax},
-		{input: "-10", err: strconv.ErrSyntax},
-		{input: "115792089237316195423570985008687907853269984665640564039457584007913129639936", err: ErrBig256Range},
-		{input: "115792089237316195423570985008687907853269984665640564039457584007913129639935"},
+	// Need to compare with big.Int
+	bigA, ok := big.NewInt(0).SetString(tc, 10)
+	if !ok {
+		if err == nil {
+			return fmt.Errorf("want error")
+		}
+		return nil // both agree that input is bad
+	}
+	if bigA.BitLen() > 256 {
+		if err == nil {
+			return fmt.Errorf("want error (bitlen > 256)")
+		}
+		return nil
+	}
+	want := bigA.String()
+	have := a.Dec()
+	if want != have {
+		return fmt.Errorf("want %v, have %v", want, have)
+	}
+	return nil
+}
+
+// Test SetString base 0
+func testSetFromBase0(tc string) error {
+	a := new(Int).SetAllOne()
+	a, haveOk := a.SetString(tc, 0)
+	// If input is negative, we should eror
+	if len(tc) > 0 && tc[0] == '-' {
+		if haveOk {
+			return fmt.Errorf("want error on negative input")
+		}
+		return nil
+	}
+	// Need to compare with big.Int
+	bigA, ok := big.NewInt(0).SetString(tc, 0)
+	if !ok {
+		if haveOk {
+			return fmt.Errorf("want error")
+		}
+		return nil // both agree that input is bad
+	}
+	if bigA.BitLen() > 256 {
+		if haveOk {
+			return fmt.Errorf("want error (bitlen > 256)")
+		}
+		return nil
+	}
+	if !haveOk {
+		return fmt.Errorf("want no err, have err")
+	}
+	want := bigA.String()
+	have := a.Dec()
+	if want != have {
+		return fmt.Errorf("want %v, have %v", want, have)
+	}
+	return nil
+}
+
+func TestStringScan(t *testing.T) {
+	for i, tc := range []string{
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		"0000000000000000000000000000000000000000000000000000000000000000000000000000097",
+		"-000000000000000000000000000000000000000000000000000000000000000000000000000000",
+		"1157920892373161954235709850086879078532699846656405640394575840079131296399351",
+		"215792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"115792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"15792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"+115792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"115792089237316195423570985008687907853269984665640564039457584007913129639936",
+		"115792089237316195423570985008687907853269984665640564039457584007913129639935",
+		"340282366920938463463374607431768211456",
+		"3402823669209384634633746074317682114561",
+		"40282366920938463463374607431768211456",
+		"00000000000000000000000097",
+		"184467440737095516161",
+		"8446744073709551616",
+		"banana",
+		"000",
+		"+000",
+		"010",
+		"0xab",
+		"-10",
+		"01",
+		"ab",
+		"0",
+		"-0",
+		"+0",
+		"",
+		"熊熊熊熊熊熊熊熊",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"-0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 	} {
-		z.SetAllOne() // Set to ensure all bits are cleared after
-		err := z.SetFromDecimal(tc.input)
-		if !errors.Is(err, tc.err) {
-			t.Errorf("test %d, input %v: want err %s, have %s", i, tc.input, tc.err, err)
+		if err := testSetFromDec(tc); err != nil {
+			t.Errorf("test %d, input '%s', SetFromDecimal err: %v", i, tc, err)
 		}
-		if err != nil {
-			continue
+		if err := testSetFromBase0(tc); err != nil {
+			t.Errorf("test %d, input '%s', SetString(..,0) err: %v", i, tc, err)
 		}
-		var want string
-		if w, ok := big.NewInt(0).SetString(tc.input, 10); !ok {
-			panic(fmt.Sprintf("test %d error", i))
-		} else {
-			want = w.String()
-		}
-		if have := z.ToBig().String(); have != want {
-			t.Errorf("test %d: input %v,  want %v: have %s", i, tc.input, want, have)
-		}
+		// TODO test SetString(.., 16)
 	}
 }
 

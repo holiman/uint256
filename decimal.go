@@ -6,8 +6,8 @@ package uint256
 
 import (
 	"io"
+	"math/big"
 	"strconv"
-	"strings"
 )
 
 const twoPow256Sub1 = "115792089237316195423570985008687907853269984665640564039457584007913129639935"
@@ -27,11 +27,29 @@ func (z *Int) Dec() string {
 // - No leading zeroes
 // The base10 version allows leading zeroes.
 func (z *Int) SetString(s string, base int) (i *Int, ok bool) {
+	z.Clear()
 	switch base {
 	case 0:
-		if strings.HasPrefix(s, "0x") {
-			err := z.fromHex(s)
-			if err != nil {
+		// From documentation at big.Int:
+		// For base 0, the number prefix determines the actual base: A prefix of
+		// “0b” or “0B” selects base 2,
+		// “0”, “0o” or “0O” selects base 8,
+		// and “0x” or “0X” selects base 16.
+		// Otherwise, the selected base is 10 and no prefix is accepted.
+		if len(s) > 1 && s[0] == '0' && (s[1] == 'x' || s[1] == 'X') {
+			// base 16
+			if err := z.fromHex(s); err != nil {
+				return nil, false
+			}
+			return z, true
+		}
+		if len(s) > 0 && s[0] == '0' {
+			// base 2 or base 8
+			// Not implemented here, use big.Int
+			// @TODO
+			if b, ok := big.NewInt(0).SetString(s, 0); !ok {
+				return nil, false
+			} else if overflow := z.SetFromBig(b); overflow {
 				return nil, false
 			}
 			return z, true
