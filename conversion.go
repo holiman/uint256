@@ -65,7 +65,7 @@ func FromBig(b *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
-// SetFromDecimal sets z from the given string, interpreted as a decimal number.
+// SetFromHex sets z from the given string, interpreted as a hexadecimal number.
 // OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 16) method.
 // Notable differences:
 // - This method _require_ "0x" or "0X" prefix.
