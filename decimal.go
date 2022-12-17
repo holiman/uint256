@@ -101,11 +101,11 @@ func (z *Int) fromDecimal(bs string) error {
 			return err
 		}
 		// add that number to our running total
-		if i != 0 {
+		if i == 0 {
+			z.SetUint64(num)
+		} else {
 			base := NewInt(num)
 			z.Add(z, base.Mul(base, mult))
-		} else {
-			z.SetUint64(num)
 		}
 		// Chop off another 19 characters
 		if remaining > 19 {
