@@ -17,9 +17,9 @@ func (z *Int) Dec() string {
 
 // FromDecimal is a convenience-constructor to create an Int from a
 // decimal (base 10) string. Numbers larger than 256 bits are not accepted.
-func FromDecimal(hex string) (*Int, error) {
+func FromDecimal(decimal string) (*Int, error) {
 	var z Int
-	if err := z.SetFromDecimal(hex); err != nil {
+	if err := z.SetFromDecimal(decimal); err != nil {
 		return nil, err
 	}
 	return &z, nil

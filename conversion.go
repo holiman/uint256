@@ -572,9 +572,12 @@ func (dst *Int) Scan(src interface{}) error {
 }
 
 // Value implements the database/sql/driver Valuer interface.
-// It encodes a string with an e0 suffix, telling postgresql that it is of the numeric/decimal type.
+// It encodes a base 10 string.
+// In Postgres, this will work with both integer and the Numeric/Decimal types
+// In MariaDB/MySQL, this will work with the Numeric/Decimal types up to 65 digits, however any more and you should use either VarChar or Char(79)
+// In SqLite, use TEXT
 func (src Int) Value() (driver.Value, error) {
-	return src.ToBig().String() + "e0", nil
+	return src.ToBig().String(), nil
 }
 
 var (
