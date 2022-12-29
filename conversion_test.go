@@ -721,7 +721,7 @@ func TestEnDecode(t *testing.T) {
 	var testSample = func(i int, bigSample big.Int, intSample Int) {
 		// Encoding
 		wantHex := fmt.Sprintf("0x%s", bigSample.Text(16))
-		wantDec := fmt.Sprintf("%s", bigSample.Text(10))
+		wantDec := bigSample.Text(10)
 
 		if got := intSample.Hex(); wantHex != got {
 			t.Fatalf("test %d #1, got %v, exp %v", i, got, wantHex)
