@@ -44,7 +44,7 @@ jobs:
       - run:
           name: "Fuzzing"
           command: |
-            go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
+            go install github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build 
             go-fuzz-build
             timeout --preserve-status --signal INT 1m go-fuzz -procs=2
             test ! "$(ls crashers)"
