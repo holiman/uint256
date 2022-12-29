@@ -14,6 +14,17 @@ import (
 func testSetFromDec(tc string) error {
 	a := new(Int).SetAllOne()
 	err := a.SetFromDecimal(tc)
+	{ // Check the FromDecimal too
+		b, err2 := FromDecimal(tc)
+		if (err == nil) != (err2 == nil) {
+			return fmt.Errorf("err != err2: %v %v", err, err2)
+		}
+		if err == nil {
+			if a.Cmp(b) != 0 {
+				return fmt.Errorf("a != b: %v %v", a, b)
+			}
+		}
+	}
 	// If input is negative, we should eror
 	if len(tc) > 0 && tc[0] == '-' {
 		if err == nil {
