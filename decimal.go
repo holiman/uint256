@@ -61,11 +61,11 @@ func (z *Int) SetFromDecimal(s string) (err error) {
 
 // multipliers holds the values that are needed for fromDecimal
 var multipliers = [5]*Int{
-	nil,                                 // represents first round, no multiplication needed
-	&Int{10000000000000000000, 0, 0, 0}, // 10 ^ 19
-	&Int{687399551400673280, 5421010862427522170, 0, 0},                     // 10 ^ 38
-	&Int{5332261958806667264, 17004971331911604867, 2938735877055718769, 0}, // 10 ^ 57
-	&Int{0, 8607968719199866880, 532749306367912313, 1593091911132452277},   // 10 ^ 76
+	nil,                             // represents first round, no multiplication needed
+	{10000000000000000000, 0, 0, 0}, // 10 ^ 19
+	{687399551400673280, 5421010862427522170, 0, 0},                     // 10 ^ 38
+	{5332261958806667264, 17004971331911604867, 2938735877055718769, 0}, // 10 ^ 57
+	{0, 8607968719199866880, 532749306367912313, 1593091911132452277},   // 10 ^ 76
 }
 
 // fromDecimal is a helper function to only ever be called via SetFromDecimal
