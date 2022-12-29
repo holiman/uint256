@@ -761,6 +761,16 @@ func TestEnDecode(t *testing.T) {
 				t.Fatalf("test %d #6, got %v, exp %v", i, decoded, intSample)
 			}
 		}
+		// z.SetFromHex
+		err = decoded.SetFromHex(wantHex)
+		{
+			if err != nil {
+				t.Fatalf("test %d #5, err: %v", i, err)
+			}
+			if decoded.Cmp(&intSample) != 0 {
+				t.Fatalf("test %d #6, got %v, exp %v", i, decoded, intSample)
+			}
+		}
 		// UnmarshalText
 		decoded = new(Int)
 		{
@@ -817,5 +827,15 @@ func TestEnDecode(t *testing.T) {
 	for i, bigSample := range big256SamplesLt {
 		intSample := int256SamplesLt[i]
 		testSample(i, bigSample, intSample)
+	}
+}
+
+func TestNil(t *testing.T) {
+	a := NewInt(1337)
+	if err := a.Scan(nil); err != nil {
+		t.Fatal(err)
+	}
+	if !a.IsZero() {
+		t.Fatal("want zero")
 	}
 }

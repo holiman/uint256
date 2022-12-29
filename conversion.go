@@ -560,7 +560,8 @@ func (z *Int) Hex() string {
 // It decodes a string, because that is what postgres uses for its numeric type
 func (dst *Int) Scan(src interface{}) error {
 	if src == nil {
-		*dst = Int{}
+		dst.Clear()
+		return nil
 	}
 	switch src := src.(type) {
 	case string:
