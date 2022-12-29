@@ -577,7 +577,7 @@ func (dst *Int) Scan(src interface{}) error {
 // In Postgres, this will work with both integer and the Numeric/Decimal types
 // In MariaDB/MySQL, this will work with the Numeric/Decimal types up to 65 digits, however any more and you should use either VarChar or Char(79)
 // In SqLite, use TEXT
-func (src Int) Value() (driver.Value, error) {
+func (src *Int) Value() (driver.Value, error) {
 	return src.ToBig().String(), nil
 }
 
