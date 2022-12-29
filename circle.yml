@@ -40,18 +40,16 @@ jobs:
           command: bash <(curl -s https://codecov.io/bash)
       - restore_cache:
           keys:
-            - corpus-v2
+            - corpus-v3
       - run:
           name: "Fuzzing"
           command: |
-            go install github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build 
-            go-fuzz-build
-            timeout --preserve-status --signal INT 1m go-fuzz -procs=2
-            test ! "$(ls crashers)"
+            GOCACHE=`pwd`/corpus-v3 go test . -run - -fuzz . -fuzztime 1m
+# TODO
       - save_cache:
-          key: corpus-v2-{{ epoch }}
+          key: corpus-v3
           paths:
-            - corpus
+            - corpus-v3
       - run:
           name: "Benchmark"
           command: go test -run=- -bench=. -benchmem
