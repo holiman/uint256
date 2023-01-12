@@ -15,6 +15,7 @@ import (
 	"io"
 	"math/big"
 	"math/bits"
+	"strings"
 )
 
 const (
@@ -565,7 +566,25 @@ func (dst *Int) Scan(src interface{}) error {
 	}
 	switch src := src.(type) {
 	case string:
-		return dst.SetFromDecimal(src)
+		splt := strings.SplitN(src, "e", 2)
+		if len(splt) < 2 {
+			return dst.SetFromDecimal(src)
+		}
+		err := dst.SetFromDecimal(splt[0])
+		if err != nil {
+			return err
+		}
+		if splt[1] == "0" {
+			return nil
+		}
+		exp := new(Int)
+		err = exp.SetFromDecimal(splt[1])
+		if err != nil {
+			return err
+		}
+		exp.Exp(NewInt(10), exp)
+		dst.Mul(dst, exp)
+		return nil
 	case []byte:
 		return dst.SetFromDecimal(string(src))
 	}
