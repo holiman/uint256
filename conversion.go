@@ -582,8 +582,14 @@ func (dst *Int) Scan(src interface{}) error {
 		if err != nil {
 			return err
 		}
+		if exp.Uint64() > uint64(len(twoPow256Sub1)) {
+			return ErrBig256Range
+		}
 		exp.Exp(NewInt(10), exp)
-		dst.Mul(dst, exp)
+		_, overflow := dst.MulOverflow(dst, exp)
+		if overflow {
+			return ErrBig256Range
+		}
 		return nil
 	case []byte:
 		return dst.SetFromDecimal(string(src))

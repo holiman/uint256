@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"testing"
@@ -72,6 +73,60 @@ func TestFromBig(t *testing.T) {
 	}
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
+	}
+}
+func TestScanScientific(t *testing.T) {
+	intsub1 := new(Int)
+	intsub1.fromDecimal(twoPow256Sub1)
+	cases := []struct {
+		in  string
+		exp *Int
+		err error
+	}{
+		{
+			"14e30",
+			new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
+			nil,
+		},
+		{
+			"1455522523e31",
+			new(Int).Mul(NewInt(1455522523), new(Int).Exp(NewInt(10), NewInt(31))),
+			nil,
+		},
+		{
+			twoPow256Sub1 + "e0",
+			intsub1,
+			nil,
+		},
+		{
+			"1e25352",
+			nil,
+			ErrBig256Range,
+		},
+		{
+			"1213128763127863781263781263781263781263781263871263871268371268371263781627836128736128736127836127836127863781e0",
+			nil,
+			ErrBig256Range,
+		},
+		{
+			twoPow256Sub1 + "e1",
+			nil,
+			ErrBig256Range,
+		},
+	}
+	for _, v := range cases {
+		i := new(Int)
+		err := i.Scan(v.in)
+		if v.err == nil {
+			if err != nil {
+				t.Fatalf("expected no error, got %s", err)
+			}
+			if !v.exp.Eq(i) {
+				t.Fatalf("got %x exp %x", i, v.exp)
+			}
+		} else if !errors.Is(err, v.err) {
+			t.Fatalf("expected error %s got %s", v.err, err)
+		}
 	}
 }
 
