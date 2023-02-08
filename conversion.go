@@ -567,22 +567,20 @@ func (dst *Int) Scan(src interface{}) error {
 	switch src := src.(type) {
 	case string:
 		splt := strings.SplitN(src, "e", 2)
-		if len(splt) < 2 {
+		if len(splt) == 1 {
 			return dst.SetFromDecimal(src)
 		}
-		err := dst.SetFromDecimal(splt[0])
-		if err != nil {
+		if err := dst.SetFromDecimal(splt[0]); err != nil {
 			return err
 		}
 		if splt[1] == "0" {
 			return nil
 		}
 		exp := new(Int)
-		err = exp.SetFromDecimal(splt[1])
-		if err != nil {
+		if err := exp.SetFromDecimal(splt[1]); err != nil {
 			return err
 		}
-		if exp.Uint64() > uint64(len(twoPow256Sub1)) {
+		if !exp.IsUint64() || exp.Uint64() > uint64(len(twoPow256Sub1)) {
 			return ErrBig256Range
 		}
 		exp.Exp(NewInt(10), exp)
