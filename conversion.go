@@ -5,12 +5,17 @@
 package uint256
 
 import (
+	"database/sql"
+	"database/sql/driver"
+	"encoding"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
 	"math/bits"
+	"strings"
 )
 
 const (
@@ -22,6 +27,16 @@ const (
 	// 32-bit and 64-bit architectures.
 	_ uint = -(maxWords & (maxWords - 1)) // maxWords is power of two.
 	_ uint = -(maxWords & ^(4 | 8))       // maxWords is 4 or 8.
+)
+
+// Compile time interface checks
+var (
+	_ driver.Valuer            = (*Int)(nil)
+	_ sql.Scanner              = (*Int)(nil)
+	_ encoding.TextMarshaler   = (*Int)(nil)
+	_ encoding.TextUnmarshaler = (*Int)(nil)
+	_ json.Marshaler           = (*Int)(nil)
+	_ json.Unmarshaler         = (*Int)(nil)
 )
 
 // ToBig returns a big.Int version of z.
@@ -51,12 +66,24 @@ func FromBig(b *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
+// SetFromHex sets z from the given string, interpreted as a hexadecimal number.
+// OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 16) method.
+// Notable differences:
+// - This method _require_ "0x" or "0X" prefix.
+// - This method does not accept zero-prefixed hex, e.g. "0x0001"
+// - This method does not accept underscore input, e.g. "100_000",
+// - This method does not accept negative zero as valid, e.g "-0x0",
+//   - (this method does not accept any negative input as valid)
+func (z *Int) SetFromHex(hex string) error {
+	z.Clear()
+	return z.fromHex(hex)
+}
+
 // fromHex is the internal implementation of parsing a hex-string.
 func (z *Int) fromHex(hex string) error {
 	if err := checkNumberS(hex); err != nil {
 		return err
 	}
-
 	if len(hex) > 66 {
 		return ErrBig256Range
 	}
@@ -92,6 +119,7 @@ func FromHex(hex string) (*Int, error) {
 
 // UnmarshalText implements encoding.TextUnmarshaler
 func (z *Int) UnmarshalText(input []byte) error {
+	z.Clear()
 	return z.fromHex(string(input))
 }
 
@@ -147,7 +175,6 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 // specification of minimum digits precision, output field
 // width, space or zero padding, and '-' for left or right
 // justification.
-//
 func (z *Int) Format(s fmt.State, ch rune) {
 	z.ToBig().Format(s, ch)
 }
@@ -470,6 +497,11 @@ func (z *Int) MarshalText() ([]byte, error) {
 	return []byte(z.Hex()), nil
 }
 
+// MarshalJSON implements json.Marshaler.
+func (z *Int) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + z.Hex() + `"`), nil
+}
+
 // UnmarshalJSON implements json.Unmarshaler.
 func (z *Int) UnmarshalJSON(input []byte) error {
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
@@ -523,6 +555,53 @@ func (z *Int) Hex() string {
 	output[64-nibbles] = '0'
 	output[65-nibbles] = 'x'
 	return string(output[64-nibbles:])
+}
+
+// Scan implements the database/sql Scanner interface.
+// It decodes a string, because that is what postgres uses for its numeric type
+func (dst *Int) Scan(src interface{}) error {
+	if src == nil {
+		dst.Clear()
+		return nil
+	}
+	switch src := src.(type) {
+	case string:
+		splt := strings.SplitN(src, "e", 2)
+		if len(splt) == 1 {
+			return dst.SetFromDecimal(src)
+		}
+		if err := dst.SetFromDecimal(splt[0]); err != nil {
+			return err
+		}
+		if splt[1] == "0" {
+			return nil
+		}
+		exp := new(Int)
+		if err := exp.SetFromDecimal(splt[1]); err != nil {
+			return err
+		}
+		if !exp.IsUint64() || exp.Uint64() > uint64(len(twoPow256Sub1)) {
+			return ErrBig256Range
+		}
+		exp.Exp(NewInt(10), exp)
+		_, overflow := dst.MulOverflow(dst, exp)
+		if overflow {
+			return ErrBig256Range
+		}
+		return nil
+	case []byte:
+		return dst.SetFromDecimal(string(src))
+	}
+	return fmt.Errorf("cannot scan %T", src)
+}
+
+// Value implements the database/sql/driver Valuer interface.
+// It encodes a base 10 string.
+// In Postgres, this will work with both integer and the Numeric/Decimal types
+// In MariaDB/MySQL, this will work with the Numeric/Decimal types up to 65 digits, however any more and you should use either VarChar or Char(79)
+// In SqLite, use TEXT
+func (src *Int) Value() (driver.Value, error) {
+	return src.ToBig().String(), nil
 }
 
 var (
