@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/big"
 	"testing"
@@ -82,51 +81,55 @@ func TestScanScientific(t *testing.T) {
 	cases := []struct {
 		in  string
 		exp *Int
-		err error
+		err string
 	}{
 		{
-			"14e30",
-			new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
-			nil,
+			in:  "14e30",
+			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
 		},
 		{
-			"1455522523e31",
-			new(Int).Mul(NewInt(1455522523), new(Int).Exp(NewInt(10), NewInt(31))),
-			nil,
+			in:  "1455522523e31",
+			exp: new(Int).Mul(NewInt(1455522523), new(Int).Exp(NewInt(10), NewInt(31))),
 		},
 		{
-			twoPow256Sub1 + "e0",
-			intsub1,
-			nil,
+			in:  twoPow256Sub1 + "e0",
+			exp: intsub1,
 		},
 		{
-			"1e25352",
-			nil,
-			ErrBig256Range,
+			in:  "1e25352",
+			err: ErrBig256Range.Error(),
 		},
 		{
-			"1213128763127863781263781263781263781263781263871263871268371268371263781627836128736128736127836127836127863781e0",
-			nil,
-			ErrBig256Range,
+			in:  "1213128763127863781263781263781263781263781263871263871268371268371263781627836128736128736127836127836127863781e0",
+			err: ErrBig256Range.Error(),
 		},
 		{
-			twoPow256Sub1 + "e1",
-			nil,
-			ErrBig256Range,
+			in:  twoPow256Sub1 + "e1",
+			err: ErrBig256Range.Error(),
+		},
+		{
+			in:  "1e253e52",
+			err: `strconv.ParseUint: parsing "253e52": invalid syntax`,
+		},
+		{
+			in:  "1e00000000000000000",
+			exp: NewInt(1),
 		},
 	}
-	for _, v := range cases {
+	for tc, v := range cases {
+		have := ""
 		i := new(Int)
-		err := i.Scan(v.in)
-		if v.err == nil {
-			if err != nil {
-				t.Fatalf("expected no error, got %s", err)
-			}
-			if !v.exp.Eq(i) {
-				t.Fatalf("got %x exp %x", i, v.exp)
-			}
-		} else if !errors.Is(err, v.err) {
-			t.Fatalf("expected error %s got %s", v.err, err)
+		if err := i.Scan(v.in); err != nil {
+			have = err.Error()
+		}
+		if want := v.err; have != want {
+			t.Fatalf("test %d: wrong error, have '%s', want '%s'", tc, have, want)
+		}
+		if len(v.err) > 0 {
+			continue
+		}
+		if !v.exp.Eq(i) {
+			t.Fatalf("test %d: got %#x exp %#x", tc, i, v.exp)
 		}
 	}
 }
