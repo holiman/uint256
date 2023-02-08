@@ -75,9 +75,10 @@ func TestFromBig(t *testing.T) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
 }
+
 func TestScanScientific(t *testing.T) {
 	intsub1 := new(Int)
-	intsub1.fromDecimal(twoPow256Sub1)
+	_ = intsub1.fromDecimal(twoPow256Sub1)
 	cases := []struct {
 		in  string
 		exp *Int
