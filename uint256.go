@@ -200,10 +200,13 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	// This is always the case when x and y are already reduced modulo such m.
 
 	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
-		var gteC1, gteC2 uint64
-		tmpX := Int{}
-		tmpY := Int{}
-		res := Int{}
+		var (
+			gteC1 uint64
+			gteC2 uint64
+			tmpX  Int
+			tmpY  Int
+			res   Int
+		)
 
 		// reduce x/y modulo m if they are gte m
 		tmpX[0], gteC1 = bits.Sub64(x[0], m[0], gteC1)
@@ -222,10 +225,11 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		if gteC2 == 0 {
 			y = &tmpY
 		}
-
-		var c1 uint64 = 0
-		var c2 uint64 = 0
-		tmp := Int{}
+		var (
+			c1  uint64
+			c2  uint64
+			tmp Int
+		)
 
 		res[0], c1 = bits.Add64(x[0], y[0], c1)
 		res[1], c1 = bits.Add64(x[1], y[1], c1)
@@ -727,10 +731,11 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 
 // Abs interprets x as a two's complement signed number,
 // and sets z to the absolute value
-//   Abs(0)        = 0
-//   Abs(1)        = 1
-//   Abs(2**255)   = -2**255
-//   Abs(2**256-1) = -1
+//
+//	Abs(0)        = 0
+//	Abs(1)        = 1
+//	Abs(2**255)   = -2**255
+//	Abs(2**256-1) = -1
 func (z *Int) Abs(x *Int) *Int {
 	if x[3] < 0x8000000000000000 {
 		return z.Set(x)
@@ -770,9 +775,11 @@ func (z *Int) SDiv(n, d *Int) *Int {
 }
 
 // Sign returns:
+//
 //	-1 if z <  0
 //	 0 if z == 0
 //	+1 if z >  0
+//
 // Where z is interpreted as a two's complement signed number
 func (z *Int) Sign() int {
 	if z.IsZero() {
@@ -907,10 +914,9 @@ func (z *Int) Eq(x *Int) bool {
 
 // Cmp compares z and x and returns:
 //
-//   -1 if z <  x
-//    0 if z == x
-//   +1 if z >  x
-//
+//	-1 if z <  x
+//	 0 if z == x
+//	+1 if z >  x
 func (z *Int) Cmp(x *Int) (r int) {
 	// z < x <=> z - x < 0 i.e. when subtraction overflows.
 	d0, carry := bits.Sub64(z[0], x[0], 0)
@@ -1242,8 +1248,9 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 
 // ExtendSign extends length of two’s complement signed integer,
 // sets z to
-//  - x if byteNum > 31
-//  - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
+//   - x if byteNum > 31
+//   - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
+//
 // and returns z.
 func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 	if byteNum.GtUint64(31) {
