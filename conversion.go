@@ -487,7 +487,7 @@ func (z *Int) MarshalSSZ() ([]byte, error) {
 
 // SizeSSZ implements the fastssz.Marshaler interface and returns the byte size
 // of the 256 bit int.
-func (z *Int) SizeSSZ() int {
+func (*Int) SizeSSZ() int {
 	return 32
 }
 
