@@ -566,33 +566,48 @@ func (dst *Int) Scan(src interface{}) error {
 	}
 	switch src := src.(type) {
 	case string:
-		splt := strings.SplitN(src, "e", 2)
-		if len(splt) == 1 {
-			return dst.SetFromDecimal(src)
-		}
-		if err := dst.SetFromDecimal(splt[0]); err != nil {
-			return err
-		}
-		if splt[1] == "0" {
-			return nil
-		}
-		exp := new(Int)
-		if err := exp.SetFromDecimal(splt[1]); err != nil {
-			return err
-		}
-		if !exp.IsUint64() || exp.Uint64() > uint64(len(twoPow256Sub1)) {
-			return ErrBig256Range
-		}
-		exp.Exp(NewInt(10), exp)
-		_, overflow := dst.MulOverflow(dst, exp)
-		if overflow {
-			return ErrBig256Range
-		}
-		return nil
+		return dst.scanScientificFromString(src)
 	case []byte:
-		return dst.SetFromDecimal(string(src))
+		return dst.scanScientificFromString(string(src))
 	}
 	return fmt.Errorf("cannot scan %T", src)
+}
+
+func (dst *Int) scanScientificFromString(src string) error {
+	if len(src) == 0 {
+		dst.Clear()
+		return nil
+	}
+	idx := strings.Index(src, "e")
+	if idx == 0 {
+		return nil
+	}
+	if idx == -1 {
+		return dst.SetFromDecimal(src)
+	}
+	// ends in e, assume e0
+	if idx == len(src)-1 {
+		return dst.SetFromDecimal(src[:idx])
+	}
+	if err := dst.SetFromDecimal(src[:idx]); err != nil {
+		return err
+	}
+	if src[(idx+1):] == "0" {
+		return nil
+	}
+	exp := new(Int)
+	if err := exp.SetFromDecimal(src[(idx + 1):]); err != nil {
+		return err
+	}
+	if !exp.IsUint64() || exp.Uint64() > uint64(len(twoPow256Sub1)) {
+		return ErrBig256Range
+	}
+	exp.Exp(NewInt(10), exp)
+	_, overflow := dst.MulOverflow(dst, exp)
+	if overflow {
+		return ErrBig256Range
+	}
+	return nil
 }
 
 // Value implements the database/sql/driver Valuer interface.
