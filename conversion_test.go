@@ -201,7 +201,7 @@ func BenchmarkScanScientific(b *testing.B) {
 	b.ResetTimer()
 	for idx := 0; idx < b.N; idx++ {
 		for _, v := range cases {
-			i.Scan(v.in)
+			_ = i.Scan(v.in)
 		}
 	}
 }
