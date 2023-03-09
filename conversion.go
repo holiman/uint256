@@ -468,7 +468,7 @@ func bigEndianUint56(b []byte) uint64 {
 // MarshalSSZTo implements the fastssz.Marshaler interface and serializes the
 // integer into an already pre-allocated buffer.
 func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
-	if len(dst) != 32 {
+	if len(dst) < 32 {
 		return nil, fmt.Errorf("%w: have %d, want %d bytes", ErrBadBufferLength, len(dst), 32)
 	}
 	binary.LittleEndian.PutUint64(dst[0:8], z[0])
@@ -476,13 +476,17 @@ func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
 	binary.LittleEndian.PutUint64(dst[16:24], z[2])
 	binary.LittleEndian.PutUint64(dst[24:32], z[3])
 
-	return dst, nil
+	return dst[32:], nil
 }
 
 // MarshalSSZ implements the fastssz.Marshaler interface and returns the integer
 // marshalled into a newly allocated byte slice.
 func (z *Int) MarshalSSZ() ([]byte, error) {
-	return z.MarshalSSZTo(make([]byte, 32))
+	blob := make([]byte, 32)
+	if _, err := z.MarshalSSZTo(blob); err != nil {
+		return nil, err
+	}
+	return blob, nil
 }
 
 // SizeSSZ implements the fastssz.Marshaler interface and returns the byte size
@@ -503,6 +507,17 @@ func (z *Int) UnmarshalSSZ(buf []byte) error {
 	z[3] = binary.LittleEndian.Uint64(buf[24:32])
 
 	return nil
+}
+
+// HashTreeRoot implements the fastssz.HashRoot interface's non-dependent part.
+func (z *Int) HashTreeRoot() ([32]byte, error) {
+	blob, err := z.MarshalSSZ()
+	if err != nil {
+		return [32]byte{}, err
+	}
+	var hash [32]byte
+	copy(hash[:], blob)
+	return hash, nil
 }
 
 // EncodeRLP implements the rlp.Encoder interface from go-ethereum

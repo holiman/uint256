@@ -629,8 +629,8 @@ func TestSSZEncodeDecodeErrors(t *testing.T) {
 		t.Fatalf("underflow unmarshal error mismatch: have %v, want %v", err, ErrBadEncodedLength)
 	}
 	large := make([]byte, 33)
-	if _, err := new(Int).MarshalSSZTo(large); !errors.Is(err, ErrBadBufferLength) {
-		t.Fatalf("underflow marshal error mismatch: have %v, want %v", err, ErrBadBufferLength)
+	if _, err := new(Int).MarshalSSZTo(large); err != nil {
+		t.Fatalf("underflow marshal error mismatch: have %v, want %v", err, nil)
 	}
 	if err := new(Int).UnmarshalSSZ(large); !errors.Is(err, ErrBadEncodedLength) {
 		t.Fatalf("overflow unmarshal error mismatch: have %v, want %v", err, ErrBadEncodedLength)
