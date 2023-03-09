@@ -483,7 +483,7 @@ func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
 // marshalled into a newly allocated byte slice.
 func (z *Int) MarshalSSZ() ([]byte, error) {
 	blob := make([]byte, 32)
-	z.MarshalSSZTo(blob) // ignore error, cannot fail, surely have 32 byte space in blob
+	_, _ = z.MarshalSSZTo(blob) // ignore error, cannot fail, surely have 32 byte space in blob
 	return blob, nil
 }
 
