@@ -881,3 +881,20 @@ func BenchmarkMulDivOverflow(b *testing.B) {
 	b.Run("div256/big", func(b *testing.B) { benchmarkBig(b, &big256SamplesLt, &big256Samples) })
 
 }
+
+func BenchmarkHashTreeRoot(b *testing.B) {
+	var (
+		z   = &Int{1, 2, 3, 4}
+		exp = [32]byte{1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0}
+	)
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		r, err := z.HashTreeRoot()
+		if err != nil {
+			b.Fatal(err)
+		}
+		if r != exp {
+			b.Fatalf("have %v want %v", r, exp)
+		}
+	}
+}

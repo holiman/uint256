@@ -510,8 +510,7 @@ func (z *Int) UnmarshalSSZ(buf []byte) error {
 // HashTreeRoot implements the fastssz.HashRoot interface's non-dependent part.
 func (z *Int) HashTreeRoot() ([32]byte, error) {
 	var hash [32]byte
-	blob, _ := z.MarshalSSZ() // ignore error, cannot fail
-	copy(hash[:], blob)
+	_, _ = z.MarshalSSZTo(hash[:]) // ignore error, cannot fail
 	return hash, nil
 }
 
