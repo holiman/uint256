@@ -483,9 +483,7 @@ func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
 // marshalled into a newly allocated byte slice.
 func (z *Int) MarshalSSZ() ([]byte, error) {
 	blob := make([]byte, 32)
-	if _, err := z.MarshalSSZTo(blob); err != nil {
-		return nil, err
-	}
+	z.MarshalSSZTo(blob) // ignore error, cannot fail, surely have 32 byte space in blob
 	return blob, nil
 }
 
@@ -511,11 +509,8 @@ func (z *Int) UnmarshalSSZ(buf []byte) error {
 
 // HashTreeRoot implements the fastssz.HashRoot interface's non-dependent part.
 func (z *Int) HashTreeRoot() ([32]byte, error) {
-	blob, err := z.MarshalSSZ()
-	if err != nil {
-		return [32]byte{}, err
-	}
 	var hash [32]byte
+	blob, _ := z.MarshalSSZ() // ignore error, cannot fail
 	copy(hash[:], blob)
 	return hash, nil
 }

@@ -338,7 +338,7 @@ func BenchmarkSetBytes(b *testing.B) {
 	})
 }
 
-func TestSSZEncodeDecode(t *testing.T) {
+func TestSSZEncodeDecodeHash(t *testing.T) {
 	type testcase struct {
 		val string
 		exp string
@@ -603,6 +603,9 @@ func TestSSZEncodeDecode(t *testing.T) {
 		{"8000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000080"},
 	} {
 		z := new(Int).SetBytes(hex2Bytes(tt.val))
+		if s := z.SizeSSZ(); s != 32 {
+			t.Errorf("testcase %d, size got: %d, exp: %d", i, s, 32)
+		}
 		b, err := z.MarshalSSZ()
 		if err != nil {
 			t.Fatal(err)
@@ -616,6 +619,13 @@ func TestSSZEncodeDecode(t *testing.T) {
 		}
 		if !z2.Eq(z) {
 			t.Errorf("testcase %d, decoding got:\n%v\nexp:%v\n", i, z2, z)
+		}
+		r, err := z.HashTreeRoot()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if exp := hex2Bytes(tt.exp); !bytes.Equal(r[:], exp) {
+			t.Errorf("testcase %d, hashing got:\n%x\nexp:%x\n", i, r, exp)
 		}
 	}
 }
