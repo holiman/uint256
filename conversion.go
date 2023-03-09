@@ -465,6 +465,55 @@ func bigEndianUint56(b []byte) uint64 {
 		uint64(b[2])<<32 | uint64(b[1])<<40 | uint64(b[0])<<48
 }
 
+// MarshalSSZTo implements the fastssz.Marshaler interface and serializes the
+// integer into an already pre-allocated buffer.
+func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
+	if len(dst) < 32 {
+		return nil, fmt.Errorf("%w: have %d, want %d bytes", ErrBadBufferLength, len(dst), 32)
+	}
+	binary.LittleEndian.PutUint64(dst[0:8], z[0])
+	binary.LittleEndian.PutUint64(dst[8:16], z[1])
+	binary.LittleEndian.PutUint64(dst[16:24], z[2])
+	binary.LittleEndian.PutUint64(dst[24:32], z[3])
+
+	return dst[32:], nil
+}
+
+// MarshalSSZ implements the fastssz.Marshaler interface and returns the integer
+// marshalled into a newly allocated byte slice.
+func (z *Int) MarshalSSZ() ([]byte, error) {
+	blob := make([]byte, 32)
+	_, _ = z.MarshalSSZTo(blob) // ignore error, cannot fail, surely have 32 byte space in blob
+	return blob, nil
+}
+
+// SizeSSZ implements the fastssz.Marshaler interface and returns the byte size
+// of the 256 bit int.
+func (*Int) SizeSSZ() int {
+	return 32
+}
+
+// UnmarshalSSZ implements the fastssz.Unmarshaler interface and parses an encoded
+// integer into the local struct.
+func (z *Int) UnmarshalSSZ(buf []byte) error {
+	if len(buf) != 32 {
+		return fmt.Errorf("%w: have %d, want %d bytes", ErrBadEncodedLength, len(buf), 32)
+	}
+	z[0] = binary.LittleEndian.Uint64(buf[0:8])
+	z[1] = binary.LittleEndian.Uint64(buf[8:16])
+	z[2] = binary.LittleEndian.Uint64(buf[16:24])
+	z[3] = binary.LittleEndian.Uint64(buf[24:32])
+
+	return nil
+}
+
+// HashTreeRoot implements the fastssz.HashRoot interface's non-dependent part.
+func (z *Int) HashTreeRoot() ([32]byte, error) {
+	var hash [32]byte
+	_, _ = z.MarshalSSZTo(hash[:]) // ignore error, cannot fail
+	return hash, nil
+}
+
 // EncodeRLP implements the rlp.Encoder interface from go-ethereum
 // and writes the RLP encoding of z to w.
 func (z *Int) EncodeRLP(w io.Writer) error {
@@ -605,13 +654,15 @@ func (src *Int) Value() (driver.Value, error) {
 }
 
 var (
-	ErrEmptyString   = errors.New("empty hex string")
-	ErrSyntax        = errors.New("invalid hex string")
-	ErrMissingPrefix = errors.New("hex string without 0x prefix")
-	ErrEmptyNumber   = errors.New("hex string \"0x\"")
-	ErrLeadingZero   = errors.New("hex number with leading zero digits")
-	ErrBig256Range   = errors.New("hex number > 256 bits")
-	ErrNonString     = errors.New("non-string")
+	ErrEmptyString      = errors.New("empty hex string")
+	ErrSyntax           = errors.New("invalid hex string")
+	ErrMissingPrefix    = errors.New("hex string without 0x prefix")
+	ErrEmptyNumber      = errors.New("hex string \"0x\"")
+	ErrLeadingZero      = errors.New("hex number with leading zero digits")
+	ErrBig256Range      = errors.New("hex number > 256 bits")
+	ErrNonString        = errors.New("non-string")
+	ErrBadBufferLength  = errors.New("bad ssz buffer length")
+	ErrBadEncodedLength = errors.New("bad ssz encoded length")
 )
 
 func checkNumberS(input string) error {
