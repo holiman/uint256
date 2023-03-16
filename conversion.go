@@ -570,7 +570,7 @@ func (dst *Int) Scan(src interface{}) error {
 	case []byte:
 		return dst.scanScientificFromString(string(src))
 	}
-	return fmt.Errorf("cannot scan %T", src)
+	return errors.New("unsupported type")
 }
 
 func (dst *Int) scanScientificFromString(src string) error {
