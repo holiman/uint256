@@ -592,12 +592,12 @@ func (dst *Int) scanScientificFromString(src string) error {
 	if err := exp.SetFromDecimal(src[(idx + 1):]); err != nil {
 		return err
 	}
-	if !exp.IsUint64() || exp.Uint64() > uint64(len(twoPow256Sub1)) {
+	// 10**78 is larger than 2**256
+	if !exp.IsUint64() || exp.GtUint64(77) {
 		return ErrBig256Range
 	}
 	exp.Exp(NewInt(10), exp)
-	_, overflow := dst.MulOverflow(dst, exp)
-	if overflow {
+	if _, overflow := dst.MulOverflow(dst, exp); overflow {
 		return ErrBig256Range
 	}
 	return nil
