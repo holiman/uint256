@@ -84,6 +84,10 @@ func TestScanScientific(t *testing.T) {
 		err string
 	}{
 		{
+			in:  "",
+			exp: new(Int),
+		},
+		{
 			in:  "e30",
 			err: "EOF",
 		},
