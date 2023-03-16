@@ -85,8 +85,32 @@ func TestScanScientific(t *testing.T) {
 		err string
 	}{
 		{
+			in:  "",
+			exp: new(Int),
+		},
+		{
+			in:  "e30",
+			err: "EOF",
+		},
+		{
+			in:  "30e",
+			err: "EOF",
+		},
+		{
+			in:  twoPow256Sub1 + "e",
+			err: "EOF",
+		},
+		{
 			in:  "14e30",
 			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
+		},
+		{ // 0xdd15fe86affad800000000000000000000000000000000000000000000000000
+			in:  "1e77",
+			exp: new(Int).Mul(NewInt(1), new(Int).Exp(NewInt(10), NewInt(77))),
+		},
+		{ // 0x8a2dbf142dfcc8000000000000000000000000000000000000000000000000000
+			in:  "1e78",
+			err: ErrBig256Range.Error(),
 		},
 		{
 			in:  "1455522523e31",
@@ -165,6 +189,40 @@ func TestToBig(t *testing.T) {
 		expected.Lsh(expected, i)
 		if b.Cmp(expected) != 0 {
 			t.Fatalf("expected %x, got %x", expected, b)
+		}
+	}
+}
+
+func BenchmarkScanScientific(b *testing.B) {
+	intsub1 := new(Int)
+	_ = intsub1.fromDecimal(twoPow256Sub1)
+	cases := []struct {
+		in  string
+		exp *Int
+		err string
+	}{
+		{
+			in:  "14e30",
+			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
+		},
+		{
+			in:  "1455522523e31",
+			exp: new(Int).Mul(NewInt(1455522523), new(Int).Exp(NewInt(10), NewInt(31))),
+		},
+		{
+			in:  twoPow256Sub1 + "e0",
+			exp: intsub1,
+		},
+		{
+			in:  "1e00000000000000000",
+			exp: NewInt(1),
+		},
+	}
+	i := new(Int)
+	b.ResetTimer()
+	for idx := 0; idx < b.N; idx++ {
+		for _, v := range cases {
+			_ = i.Scan(v.in)
 		}
 	}
 }
