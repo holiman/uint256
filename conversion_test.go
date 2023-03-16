@@ -84,6 +84,18 @@ func TestScanScientific(t *testing.T) {
 		err string
 	}{
 		{
+			in:  "e30",
+			err: "EOF",
+		},
+		{
+			in:  "30e",
+			err: "EOF",
+		},
+		{
+			in:  twoPow256Sub1 + "e",
+			err: "EOF",
+		},
+		{
 			in:  "14e30",
 			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
 		},
@@ -93,10 +105,6 @@ func TestScanScientific(t *testing.T) {
 		},
 		{
 			in:  twoPow256Sub1 + "e0",
-			exp: intsub1,
-		},
-		{
-			in:  twoPow256Sub1 + "e",
 			exp: intsub1,
 		},
 		{
