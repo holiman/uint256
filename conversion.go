@@ -592,8 +592,7 @@ func (dst *Int) scanScientificFromString(src string) error {
 	if err := exp.SetFromDecimal(src[(idx + 1):]); err != nil {
 		return err
 	}
-	// 10**78 is larger than 2**256
-	if !exp.IsUint64() || exp.GtUint64(77) {
+	if exp.GtUint64(77) { // 10**78 is larger than 2**256
 		return ErrBig256Range
 	}
 	exp.Exp(NewInt(10), exp)
