@@ -66,6 +66,17 @@ func FromBig(b *big.Int) (*Int, bool) {
 	return z, overflow
 }
 
+// MustFromBig is a convenience-constructor from big.Int.
+// Returns a new Int and panics if overflow occurred.
+func MustFromBig(b *big.Int) *Int {
+	z := &Int{}
+	overflow := z.SetFromBig(b)
+	if overflow {
+		panic("overflow")
+	}
+	return z
+}
+
 // SetFromHex sets z from the given string, interpreted as a hexadecimal number.
 // OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 16) method.
 // Notable differences:
