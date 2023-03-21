@@ -1328,6 +1328,10 @@ func TestDecimal(t *testing.T) {
 		if have != want {
 			t.Errorf("want '%v' have '%v', \n", want, have)
 		}
+		// Op must not modify the original
+		if have := a.Dec(); have != want {
+			t.Errorf("second test: want '%v' have '%v', \n", want, have)
+		}
 	}
 }
 
@@ -1368,6 +1372,11 @@ func TestPrettyDecimal(t *testing.T) {
 		if have != want {
 			t.Fatalf("%d: have '%v', want '%v'", i, have, want)
 		}
+		// Op must not modify the original
+		if have := a.PrettyDec(','); have != want {
+			t.Errorf("second test: want '%v' have '%v', \n", want, have)
+		}
+
 	}
 }
 

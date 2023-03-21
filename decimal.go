@@ -6,6 +6,7 @@ package uint256
 
 import (
 	"io"
+	"math"
 	"strconv"
 )
 
@@ -16,17 +17,19 @@ func (z *Int) Dec() string {
 	if z.IsZero() {
 		return "0"
 	}
+	if z.LtUint64(math.MaxInt64) {
+		return strconv.FormatInt(int64(z.Uint64()), 10)
+	}
 	var (
-		ten   = NewInt(10)
-		y     = new(Int).Set(z)
-		chars = []byte("0123456789")
-		out   = make([]byte, 0, 78)
+		ten = NewInt(10)
+		y   = new(Int).Set(z)
+		out = make([]byte, 0, 78)
 	)
 	for !y.IsZero() {
 		var quot Int
 		rem := udivrem(quot[:], y[:], ten)
 		y.Set(&quot)
-		out = append(out, chars[rem.Uint64()%10])
+		out = append(out, byte(0x30+rem.Uint64()%10))
 	}
 	for i := 0; i < len(out)/2; i++ {
 		out[i], out[len(out)-1-i] = out[len(out)-1-i], out[i]
@@ -44,7 +47,6 @@ func (z *Int) PrettyDec(separator byte) string {
 	var (
 		ten   = NewInt(10)
 		y     = new(Int).Set(z)
-		chars = []byte("0123456789")
 		out   = make([]byte, 0, 103)
 		comma int
 	)
@@ -56,7 +58,7 @@ func (z *Int) PrettyDec(separator byte) string {
 		var quot Int
 		rem := udivrem(quot[:], y[:], ten)
 		y.Set(&quot)
-		out = append(out, chars[rem.Uint64()%10])
+		out = append(out, byte(30+rem.Uint64()%10))
 		comma++
 	}
 	for i := 0; i < len(out)/2; i++ {
