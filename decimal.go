@@ -6,19 +6,32 @@ package uint256
 
 import (
 	"io"
-	"math"
 	"strconv"
 )
 
 const twoPow256Sub1 = "115792089237316195423570985008687907853269984665640564039457584007913129639935"
 
 // Dec returns the decimal representation of z.
-// OBS: This method is not optimized, and uses big.Int-conversion under the hood (TODO!)
 func (z *Int) Dec() string {
-	if z.LtUint64(math.MaxInt64) {
-		return strconv.FormatInt(int64(z.Uint64()), 10)
+	if z.IsZero() {
+		return "0"
 	}
-	return z.ToBig().Text(10)
+	var (
+		ten          = NewInt(10)
+		y            = &(*z)
+		chars        = []byte("0123456789")
+		out   []byte = make([]byte, 0, 78)
+	)
+	for !y.IsZero() {
+		var quot Int
+		rem := udivrem(quot[:], y[:], ten)
+		y.Set(&quot)
+		out = append(out, chars[rem.Uint64()%10])
+	}
+	for i := 0; i < len(out)/2; i++ {
+		out[i], out[len(out)-1-i] = out[len(out)-1-i], out[i]
+	}
+	return string(out)
 }
 
 // PrettyDec returns the decimal representation of z, with thousands-separators.
