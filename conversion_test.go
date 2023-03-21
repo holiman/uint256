@@ -1366,7 +1366,7 @@ func TestPrettyDecimal(t *testing.T) {
 		have := a.PrettyDec(',')
 		want := prettyFmtBigInt(a.ToBig())
 		if have != want {
-			t.Fatalf("have %v, want %v", have, want)
+			t.Fatalf("%d: have '%v', want '%v'", i, have, want)
 		}
 	}
 }

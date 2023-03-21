@@ -17,10 +17,10 @@ func (z *Int) Dec() string {
 		return "0"
 	}
 	var (
-		ten          = NewInt(10)
-		y            = &(*z)
-		chars        = []byte("0123456789")
-		out   []byte = make([]byte, 0, 78)
+		ten   = NewInt(10)
+		y     = new(Int).Set(z)
+		chars = []byte("0123456789")
+		out   = make([]byte, 0, 78)
 	)
 	for !y.IsZero() {
 		var quot Int
@@ -35,24 +35,34 @@ func (z *Int) Dec() string {
 }
 
 // PrettyDec returns the decimal representation of z, with thousands-separators.
-// OBS: This method is not optimized, and uses big.Int-conversion under the hood (TODO!)
 func (z *Int) PrettyDec(separator byte) string {
+	if z.IsZero() {
+		return "0"
+	}
+	// Largest string has 103 characters:
+	// 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935
 	var (
-		text  = z.Dec()
-		buf   = make([]byte, len(text)+len(text)/3)
-		comma = 0
-		i     = len(buf) - 1
+		ten   = NewInt(10)
+		y     = new(Int).Set(z)
+		chars = []byte("0123456789")
+		out   = make([]byte, 0, 103)
+		comma int
 	)
-	for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
+	for !y.IsZero() {
 		if comma == 3 {
-			buf[i] = separator
-			i--
+			out = append(out, separator)
 			comma = 0
 		}
-		buf[i] = text[j]
+		var quot Int
+		rem := udivrem(quot[:], y[:], ten)
+		y.Set(&quot)
+		out = append(out, chars[rem.Uint64()%10])
 		comma++
 	}
-	return string(buf[i+1:])
+	for i := 0; i < len(out)/2; i++ {
+		out[i], out[len(out)-1-i] = out[len(out)-1-i], out[i]
+	}
+	return string(out)
 }
 
 // FromDecimal is a convenience-constructor to create an Int from a
