@@ -27,6 +27,10 @@ func TestFromBig(t *testing.T) {
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
+	b2 := MustFromBig(a)
+	if exp, got := a.Bytes(), b2.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
 
 	a = big.NewInt(1)
 	b, o = FromBig(a)
@@ -34,6 +38,10 @@ func TestFromBig(t *testing.T) {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
+	b2 = MustFromBig(a)
+	if exp, got := a.Bytes(), b2.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
 
@@ -45,6 +53,10 @@ func TestFromBig(t *testing.T) {
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
+	b2 = MustFromBig(a)
+	if exp, got := a.Bytes(), b2.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
 
 	a = big.NewInt(0x1234)
 	b, o = FromBig(a)
@@ -52,6 +64,10 @@ func TestFromBig(t *testing.T) {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
+	b2 = MustFromBig(a)
+	if exp, got := a.Bytes(), b2.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
 
@@ -65,6 +81,18 @@ func TestFromBig(t *testing.T) {
 	if !b.Eq(new(Int)) {
 		t.Fatalf("got %x exp 0", b.Bytes())
 	}
+	done := make(chan struct{})
+	go func() {
+		defer func() {
+			o = recover() != nil
+			done <- struct{}{}
+		}()
+		MustFromBig(a)
+	}()
+	<-done
+	if !o {
+		t.Fatalf("expected overflow")
+	}
 
 	a.Sub(a, big.NewInt(1))
 	b, o = FromBig(a)
@@ -72,6 +100,10 @@ func TestFromBig(t *testing.T) {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
+		t.Fatalf("got %x exp %x", got, exp)
+	}
+	b2 = MustFromBig(a)
+	if exp, got := a.Bytes(), b2.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
 }
@@ -160,19 +192,41 @@ func TestScanScientific(t *testing.T) {
 }
 
 func TestFromBigOverflow(t *testing.T) {
-	_, o := FromBig(new(big.Int).SetBytes(hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	// Test overflow with error returns
+	b := new(big.Int).SetBytes(hex2Bytes("ababee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
+	_, o := FromBig(b)
 	if !o {
 		t.Errorf("expected overflow, got %v", o)
 	}
-	_, o = FromBig(new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199")))
+	// Test overflow with panic (recovery is a bit unwieldy)
+	done := make(chan struct{})
+	go func() {
+		defer func() {
+			o = recover() != nil
+			done <- struct{}{}
+		}()
+		MustFromBig(b)
+	}()
+	<-done
+	if !o {
+		t.Fatalf("expected overflow")
+	}
+	// Test no overflow
+	b = new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
+	_, o = FromBig(b)
 	if o {
 		t.Errorf("expected no overflow, got %v", o)
 	}
-	b := new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
-	_, o = FromBig(b.Neg(b))
+	MustFromBig(b)
+
+	b = new(big.Int).SetBytes(hex2Bytes("ee444444444444ffcc333333333333ddaa222222222222bb8811111111111199"))
+	b.Neg(b)
+
+	_, o = FromBig(b)
 	if o {
 		t.Errorf("expected no overflow, got %v", o)
 	}
+	MustFromBig(b)
 }
 
 func TestToBig(t *testing.T) {
