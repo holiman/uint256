@@ -70,7 +70,7 @@ func FromBig(b *big.Int) (*Int, bool) {
 // Returns a new Int and panics if overflow occurred.
 func MustFromBig(b *big.Int) *Int {
 	z := &Int{}
-	if overflow := z.SetFromBig(b); overflow {
+	if z.SetFromBig(b) {
 		panic("overflow")
 	}
 	return z
