@@ -1318,3 +1318,91 @@ func TestNil(t *testing.T) {
 		t.Fatal("want zero")
 	}
 }
+
+func TestDecimal(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		want := a.ToBig().Text(10)
+		have := a.Dec()
+		if have != want {
+			t.Errorf("want '%v' have '%v', \n", want, have)
+		}
+	}
+}
+
+func TestPrettyDecimal(t *testing.T) {
+	// prettyFmtBigInt formats n with thousand separators.
+	prettyFmtBigInt := func(n *big.Int) string {
+		t.Helper()
+		var (
+			text  = n.String()
+			buf   = make([]byte, len(text)+len(text)/3)
+			comma = 0
+			i     = len(buf) - 1
+		)
+		for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
+			c := text[j]
+
+			switch {
+			case c == '-':
+				buf[i] = c
+			case comma == 3:
+				buf[i] = ','
+				i--
+				comma = 0
+				fallthrough
+			default:
+				buf[i] = c
+				comma++
+			}
+		}
+		return string(buf[i+1:])
+	}
+
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		have := a.PrettyDec(',')
+		want := prettyFmtBigInt(a.ToBig())
+		if have != want {
+			t.Fatalf("have %v, want %v", have, want)
+		}
+	}
+}
+
+func BenchmarkDecimal(b *testing.B) {
+	var u256Ints []*Int
+	var bigints []*big.Int
+
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		u256Ints = append(u256Ints, a)
+		bigints = append(bigints, a.ToBig())
+	}
+	b.Run("ToDecimal/uint256", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range u256Ints {
+				_ = z.Dec()
+			}
+		}
+	})
+	b.Run("ToPrettyDecimal/uint256", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range u256Ints {
+				_ = z.PrettyDec(',')
+			}
+		}
+	})
+	b.Run("ToDecimal/big", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range bigints {
+				_ = z.Text(10)
+			}
+		}
+	})
+}

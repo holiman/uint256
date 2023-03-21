@@ -6,13 +6,40 @@ package uint256
 
 import (
 	"io"
+	"math"
 	"strconv"
 )
 
 const twoPow256Sub1 = "115792089237316195423570985008687907853269984665640564039457584007913129639935"
 
+// Dec returns the decimal representation of z.
+// OBS: This method is not optimized, and uses big.Int-conversion under the hood (TODO!)
 func (z *Int) Dec() string {
-	return z.ToBig().String()
+	if z.LtUint64(math.MaxInt64) {
+		return strconv.FormatInt(int64(z.Uint64()), 10)
+	}
+	return z.ToBig().Text(10)
+}
+
+// PrettyDec returns the decimal representation of z, with thousands-separators.
+// OBS: This method is not optimized, and uses big.Int-conversion under the hood (TODO!)
+func (z *Int) PrettyDec(separator byte) string {
+	var (
+		text  = z.Dec()
+		buf   = make([]byte, len(text)+len(text)/3)
+		comma = 0
+		i     = len(buf) - 1
+	)
+	for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
+		if comma == 3 {
+			buf[i] = separator
+			i--
+			comma = 0
+		}
+		buf[i] = text[j]
+		comma++
+	}
+	return string(buf[i+1:])
 }
 
 // FromDecimal is a convenience-constructor to create an Int from a

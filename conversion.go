@@ -667,7 +667,7 @@ func (dst *Int) scanScientificFromString(src string) error {
 // In MariaDB/MySQL, this will work with the Numeric/Decimal types up to 65 digits, however any more and you should use either VarChar or Char(79)
 // In SqLite, use TEXT
 func (src *Int) Value() (driver.Value, error) {
-	return src.ToBig().String(), nil
+	return src.Dec(), nil
 }
 
 var (
