@@ -5,6 +5,7 @@
 package uint256
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"testing"
@@ -18,6 +19,14 @@ func testSetFromDec(tc string) error {
 		b, err2 := FromDecimal(tc)
 		if (err == nil) != (err2 == nil) {
 			return fmt.Errorf("err != err2: %v %v", err, err2)
+		}
+		// Test the MustFromDecimal too
+		if err != nil {
+			if !causesPanic(func() { MustFromDecimal(tc) }) {
+				return errors.New("expected panic")
+			}
+		} else {
+			MustFromDecimal(tc) // must not manic
 		}
 		if err == nil {
 			if a.Cmp(b) != 0 {
