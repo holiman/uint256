@@ -51,7 +51,7 @@ func (z *Int) Dec() string {
 		// Convert the R to ascii representation
 		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
 		// Copy in the ascii digits
-		copy(out[pos-len(buf):], buf[:])
+		copy(out[pos-len(buf):], buf)
 		if y.IsZero() {
 			break
 		}
@@ -85,7 +85,7 @@ func (z *Int) PrettyDec(separator byte) string {
 		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
 		for j := len(buf) - 1; j >= 0; j-- {
 			if comma == 3 {
-				out[pos] = ','
+				out[pos] = separator
 				pos--
 				comma = 0
 			}
@@ -99,7 +99,7 @@ func (z *Int) PrettyDec(separator byte) string {
 		// Need to do zero-padding if we have more iterations coming
 		for j := 0; j < 19-len(buf); j++ {
 			if comma == 3 {
-				out[pos] = ','
+				out[pos] = separator
 				pos--
 				comma = 0
 			}
