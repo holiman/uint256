@@ -1157,7 +1157,6 @@ func TestEncode(t *testing.T) {
 			t.Errorf("input %x: wrong encoding %s (exp %s)", test.input, enc, test.want)
 		}
 	}
-
 }
 
 func TestDecode(t *testing.T) {
@@ -1214,18 +1213,21 @@ func TestEnDecode(t *testing.T) {
 		if got, _ := intSample.Value(); wantDec != got.(string) {
 			t.Fatalf("test %d #4, got %v, exp %v", i, got, wantHex)
 		}
+		if got := intSample.Dec(); wantDec != got {
+			t.Fatalf("test %d #5, got %v, exp %v", i, got, wantHex)
+		}
 		{ // Json
 			jsonEncoded, err := json.Marshal(&jsonStruct{&intSample})
 			if err != nil {
-				t.Fatalf("test %d #4, err: %v", i, err)
+				t.Fatalf("test %d #6, err: %v", i, err)
 			}
 			var jsonDecoded jsonStruct
 			err = json.Unmarshal(jsonEncoded, &jsonDecoded)
 			if err != nil {
-				t.Fatalf("test %d #5, err: %v", i, err)
+				t.Fatalf("test %d #7, err: %v", i, err)
 			}
 			if jsonDecoded.Foo.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #6, got %v, exp %v", i, jsonDecoded.Foo, intSample)
+				t.Fatalf("test %d #8, got %v, exp %v", i, jsonDecoded.Foo, intSample)
 			}
 		}
 		// Decoding
@@ -1234,67 +1236,67 @@ func TestEnDecode(t *testing.T) {
 		decoded, err := FromHex(wantHex)
 		{
 			if err != nil {
-				t.Fatalf("test %d #5, err: %v", i, err)
+				t.Fatalf("test %d #9, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #6, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// z.SetFromHex
 		err = decoded.SetFromHex(wantHex)
 		{
 			if err != nil {
-				t.Fatalf("test %d #5, err: %v", i, err)
+				t.Fatalf("test %d #11, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #6, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #12, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// UnmarshalText
 		decoded = new(Int)
 		{
 			if err := decoded.UnmarshalText([]byte(wantHex)); err != nil {
-				t.Fatalf("test %d #7, err: %v", i, err)
+				t.Fatalf("test %d #13, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #8, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #14, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// FromDecimal
 		decoded, err = FromDecimal(wantDec)
 		{
 			if err != nil {
-				t.Fatalf("test %d #9, err: %v", i, err)
+				t.Fatalf("test %d #15, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #16, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// Scan w string
 		err = decoded.Scan(wantDec)
 		{
 			if err != nil {
-				t.Fatalf("test %d #9, err: %v", i, err)
+				t.Fatalf("test %d #17, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #18, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// Scan w byte slice
 		err = decoded.Scan([]byte(wantDec))
 		{
 			if err != nil {
-				t.Fatalf("test %d #9, err: %v", i, err)
+				t.Fatalf("test %d #19, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #20, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// Scan with neither string nor byte
 		err = decoded.Scan(5)
 		{
 			if err == nil {
-				t.Fatalf("test %d #11, want error", i)
+				t.Fatalf("test %d #21, want error", i)
 			}
 		}
 	}
@@ -1317,4 +1319,155 @@ func TestNil(t *testing.T) {
 	if !a.IsZero() {
 		t.Fatal("want zero")
 	}
+}
+
+func TestDecimal(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		want := a.ToBig().Text(10)
+		if have := a.Dec(); have != want {
+			t.Errorf("want '%v' have '%v', \n", want, have)
+		}
+		// Op must not modify the original
+		if have := a.Dec(); have != want {
+			t.Errorf("want '%v' have '%v', \n", want, have)
+		}
+	}
+	// test zero-case
+	if have, want := new(Int).Dec(), new(big.Int).Text(10); have != want {
+		t.Errorf("have '%v', want '%v'", have, want)
+	}
+	{ // max
+		max, _ := FromHex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+		maxb, _ := new(big.Int).SetString("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 0)
+		if have, want := max.Dec(), maxb.Text(10); have != want {
+			t.Errorf("have '%v', want '%v'", have, want)
+		}
+	}
+	{
+		max, _ := FromDecimal("29999999999999999999")
+		maxb, _ := new(big.Int).SetString("29999999999999999999", 0)
+		if have, want := max.Dec(), maxb.Text(10); have != want {
+			t.Errorf("have '%v', want '%v'", have, want)
+		}
+	}
+}
+
+// prettyFmtBigInt formats n with thousand separators.
+func prettyFmtBigInt(n *big.Int) string {
+	var (
+		text  = n.String()
+		buf   = make([]byte, len(text)+len(text)/3)
+		comma = 0
+		i     = len(buf) - 1
+	)
+	for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
+		c := text[j]
+
+		switch {
+		case c == '-':
+			buf[i] = c
+		case comma == 3:
+			buf[i] = ','
+			i--
+			comma = 0
+			fallthrough
+		default:
+			buf[i] = c
+			comma++
+		}
+	}
+	return string(buf[i+1:])
+}
+
+func TestPrettyDecimal(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		want := prettyFmtBigInt(a.ToBig())
+		if have := a.PrettyDec(','); have != want {
+			t.Errorf("%d: have '%v', want '%v'", i, have, want)
+		}
+		// Op must not modify the original
+		if have := a.PrettyDec(','); have != want {
+			t.Errorf("%d: have '%v', want '%v'", i, have, want)
+		}
+	}
+	// test zero-case
+	if have, want := new(Int).PrettyDec(','), prettyFmtBigInt(new(big.Int)); have != want {
+		t.Errorf("have '%v', want '%v'", have, want)
+	}
+}
+
+func FuzzDecimal(f *testing.F) {
+	f.Fuzz(func(t *testing.T, aa, bb, cc, dd uint64) {
+		a := &Int{aa, bb, cc, dd}
+		{ // Test Dec()
+			want := a.ToBig().Text(10)
+			if have := a.Dec(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+			// Op must not modify the original
+			if have := a.Dec(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+		}
+		{ // Test PrettyDec
+			want := prettyFmtBigInt(a.ToBig())
+			if have := a.PrettyDec(','); have != want {
+				t.Errorf("have '%v', want '%v'", have, want)
+			}
+			// Op must not modify the original
+			if have := a.PrettyDec(','); have != want {
+				t.Errorf("have '%v', want '%v'", have, want)
+			}
+		}
+		{ // Test Hex()
+			want := fmt.Sprintf("%#x", a.ToBig())
+			if have := a.Hex(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+			// Op must not modify the original
+			if have := a.Hex(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+		}
+	})
+}
+
+func BenchmarkDecimal(b *testing.B) {
+	var u256Ints []*Int
+	var bigints []*big.Int
+
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		u256Ints = append(u256Ints, a)
+		bigints = append(bigints, a.ToBig())
+	}
+	b.Run("ToDecimal/uint256", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range u256Ints {
+				_ = z.Dec()
+			}
+		}
+	})
+	b.Run("ToPrettyDecimal/uint256", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range u256Ints {
+				_ = z.PrettyDec(',')
+			}
+		}
+	})
+	b.Run("ToDecimal/big", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range bigints {
+				_ = z.Text(10)
+			}
+		}
+	})
 }

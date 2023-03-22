@@ -44,7 +44,8 @@ jobs:
       - run:
           name: "Fuzzing"
           command: |
-            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz . -fuzztime 1m
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBase10StringCompare -fuzztime 30s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzDecimal -fuzztime 30s
       - save_cache:
           key: corpus-v3-{{ epoch }}
           paths:
