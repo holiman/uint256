@@ -81,19 +81,9 @@ func TestFromBig(t *testing.T) {
 	if !b.Eq(new(Int)) {
 		t.Fatalf("got %x exp 0", b.Bytes())
 	}
-	done := make(chan struct{})
-	go func() {
-		defer func() {
-			o = recover() != nil
-			done <- struct{}{}
-		}()
-		MustFromBig(a)
-	}()
-	<-done
-	if !o {
+	if !causesPanic(func() { MustFromBig(a) }) {
 		t.Fatalf("expected overflow")
 	}
-
 	a.Sub(a, big.NewInt(1))
 	b, o = FromBig(a)
 	if o {
@@ -199,16 +189,7 @@ func TestFromBigOverflow(t *testing.T) {
 		t.Errorf("expected overflow, got %v", o)
 	}
 	// Test overflow with panic (recovery is a bit unwieldy)
-	done := make(chan struct{})
-	go func() {
-		defer func() {
-			o = recover() != nil
-			done <- struct{}{}
-		}()
-		MustFromBig(b)
-	}()
-	<-done
-	if !o {
+	if !causesPanic(func() { MustFromBig(b) }) {
 		t.Fatalf("expected overflow")
 	}
 	// Test no overflow
@@ -1159,9 +1140,29 @@ func TestEncode(t *testing.T) {
 	}
 }
 
+// causesPanic returns true if panic occurred when executing fn.
+func causesPanic(fn func()) bool {
+	done := make(chan struct{})
+	var ok bool
+	go func() {
+		defer func() {
+			ok = recover() != nil
+			done <- struct{}{}
+		}()
+		fn()
+	}()
+	<-done
+	return ok
+}
+
 func TestDecode(t *testing.T) {
 	for _, test := range decodeBigTests {
 		dec, err := FromHex(test.input)
+		if err != nil {
+			if !causesPanic(func() { MustFromHex(test.input) }) {
+				t.Fatalf("expected panic")
+			}
+		}
 		if !checkError(t, test.input, err, test.wantErr) {
 			continue
 		}
@@ -1169,6 +1170,10 @@ func TestDecode(t *testing.T) {
 		if b.Cmp(test.want.(*big.Int)) != 0 {
 			t.Errorf("input %s: value mismatch: got %x, want %x", test.input, dec, test.want)
 			continue
+		}
+		d2 := MustFromHex(test.input)
+		if !d2.Eq(dec) {
+			t.Errorf("input %s: value mismatch: got %x, want %x", test.input, d2, dec)
 		}
 	}
 	// Some remaining json-tests

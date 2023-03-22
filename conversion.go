@@ -127,6 +127,17 @@ func FromHex(hex string) (*Int, error) {
 	return &z, nil
 }
 
+// MustFromHex is a convenience-constructor to create an Int from
+// a hexadecimal string.
+// Returns a new Int and panics if any error occurred.
+func MustFromHex(hex string) *Int {
+	var z Int
+	if err := z.fromHex(hex); err != nil {
+		panic(err)
+	}
+	return &z
+}
+
 // UnmarshalText implements encoding.TextUnmarshaler
 func (z *Int) UnmarshalText(input []byte) error {
 	z.Clear()

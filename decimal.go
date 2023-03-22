@@ -120,6 +120,17 @@ func FromDecimal(decimal string) (*Int, error) {
 	return &z, nil
 }
 
+// MustFromDecimal is a convenience-constructor to create an Int from a
+// decimal (base 10) string.
+// Returns a new Int and panics if any error occurred.
+func MustFromDecimal(decimal string) *Int {
+	var z Int
+	if err := z.SetFromDecimal(decimal); err != nil {
+		panic(err)
+	}
+	return &z
+}
+
 // SetFromDecimal sets z from the given string, interpreted as a decimal number.
 // OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 10) method.
 // Notable differences:
