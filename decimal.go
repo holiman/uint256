@@ -33,17 +33,16 @@ func (z *Int) Dec() string {
 	// 12345 / 100 = 123  (quo)
 	// -> output '45', continue iterate on 123
 	var (
+		// out is 98 bytes long: 78 (max size of a string without leading zeroes,
+		// plus slack so we can copy 19 bytes every iteration).
+		// We init it with zeroes, because when strconv appends the ascii representations,
+		// it will omit leading zeroes.
+		out     = []byte("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 		divisor = NewInt(10000000000000000000) // 20 digits
 		y       = new(Int).Set(z)              // copy to avoid modifying z
-		pos     = 78 + 20                      // position to write to
+		pos     = len(out)                     // position to write to
 		buf     = make([]byte, 0, 19)          // buffer to write uint64:s to
-		buflen  = 0                            // used size of buf
 	)
-	// The 'out' area is 98 bytes long: 78 (max size of a string without leading zeroes,
-	// plus slack so we can copy 19 bytes every iteration).
-	// We init it with zeroes, because when strconv appends the ascii representations,
-	// it will omit leading zeroes.
-	out := []byte("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 	for {
 		// Obtain Q and R for divisor
 		var quot Int
@@ -51,17 +50,16 @@ func (z *Int) Dec() string {
 		y.Set(&quot) // Set Q for next loop
 		// Convert the R to ascii representation
 		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
-		buflen = len(buf)
-		// Move 19 digits left
-		pos -= 19
 		// Copy in the ascii digits
-		copy(out[pos+19-buflen:], buf[:])
+		copy(out[pos-len(buf):], buf[:])
 		if y.IsZero() {
 			break
 		}
+		// Move 19 digits left
+		pos -= 19
 	}
 	// skip leading zeroes by only using the 'used size' of buf
-	return string(out[pos+19-buflen:])
+	return string(out[pos-len(buf):])
 }
 
 // PrettyDec returns the decimal representation of z, with thousands-separators.
