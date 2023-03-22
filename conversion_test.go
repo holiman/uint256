@@ -1335,6 +1335,19 @@ func TestDecimal(t *testing.T) {
 	}
 }
 
+func TestSingleDecimal(t *testing.T) {
+	a, _ := FromDecimal("18446744073709551616")
+	want := a.ToBig().Text(10)
+	have := a.Dec()
+	if have != want {
+		t.Fatalf("want '%v' have '%v', \n", want, have)
+	}
+	// Op must not modify the original
+	if have := a.Dec(); have != want {
+		t.Fatalf("second test: want '%v' have '%v', \n", want, have)
+	}
+}
+
 func TestPrettyDecimal(t *testing.T) {
 	// prettyFmtBigInt formats n with thousand separators.
 	prettyFmtBigInt := func(n *big.Int) string {

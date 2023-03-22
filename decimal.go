@@ -6,7 +6,6 @@ package uint256
 
 import (
 	"io"
-	"math"
 	"strconv"
 )
 
@@ -17,24 +16,46 @@ func (z *Int) Dec() string {
 	if z.IsZero() {
 		return "0"
 	}
-	if z.LtUint64(math.MaxInt64) {
-		return strconv.FormatInt(int64(z.Uint64()), 10)
+	if z.IsUint64() {
+		return strconv.FormatUint(uint64(z.Uint64()), 10)
 	}
+	// The max uint64 value is 18446744073709551615, thus the largest
+	// base10 power-of-ten number is 10000000000000000000.
+	// When we do a QuoRem using that number, the remainder that we
+	// get back is the lower part of the output.
+	// Example using 100
+	//
+	// 12345 % 100 = 45   (rem)
+	// 12345 / 100 = 123  (quo)
+	// -> output '45', continue iterate on 123
+
 	var (
-		ten = NewInt(10)
-		y   = new(Int).Set(z)
-		out = make([]byte, 0, 78)
+		divisor = NewInt(10000000000000000000) // 19 zeroes
+		y       = new(Int).Set(z)              // copy to avoid modifying z
+		out     = make([]byte, 78+20)          // the final output
+		pos     = 78 + 20                      // position to write to
+		buf     = make([]byte, 0, 19)          // buffer to write uint64:s to
+		buflen  = 0                            // used size of buf
 	)
+	// Fill the 'out' area with zeroes. This is because when strconv appends
+	// the ascii representations, it will not print leading zeroes.
+	copy(out, []byte("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"))
 	for !y.IsZero() {
+		// Obtain Q and R for divisor
 		var quot Int
-		rem := udivrem(quot[:], y[:], ten)
-		y.Set(&quot)
-		out = append(out, byte(0x30+rem.Uint64()%10))
+		rem := udivrem(quot[:], y[:], divisor)
+		y.Set(&quot) // Set Q for next loop
+		// Convert the R to ascii representation
+		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
+		buflen = len(buf)
+		// Move 19 digits left
+		pos -= 19
+		// Copy in the ascii digits
+		copy(out[pos+19-buflen:], buf[:])
+
 	}
-	for i := 0; i < len(out)/2; i++ {
-		out[i], out[len(out)-1-i] = out[len(out)-1-i], out[i]
-	}
-	return string(out)
+	// skip leading zeroes by only using the 'used size' of buf
+	return string(out[pos+19-buflen:])
 }
 
 // PrettyDec returns the decimal representation of z, with thousands-separators.
