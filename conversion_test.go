@@ -1157,7 +1157,6 @@ func TestEncode(t *testing.T) {
 			t.Errorf("input %x: wrong encoding %s (exp %s)", test.input, enc, test.want)
 		}
 	}
-
 }
 
 func TestDecode(t *testing.T) {
@@ -1324,13 +1323,12 @@ func TestDecimal(t *testing.T) {
 		a := NewInt(1)
 		a.Lsh(a, i)
 		want := a.ToBig().Text(10)
-		have := a.Dec()
-		if have != want {
+		if have := a.Dec(); have != want {
 			t.Errorf("want '%v' have '%v', \n", want, have)
 		}
 		// Op must not modify the original
 		if have := a.Dec(); have != want {
-			t.Errorf("second test: want '%v' have '%v', \n", want, have)
+			t.Errorf("want '%v' have '%v', \n", want, have)
 		}
 	}
 	// test zero-case
@@ -1353,52 +1351,86 @@ func TestDecimal(t *testing.T) {
 	}
 }
 
-func TestPrettyDecimal(t *testing.T) {
-	// prettyFmtBigInt formats n with thousand separators.
-	prettyFmtBigInt := func(n *big.Int) string {
-		t.Helper()
-		var (
-			text  = n.String()
-			buf   = make([]byte, len(text)+len(text)/3)
+// prettyFmtBigInt formats n with thousand separators.
+func prettyFmtBigInt(n *big.Int) string {
+	var (
+		text  = n.String()
+		buf   = make([]byte, len(text)+len(text)/3)
+		comma = 0
+		i     = len(buf) - 1
+	)
+	for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
+		c := text[j]
+
+		switch {
+		case c == '-':
+			buf[i] = c
+		case comma == 3:
+			buf[i] = ','
+			i--
 			comma = 0
-			i     = len(buf) - 1
-		)
-		for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
-			c := text[j]
-
-			switch {
-			case c == '-':
-				buf[i] = c
-			case comma == 3:
-				buf[i] = ','
-				i--
-				comma = 0
-				fallthrough
-			default:
-				buf[i] = c
-				comma++
-			}
+			fallthrough
+		default:
+			buf[i] = c
+			comma++
 		}
-		return string(buf[i+1:])
 	}
+	return string(buf[i+1:])
+}
 
+func TestPrettyDecimal(t *testing.T) {
 	for i := uint(0); i < 255; i++ {
 		a := NewInt(1)
 		a.Lsh(a, i)
-		have := a.PrettyDec(',')
 		want := prettyFmtBigInt(a.ToBig())
-		if have != want {
+		if have := a.PrettyDec(','); have != want {
 			t.Errorf("%d: have '%v', want '%v'", i, have, want)
 		}
 		// Op must not modify the original
 		if have := a.PrettyDec(','); have != want {
-			t.Errorf("second test: want '%v' have '%v', \n", want, have)
+			t.Errorf("%d: have '%v', want '%v'", i, have, want)
 		}
 	}
 	// test zero-case
 	if have, want := new(Int).PrettyDec(','), prettyFmtBigInt(new(big.Int)); have != want {
 		t.Errorf("have '%v', want '%v'", have, want)
 	}
+}
+
+func FuzzDecimal(f *testing.F) {
+	f.Fuzz(func(t *testing.T, aa, bb, cc, dd uint64) {
+		a := &Int{aa, bb, cc, dd}
+		{ // Test Dec()
+			want := a.ToBig().Text(10)
+			if have := a.Dec(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+			// Op must not modify the original
+			if have := a.Dec(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+		}
+		{ // Test PrettyDec
+			want := prettyFmtBigInt(a.ToBig())
+			if have := a.PrettyDec(','); have != want {
+				t.Errorf("have '%v', want '%v'", have, want)
+			}
+			// Op must not modify the original
+			if have := a.PrettyDec(','); have != want {
+				t.Errorf("have '%v', want '%v'", have, want)
+			}
+		}
+		{ // Test Hex()
+			want := fmt.Sprintf("%#x", a.ToBig())
+			if have := a.Hex(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+			// Op must not modify the original
+			if have := a.Hex(); have != want {
+				t.Errorf("want '%v' have '%v', \n", want, have)
+			}
+		}
+	})
 }
 
 func BenchmarkDecimal(b *testing.B) {
