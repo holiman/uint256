@@ -67,22 +67,47 @@ func (z *Int) PrettyDec(separator byte) string {
 	if z.IsZero() {
 		return "0"
 	}
+	// See algorithm-description in Dec()
+	// This just also inserts comma while copying byte-for-byte instead
+	// of using copy().
 	var (
-		text  = z.Dec()
-		buf   = make([]byte, len(text)+len(text)/3)
-		comma = 0
-		i     = len(buf) - 1
+		out     = []byte("0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+		divisor = NewInt(10000000000000000000)
+		y       = new(Int).Set(z)     // copy to avoid modifying z
+		pos     = len(out) - 1        // position to write to
+		buf     = make([]byte, 0, 19) // buffer to write uint64:s to
+		comma   = 0
 	)
-	for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
-		if comma == 3 {
-			buf[i] = ','
-			i--
-			comma = 0
+	for {
+		var quot Int
+		rem := udivrem(quot[:], y[:], divisor)
+		y.Set(&quot) // Set Q for next loop
+		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
+		for j := len(buf) - 1; j >= 0; j-- {
+			if comma == 3 {
+				out[pos] = ','
+				pos--
+				comma = 0
+			}
+			out[pos] = buf[j]
+			comma++
+			pos--
 		}
-		buf[i] = text[j]
-		comma++
+		if y.IsZero() {
+			break
+		}
+		// Need to do zero-padding if we have more iterations coming
+		for j := 0; j < 19-len(buf); j++ {
+			if comma == 3 {
+				out[pos] = ','
+				pos--
+				comma = 0
+			}
+			comma++
+			pos--
+		}
 	}
-	return string(buf[i+1:])
+	return string(out[pos+1:])
 }
 
 // FromDecimal is a convenience-constructor to create an Int from a
