@@ -17,7 +17,7 @@ func (z *Int) Dec() string {
 		return "0"
 	}
 	if z.IsUint64() {
-		return strconv.FormatUint(uint64(z.Uint64()), 10)
+		return strconv.FormatUint(z.Uint64(), 10)
 	}
 	// The max uint64 value is 18446744073709551615, thus the largest
 	// base10 power-of-ten number is 10000000000000000000.
@@ -52,7 +52,6 @@ func (z *Int) Dec() string {
 		pos -= 19
 		// Copy in the ascii digits
 		copy(out[pos+19-buflen:], buf[:])
-
 	}
 	// skip leading zeroes by only using the 'used size' of buf
 	return string(out[pos+19-buflen:])
@@ -63,29 +62,23 @@ func (z *Int) PrettyDec(separator byte) string {
 	if z.IsZero() {
 		return "0"
 	}
-	// Largest string has 103 characters:
-	// 115,792,089,237,316,195,423,570,985,008,687,907,853,269,984,665,640,564,039,457,584,007,913,129,639,935
 	var (
-		ten   = NewInt(10)
-		y     = new(Int).Set(z)
-		out   = make([]byte, 0, 103)
-		comma int
+		text  = z.Dec()
+		buf   = make([]byte, len(text)+len(text)/3)
+		comma = 0
+		i     = len(buf) - 1
 	)
-	for !y.IsZero() {
+	for j := len(text) - 1; j >= 0; j, i = j-1, i-1 {
+		c := text[j]
 		if comma == 3 {
-			out = append(out, separator)
+			buf[i] = ','
+			i--
 			comma = 0
 		}
-		var quot Int
-		rem := udivrem(quot[:], y[:], ten)
-		y.Set(&quot)
-		out = append(out, byte(30+rem.Uint64()%10))
+		buf[i] = c
 		comma++
 	}
-	for i := 0; i < len(out)/2; i++ {
-		out[i], out[len(out)-1-i] = out[len(out)-1-i], out[i]
-	}
-	return string(out)
+	return string(buf[i+1:])
 }
 
 // FromDecimal is a convenience-constructor to create an Int from a
