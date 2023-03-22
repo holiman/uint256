@@ -1213,18 +1213,21 @@ func TestEnDecode(t *testing.T) {
 		if got, _ := intSample.Value(); wantDec != got.(string) {
 			t.Fatalf("test %d #4, got %v, exp %v", i, got, wantHex)
 		}
+		if got := intSample.Dec(); wantDec != got {
+			t.Fatalf("test %d #5, got %v, exp %v", i, got, wantHex)
+		}
 		{ // Json
 			jsonEncoded, err := json.Marshal(&jsonStruct{&intSample})
 			if err != nil {
-				t.Fatalf("test %d #4, err: %v", i, err)
+				t.Fatalf("test %d #6, err: %v", i, err)
 			}
 			var jsonDecoded jsonStruct
 			err = json.Unmarshal(jsonEncoded, &jsonDecoded)
 			if err != nil {
-				t.Fatalf("test %d #5, err: %v", i, err)
+				t.Fatalf("test %d #7, err: %v", i, err)
 			}
 			if jsonDecoded.Foo.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #6, got %v, exp %v", i, jsonDecoded.Foo, intSample)
+				t.Fatalf("test %d #8, got %v, exp %v", i, jsonDecoded.Foo, intSample)
 			}
 		}
 		// Decoding
@@ -1233,67 +1236,67 @@ func TestEnDecode(t *testing.T) {
 		decoded, err := FromHex(wantHex)
 		{
 			if err != nil {
-				t.Fatalf("test %d #5, err: %v", i, err)
+				t.Fatalf("test %d #9, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #6, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// z.SetFromHex
 		err = decoded.SetFromHex(wantHex)
 		{
 			if err != nil {
-				t.Fatalf("test %d #5, err: %v", i, err)
+				t.Fatalf("test %d #11, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #6, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #12, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// UnmarshalText
 		decoded = new(Int)
 		{
 			if err := decoded.UnmarshalText([]byte(wantHex)); err != nil {
-				t.Fatalf("test %d #7, err: %v", i, err)
+				t.Fatalf("test %d #13, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #8, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #14, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// FromDecimal
 		decoded, err = FromDecimal(wantDec)
 		{
 			if err != nil {
-				t.Fatalf("test %d #9, err: %v", i, err)
+				t.Fatalf("test %d #15, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #16, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// Scan w string
 		err = decoded.Scan(wantDec)
 		{
 			if err != nil {
-				t.Fatalf("test %d #9, err: %v", i, err)
+				t.Fatalf("test %d #17, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #18, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// Scan w byte slice
 		err = decoded.Scan([]byte(wantDec))
 		{
 			if err != nil {
-				t.Fatalf("test %d #9, err: %v", i, err)
+				t.Fatalf("test %d #19, err: %v", i, err)
 			}
 			if decoded.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #10, got %v, exp %v", i, decoded, intSample)
+				t.Fatalf("test %d #20, got %v, exp %v", i, decoded, intSample)
 			}
 		}
 		// Scan with neither string nor byte
 		err = decoded.Scan(5)
 		{
 			if err == nil {
-				t.Fatalf("test %d #11, want error", i)
+				t.Fatalf("test %d #21, want error", i)
 			}
 		}
 	}
