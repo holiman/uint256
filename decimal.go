@@ -19,17 +19,21 @@ func (z *Int) Dec() string {
 	if z.IsUint64() {
 		return strconv.FormatUint(z.Uint64(), 10)
 	}
-	// The max uint64 value is 18446744073709551615, thus the largest
-	// base10 power-of-ten number is 10000000000000000000.
-	// When we do a QuoRem using that number, the remainder that we
+	// The max uint64 value being 18446744073709551615, the largest
+	// power-of-ten below that is 10000000000000000000.
+	// When we do a DivMod using that number, the remainder that we
 	// get back is the lower part of the output.
-	// Example using 100
+	//
+	// The ascii-output of remainder will never exceed 19 bytes (since it will be
+	// below 10000000000000000000).
+	//
+	// Algorithm example using 100 as divisor
 	//
 	// 12345 % 100 = 45   (rem)
 	// 12345 / 100 = 123  (quo)
 	// -> output '45', continue iterate on 123
 	var (
-		divisor = NewInt(10000000000000000000) // 19 zeroes
+		divisor = NewInt(10000000000000000000) // 20 digits
 		y       = new(Int).Set(z)              // copy to avoid modifying z
 		pos     = 78 + 20                      // position to write to
 		buf     = make([]byte, 0, 19)          // buffer to write uint64:s to

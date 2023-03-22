@@ -1337,6 +1337,20 @@ func TestDecimal(t *testing.T) {
 	if have, want := new(Int).Dec(), new(big.Int).Text(10); have != want {
 		t.Errorf("have '%v', want '%v'", have, want)
 	}
+	{ // max
+		max, _ := FromHex("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+		maxb, _ := new(big.Int).SetString("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 0)
+		if have, want := max.Dec(), maxb.Text(10); have != want {
+			t.Errorf("have '%v', want '%v'", have, want)
+		}
+	}
+	{
+		max, _ := FromDecimal("29999999999999999999")
+		maxb, _ := new(big.Int).SetString("29999999999999999999", 0)
+		if have, want := max.Dec(), maxb.Text(10); have != want {
+			t.Errorf("have '%v', want '%v'", have, want)
+		}
+	}
 }
 
 func TestPrettyDecimal(t *testing.T) {
