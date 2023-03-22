@@ -1333,18 +1333,9 @@ func TestDecimal(t *testing.T) {
 			t.Errorf("second test: want '%v' have '%v', \n", want, have)
 		}
 	}
-}
-
-func TestSingleDecimal(t *testing.T) {
-	a, _ := FromDecimal("18446744073709551616")
-	want := a.ToBig().Text(10)
-	have := a.Dec()
-	if have != want {
-		t.Fatalf("want '%v' have '%v', \n", want, have)
-	}
-	// Op must not modify the original
-	if have := a.Dec(); have != want {
-		t.Fatalf("second test: want '%v' have '%v', \n", want, have)
+	// test zero-case
+	if have, want := new(Int).Dec(), new(big.Int).Text(10); have != want {
+		t.Errorf("have '%v', want '%v'", have, want)
 	}
 }
 
@@ -1383,13 +1374,16 @@ func TestPrettyDecimal(t *testing.T) {
 		have := a.PrettyDec(',')
 		want := prettyFmtBigInt(a.ToBig())
 		if have != want {
-			t.Fatalf("%d: have '%v', want '%v'", i, have, want)
+			t.Errorf("%d: have '%v', want '%v'", i, have, want)
 		}
 		// Op must not modify the original
 		if have := a.PrettyDec(','); have != want {
 			t.Errorf("second test: want '%v' have '%v', \n", want, have)
 		}
-
+	}
+	// test zero-case
+	if have, want := new(Int).PrettyDec(','), prettyFmtBigInt(new(big.Int)); have != want {
+		t.Errorf("have '%v', want '%v'", have, want)
 	}
 }
 
