@@ -76,6 +76,20 @@ func MustFromBig(b *big.Int) *Int {
 	return z
 }
 
+// Float64 returns the float64 value nearest to x. If x is too small to be
+// represented by a float64 (|x| < math.SmallestNonzeroFloat64), the result
+// is (0, Below) or (-0, Above), respectively, depending on the sign of x.
+// If x is too large to be represented by a float64 (|x| > math.MaxFloat64),
+// the result is (+Inf, Above) or (-Inf, Below), depending on the sign of x.
+//
+// OBS! Currently, this method is not optimized: but uses big.Int and big.Float.
+func (z *Int) Float64() (float64, big.Accuracy) {
+	if z.IsUint64() {
+		return new(big.Float).SetUint64(z.Uint64()).Float64()
+	}
+	return new(big.Float).SetInt(z.ToBig()).Float64()
+}
+
 // SetFromHex sets z from the given string, interpreted as a hexadecimal number.
 // OBS! This method is _not_ strictly identical to the (*big.Int).SetString(..., 16) method.
 // Notable differences:
