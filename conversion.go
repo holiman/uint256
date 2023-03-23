@@ -87,8 +87,7 @@ func MustFromBig(b *big.Int) *Int {
 // OBS! Currently, this method is not optimized: but uses big.Int and big.Float.
 func (z *Int) Float64() float64 {
 	if z.IsUint64() {
-		f, _ := new(big.Float).SetUint64(z.Uint64()).Float64()
-		return f
+		return float64(z.Uint64())
 	}
 	f, _ := new(big.Float).SetInt(z.ToBig()).Float64()
 	return f
