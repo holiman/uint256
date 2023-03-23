@@ -1481,14 +1481,10 @@ func TestFloat64(t *testing.T) {
 	for i := uint(0); i < 255; i++ {
 		z := NewInt(1)
 		z.Lsh(z, i)
-		bigF, bigAcc := new(big.Float).SetInt(z.ToBig()).Float64()
-		_, _ = z.Float64() // Op must not modify the z
-		u256F, u256Acc := z.Float64()
-		if have, want := u256F, bigF; have != want {
+		bigF, _ := new(big.Float).SetInt(z.ToBig()).Float64()
+		_ = z.Float64() // Op must not modify the z
+		if have, want := z.Float64(), bigF; have != want {
 			t.Errorf("%s: have %f want %f", z.Hex(), have, want)
-		}
-		if have, want := u256Acc, bigAcc; have != want {
-			t.Errorf("%s: have %v want %v", z.Hex(), have, want)
 		}
 	}
 }
@@ -1496,14 +1492,10 @@ func TestFloat64(t *testing.T) {
 func FuzzFloat64(f *testing.F) {
 	f.Fuzz(func(t *testing.T, aa, bb, cc, dd uint64) {
 		z := &Int{aa, bb, cc, dd}
-		bigF, bigAcc := new(big.Float).SetInt(z.ToBig()).Float64()
-		_, _ = z.Float64() // Op must not modify the z
-		u256F, u256Acc := z.Float64()
-		if have, want := u256F, bigF; have != want {
+		bigF, _ := new(big.Float).SetInt(z.ToBig()).Float64()
+		_ = z.Float64() // Op must not modify the z
+		if have, want := z.Float64(), bigF; have != want {
 			t.Errorf("%s: have %f want %f", z.Hex(), have, want)
-		}
-		if have, want := u256Acc, bigAcc; have != want {
-			t.Errorf("%s: have %v want %v", z.Hex(), have, want)
 		}
 	})
 }
@@ -1522,7 +1514,7 @@ func BenchmarkFloat64(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			for _, z := range u256Ints {
-				_, _ = z.Float64()
+				_ = z.Float64()
 			}
 		}
 	})
