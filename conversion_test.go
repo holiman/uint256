@@ -1477,26 +1477,24 @@ func BenchmarkDecimal(b *testing.B) {
 	})
 }
 
+func testFloat64(t *testing.T, z *Int) {
+	bigF, _ := new(big.Float).SetInt(z.ToBig()).Float64()
+	_ = z.Float64() // Op must not modify the z
+	if have, want := z.Float64(), bigF; have != want {
+		t.Errorf("%s: have %f want %f", z.Hex(), have, want)
+	}
+}
+
 func TestFloat64(t *testing.T) {
 	for i := uint(0); i < 255; i++ {
 		z := NewInt(1)
-		z.Lsh(z, i)
-		bigF, _ := new(big.Float).SetInt(z.ToBig()).Float64()
-		_ = z.Float64() // Op must not modify the z
-		if have, want := z.Float64(), bigF; have != want {
-			t.Errorf("%s: have %f want %f", z.Hex(), have, want)
-		}
+		testFloat64(t, z.Lsh(z, i))
 	}
 }
 
 func FuzzFloat64(f *testing.F) {
 	f.Fuzz(func(t *testing.T, aa, bb, cc, dd uint64) {
-		z := &Int{aa, bb, cc, dd}
-		bigF, _ := new(big.Float).SetInt(z.ToBig()).Float64()
-		_ = z.Float64() // Op must not modify the z
-		if have, want := z.Float64(), bigF; have != want {
-			t.Errorf("%s: have %f want %f", z.Hex(), have, want)
-		}
+		testFloat64(t, &Int{aa, bb, cc, dd})
 	})
 }
 
