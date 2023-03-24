@@ -1476,3 +1476,52 @@ func BenchmarkDecimal(b *testing.B) {
 		}
 	})
 }
+
+func testFloat64(t *testing.T, z *Int) {
+	bigF, _ := new(big.Float).SetInt(z.ToBig()).Float64()
+	_ = z.Float64() // Op must not modify the z
+	if have, want := z.Float64(), bigF; have != want {
+		t.Errorf("%s: have %f want %f", z.Hex(), have, want)
+	}
+}
+
+func TestFloat64(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		z := NewInt(1)
+		testFloat64(t, z.Lsh(z, i))
+	}
+}
+
+func FuzzFloat64(f *testing.F) {
+	f.Fuzz(func(t *testing.T, aa, bb, cc, dd uint64) {
+		testFloat64(t, &Int{aa, bb, cc, dd})
+	})
+}
+
+func BenchmarkFloat64(b *testing.B) {
+	var u256Ints []*Int
+	var bigints []*big.Int
+
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		u256Ints = append(u256Ints, a)
+		bigints = append(bigints, a.ToBig())
+	}
+	b.Run("Float64/uint256", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range u256Ints {
+				_ = z.Float64()
+			}
+		}
+	})
+	b.Run("Float64/big", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range bigints {
+				_, _ = new(big.Float).SetInt(z).Float64()
+			}
+		}
+	})
+}
