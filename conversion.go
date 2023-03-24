@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"math/bits"
 	"strings"
@@ -83,14 +84,34 @@ func MustFromBig(b *big.Int) *Int {
 // `float64`. However, the `uint256` type is unable to represent values
 // out of scope (|x| < math.SmallestNonzeroFloat64 or |x| > math.MaxFloat64),
 // therefore this method does not return any accuracy.
-//
-// OBS! Currently, this method is not optimized: but uses big.Int and big.Float.
 func (z *Int) Float64() float64 {
 	if z.IsUint64() {
 		return float64(z.Uint64())
 	}
-	f, _ := new(big.Float).SetInt(z.ToBig()).Float64()
-	return f
+	// See [1] for a detailed walkthrough of IEEE 754 conversion
+	//
+	// 1: https://www.wikihow.com/Convert-a-Number-from-Decimal-to-IEEE-754-Floating-Point-Representation
+
+	const bias = uint64(1023) // double-precision uses 1023 as bias
+
+	// Normalize the number, by shifting it so that the MSB is shifted out.
+	shifts := uint(1 + 256 - z.BitLen())
+
+	// The number with the leading 1 shifted out is the fraction.
+	y := new(Int).Lsh(z, shifts)
+	fraction := y[3]
+
+	// The exp is calculated from the number of shifts, adjusted with the bias.
+	biased_exp := bias + uint64(256-shifts)
+
+	// The IEEE 754 double-precision layout is as follows:
+	//  1 sign bit (we don't bother with this, since it's always zero for uints)
+	// 11 exponent bits
+	// 52 fraction bits
+	// --------
+	// 64 bits
+
+	return math.Float64frombits(biased_exp<<52 | fraction>>12)
 }
 
 // SetFromHex sets z from the given string, interpreted as a hexadecimal number.
