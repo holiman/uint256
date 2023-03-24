@@ -92,17 +92,16 @@ func (z *Int) Float64() float64 {
 	//
 	// 1: https://www.wikihow.com/Convert-a-Number-from-Decimal-to-IEEE-754-Floating-Point-Representation
 
-	const bias = uint64(1023) // double-precision uses 1023 as bias
+	bitlen := uint64(z.BitLen())
 
 	// Normalize the number, by shifting it so that the MSB is shifted out.
-	shifts := uint(1 + 256 - z.BitLen())
-
+	y := new(Int).Lsh(z, uint(1+256-bitlen))
 	// The number with the leading 1 shifted out is the fraction.
-	y := new(Int).Lsh(z, shifts)
 	fraction := y[3]
 
 	// The exp is calculated from the number of shifts, adjusted with the bias.
-	biased_exp := bias + uint64(256-shifts)
+	// double-precision uses 1023 as bias
+	biased_exp := 1023 + bitlen - 1
 
 	// The IEEE 754 double-precision layout is as follows:
 	//  1 sign bit (we don't bother with this, since it's always zero for uints)
