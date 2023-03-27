@@ -134,7 +134,7 @@ func FuzzBase10StringCompare(f *testing.F) {
 func BenchmarkFromDecimalString(b *testing.B) {
 	input := twoPow256Sub1
 
-	b.Run("bigint", func(b *testing.B) {
+	b.Run("big", func(b *testing.B) {
 		val := new(big.Int)
 		b.ReportAllocs()
 		b.ResetTimer()
@@ -147,41 +147,13 @@ func BenchmarkFromDecimalString(b *testing.B) {
 		}
 	})
 
-	b.Run("u256", func(b *testing.B) {
+	b.Run("uint256", func(b *testing.B) {
 		val := new(Int)
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			for j := 1; j < len(input); j++ {
 				if err := val.SetFromDecimal(input[:j]); err != nil {
-					b.Fatalf("%v: %v", err, string(input[:j]))
-				}
-			}
-		}
-	})
-}
-
-func BenchmarkFromHexString(b *testing.B) {
-	input := "0xf131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303"
-	b.Run("bigint", func(b *testing.B) {
-		val := new(big.Int)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			for j := 3; j < len(input); j++ {
-				if _, ok := val.SetString(input[:j], 0); !ok {
-					b.Fatalf("Error on %v", string(input[:j]))
-				}
-			}
-		}
-	})
-	b.Run("u256", func(b *testing.B) {
-		val := new(Int)
-		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
-			for j := 3; j < len(input); j++ {
-				if err := val.SetFromHex(input[:j]); err != nil {
 					b.Fatalf("%v: %v", err, string(input[:j]))
 				}
 			}

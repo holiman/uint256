@@ -135,7 +135,7 @@ func benchmark_Add_Big(bench *testing.B) {
 		b.Add(b, b2)
 	}
 }
-func Benchmark_Add(bench *testing.B) {
+func BenchmarkAdd(bench *testing.B) {
 	bench.Run("single/big", benchmark_Add_Big)
 	bench.Run("single/uint256", benchmark_Add_Bit)
 }
@@ -172,7 +172,7 @@ func benchmark_Sub_Big(bench *testing.B) {
 		b1.Sub(b1, b2)
 	}
 }
-func Benchmark_Sub(bench *testing.B) {
+func BenchmarkSub(bench *testing.B) {
 	bench.Run("single/big", benchmark_Sub_Big)
 	bench.Run("single/uint256", benchmark_Sub_Bit)
 	bench.Run("single/uint256_of", benchmark_SubOverflow_Bit)
@@ -302,7 +302,7 @@ func benchmark_And_Bit(bench *testing.B) {
 		f.And(f, f2)
 	}
 }
-func Benchmark_And(bench *testing.B) {
+func BenchmarkAnd(bench *testing.B) {
 	bench.Run("single/big", benchmark_And_Big)
 	bench.Run("single/uint256", benchmark_And_Bit)
 }
@@ -325,7 +325,7 @@ func benchmark_Or_Bit(bench *testing.B) {
 		f.Or(f, f2)
 	}
 }
-func Benchmark_Or(bench *testing.B) {
+func BenchmarkOr(bench *testing.B) {
 	bench.Run("single/big", benchmark_Or_Big)
 	bench.Run("single/uint256", benchmark_Or_Bit)
 }
@@ -349,7 +349,7 @@ func benchmark_Xor_Bit(bench *testing.B) {
 	}
 }
 
-func Benchmark_Xor(bench *testing.B) {
+func BenchmarkXor(bench *testing.B) {
 	bench.Run("single/big", benchmark_Xor_Big)
 	bench.Run("single/uint256", benchmark_Xor_Bit)
 }
@@ -375,7 +375,7 @@ func benchmark_Cmp_Bit(bench *testing.B) {
 		f2.Cmp(f)
 	}
 }
-func Benchmark_Cmp(bench *testing.B) {
+func BenchmarkCmp(bench *testing.B) {
 	bench.Run("single/big", benchmark_Cmp_Big)
 	bench.Run("single/uint256", benchmark_Cmp_Bit)
 }
@@ -457,7 +457,7 @@ func benchmark_Lsh_Bit_N_GT_64(bench *testing.B) {
 func benchmark_Lsh_Bit_N_GT_0(bench *testing.B) {
 	benchmark_Lsh_Bit(1, bench)
 }
-func Benchmark_Lsh(bench *testing.B) {
+func BenchmarkLsh(bench *testing.B) {
 	bench.Run("n_eq_0/big", benchmark_Lsh_Big_N_EQ_0)
 	bench.Run("n_gt_192/big", benchmark_Lsh_Big_N_GT_192)
 	bench.Run("n_gt_128/big", benchmark_Lsh_Big_N_GT_128)
@@ -518,7 +518,7 @@ func benchmark_Rsh_Bit_N_GT_64(bench *testing.B) {
 func benchmark_Rsh_Bit_N_GT_0(bench *testing.B) {
 	benchmark_Rsh_Bit(1, bench)
 }
-func Benchmark_Rsh(bench *testing.B) {
+func BenchmarkRsh(bench *testing.B) {
 	bench.Run("n_eq_0/big", benchmark_Rsh_Big_N_EQ_0)
 	bench.Run("n_gt_192/big", benchmark_Rsh_Big_N_GT_192)
 	bench.Run("n_gt_128/big", benchmark_Rsh_Big_N_GT_128)
@@ -598,7 +598,7 @@ func benchmark_ExpSmall_Bit(bench *testing.B) {
 		f_base.Set(f_orig)
 	}
 }
-func Benchmark_Exp(bench *testing.B) {
+func BenchmarkExp(bench *testing.B) {
 	bench.Run("large/big", benchmark_Exp_Big)
 	bench.Run("large/uint256", benchmark_Exp_Bit)
 	bench.Run("small/big", benchmark_ExpSmall_Big)
@@ -785,12 +785,12 @@ func benchmark_SdivLarge_Bit(bench *testing.B) {
 	}
 }
 
-func Benchmark_SDiv(bench *testing.B) {
+func BenchmarkSDiv(bench *testing.B) {
 	bench.Run("large/big", benchmark_SdivLarge_Big)
 	bench.Run("large/uint256", benchmark_SdivLarge_Bit)
 }
 
-func Benchmark_EncodeHex(b *testing.B) {
+func BenchmarkEncodeHex(b *testing.B) {
 	hexEncodeU256 := func(b *testing.B, samples *[numSamples]Int) {
 		b.ReportAllocs()
 		for j := 0; j < b.N; j += numSamples {
@@ -814,33 +814,29 @@ func Benchmark_EncodeHex(b *testing.B) {
 	b.Run("large/big", func(b *testing.B) { hexEncodeBig(b, &big256Samples) })
 }
 
-func Benchmark_DecodeHex(b *testing.B) {
-
+func BenchmarkFromHexString(b *testing.B) {
 	var hexStrings []string
 	for _, z := range &int256Samples {
 		hexStrings = append(hexStrings, (&z).Hex())
 	}
-
-	hexDecodeU256 := func(b *testing.B, samples *[numSamples]Int) {
+	b.Run("uint256", func(b *testing.B) {
 		b.ReportAllocs()
-		//var sink Int
-		for j := 0; j < b.N; j += numSamples {
-			for i := 0; i < numSamples; i++ {
-				_, _ = FromHex(hexStrings[i])
+		for j := 0; j < b.N; j++ {
+			i := j % numSamples
+			if _, err := FromHex(hexStrings[i]); err != nil {
+				b.Fatalf("%v: %v", err, string(hexStrings[i]))
 			}
 		}
-	}
-	hexDecodeBig := func(b *testing.B, samples *[numSamples]big.Int) {
+	})
+	b.Run("big", func(b *testing.B) {
 		b.ReportAllocs()
-		//var sink big.Int
-		for j := 0; j < b.N; j += numSamples {
-			for i := 0; i < numSamples; i++ {
-				big.NewInt(0).SetString(hexStrings[i], 16)
+		for j := 0; j < b.N; j++ {
+			i := j % numSamples
+			if _, ok := big.NewInt(0).SetString(hexStrings[i], 0); !ok {
+				b.Fatalf("Error on %v", string(hexStrings[i]))
 			}
 		}
-	}
-	b.Run("large/uint256", func(b *testing.B) { hexDecodeU256(b, &int256Samples) })
-	b.Run("large/big", func(b *testing.B) { hexDecodeBig(b, &big256Samples) })
+	})
 }
 
 func BenchmarkMulDivOverflow(b *testing.B) {

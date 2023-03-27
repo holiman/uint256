@@ -1459,6 +1459,14 @@ func BenchmarkDecimal(b *testing.B) {
 			}
 		}
 	})
+	b.Run("ToDecimal/big", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range bigints {
+				_ = z.Text(10)
+			}
+		}
+	})
 	b.Run("ToPrettyDecimal/uint256", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
@@ -1467,11 +1475,11 @@ func BenchmarkDecimal(b *testing.B) {
 			}
 		}
 	})
-	b.Run("ToDecimal/big", func(b *testing.B) {
+	b.Run("ToPrettyDecimal/big", func(b *testing.B) {
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			for _, z := range bigints {
-				_ = z.Text(10)
+				_ = prettyFmtBigInt(z)
 			}
 		}
 	})
