@@ -932,6 +932,21 @@ func (z *Int) Cmp(x *Int) (r int) {
 	return 1
 }
 
+// CmpUint64 compares z and x and returns:
+//
+//	-1 if z <  x
+//	 0 if z == x
+//	+1 if z >  x
+func (z *Int) CmpUint64(n uint64) int {
+	if z[0] > n || (z[1]|z[2]|z[3]) != 0 {
+		return 1
+	}
+	if z[0] == n {
+		return 0
+	}
+	return -1
+}
+
 // LtUint64 returns true if z is smaller than n
 func (z *Int) LtUint64(n uint64) bool {
 	return z[0] < n && (z[1]|z[2]|z[3]) == 0
@@ -1300,5 +1315,97 @@ func (z *Int) Sqrt(x *Int) *Int {
 			return z.Set(z1)
 		}
 		z1, z2 = z2, z1
+	}
+}
+
+var (
+	// lut is a lookuptable of bitlength -> log10, used in Log10().
+	lut = [257]int{0, 0, 0, 0, -1, 1, 1, -1, 2, 2, -1, 3, 3, 3, -1, 4, 4, -1, 5, 5, -1, 6, 6, 6, -1, 7, 7, -1, 8, 8, -1, 9, 9, 9, -1, 10, 10, -1, 11, 11, -1, 12, 12, 12, -1, 13, 13, -1, 14, 14, -1, 15, 15, 15, -1, 16, 16, -1, 17, 17, -1, 18, 18, 18, -1, 19, 19, -1, 20, 20, -1, 21, 21, 21, -1, 22, 22, -1, 23, 23, -1, 24, 24, 24, -1, 25, 25, -1, 26, 26, -1, 27, 27, 27, -1, 28, 28, -1, 29, 29, -1, 30, 30, -1, 31, 31, 31, -1, 32, 32, -1, 33, 33, -1, 34, 34, 34, -1, 35, 35, -1, 36, 36, -1, 37, 37, 37, -1, 38, 38, -1, 39, 39, -1, 40, 40, 40, -1, 41, 41, -1, 42, 42, -1, 43, 43, 43, -1, 44, 44, -1, 45, 45, -1, 46, 46, 46, -1, 47, 47, -1, 48, 48, -1, 49, 49, 49, -1, 50, 50, -1, 51, 51, -1, 52, 52, 52, -1, 53, 53, -1, 54, 54, -1, 55, 55, 55, -1, 56, 56, -1, 57, 57, -1, 58, 58, -1, 59, 59, 59, -1, 60, 60, -1, 61, 61, -1, 62, 62, 62, -1, 63, 63, -1, 64, 64, -1, 65, 65, 65, -1, 66, 66, -1, 67, 67, -1, 68, 68, 68, -1, 69, 69, -1, 70, 70, -1, 71, 71, 71, -1, 72, 72, -1, 73, 73, -1, 74, 74, 74, -1, 75, 75, -1, 76, 76, -1}
+	// 10 ** 32
+	tenTo32 = &Int{9632337040368467968, 5421010862427, 0, 0}
+	// 10 ** 64
+	tenTo64 = &Int{0, 7942358959831785217, 16807427164405733357, 1593091}
+)
+
+// Log10 returns the log in base 10, floored to nearest integer.
+// **OBS** This method returns '0' for '0', not `-Inf`.
+func (z *Int) Log10() uint {
+	// For some bit-lengths, there's only one possible value. Example:
+	// three bits can only represent [100 ... 111], or [4 ... 7]
+	// Ergo, bitlen:4 -> log10 == 0
+	if quick := lut[z.BitLen()%257]; quick >= 0 {
+		return uint(quick)
+	}
+	// The fast-path fails for certain bitlengths, then we need to divide
+	// it down.
+	var (
+		result uint
+		x      = new(Int).Set(z)
+		y      = new(Int)
+	)
+	// The max value here is around 10**78, so we can divide by 10**64
+	// XOR by 10**32, but we never need to do both.
+	if divisor := tenTo64; x.Cmp(divisor) >= 0 {
+		x.Div(x, divisor)
+		result += 64
+	} else if divisor := tenTo32; x.Cmp(divisor) >= 0 {
+		x.Div(x, divisor)
+		result += 32
+	}
+	// Dividing by 10 ** 16, approaching uint64-space
+	if divisor := uint64(10_000_000_000_000_000); x.CmpUint64(divisor) >= 0 {
+		x.Div(x, y.SetUint64(divisor))
+		result += 16
+	}
+	// At this point, we're fully in uint64-space.
+	// max value now is (10_000_000_000_000_000 -1) = 9_999_999_999_999_999
+	xx := x.Uint64()
+	if xx >= 1e8 {
+		if xx >= 1e15 {
+			return result + 15
+		}
+		if xx >= 1e14 {
+			return result + 14
+		}
+		if xx >= 1e13 {
+			return result + 13
+		}
+		if xx >= 1e12 {
+			return result + 12
+		}
+		if xx >= 1e11 {
+			return result + 11
+		}
+		if xx >= 1e10 {
+			return result + 10
+		}
+		if xx >= 1e9 {
+			return result + 9
+		}
+		return result + 8
+
+	} else {
+		if xx >= 1e7 {
+			return result + 7
+		}
+		if xx >= 1e6 {
+			return result + 6
+		}
+		if xx >= 1e5 {
+			return result + 5
+		}
+		if xx >= 1e4 {
+			return result + 4
+		}
+		if xx >= 1000 {
+			return result + 3
+		}
+		if xx >= 100 {
+			return result + 2
+		}
+		if xx >= 10 {
+			return result + 1
+		}
+		return result
 	}
 }
