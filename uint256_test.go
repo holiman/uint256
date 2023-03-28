@@ -1651,12 +1651,12 @@ func TestByte32Representation(t *testing.T) {
 }
 
 func testLog10(t *testing.T, z *Int) {
-	want := uint(math.Log10(z.Float64()))
-	if z.IsZero() {
-		want = 0
+	want := uint(len(z.Dec()))
+	if want > 0 {
+		want--
 	}
 	if have := z.Log10(); have != want {
-		t.Errorf("%s: have %v want %v", z.Hex(), have, want)
+		t.Errorf("%s (%s): have %v want %v", z.Hex(), z.Dec(), have, want)
 	}
 }
 
@@ -1664,6 +1664,11 @@ func TestLog10(t *testing.T) {
 	for i := uint(0); i < 255; i++ {
 		z := NewInt(1)
 		testLog10(t, z.Lsh(z, i))
+	}
+	z := NewInt(1)
+	ten := NewInt(10)
+	for i := uint(0); i < 80; i++ {
+		testLog10(t, z.Mul(z, ten))
 	}
 }
 

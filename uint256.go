@@ -1332,7 +1332,7 @@ var (
 func (z *Int) Log10() uint {
 	// For some bit-lengths, there's only one possible value. Example:
 	// three bits can only represent [100 ... 111], or [4 ... 7]
-	// Ergo, bitlen:4 -> log10 == 0
+	// Ergo, bitlen:3 -> log10 == 0
 	if quick := lut[z.BitLen()%257]; quick >= 0 {
 		return uint(quick)
 	}
