@@ -1720,8 +1720,18 @@ func TestLogBit(t *testing.T) {
 		for j := last; j < a.BitLen(); j++ {
 			fmt.Printf("%d,", i)
 		}
-		fmt.Printf("%d,", -1)
+		//fmt.Printf("bitlength %d has log %d or %d\n,", a.BitLen(), i, i+1)
+		fmt.Printf("%d,", -(i + 1))
 		last = a.BitLen() + 1
 	}
 	fmt.Printf("}\n")
+}
+
+func TestPrintTenPows(t *testing.T) {
+	z := NewInt(1)
+	ten := NewInt(10)
+	for i := uint(0); i < 80; i++ {
+		fmt.Printf("pows[%d] = &Int{ %d, %d, %d, %d }\n", i, z[0], z[1], z[2], z[3])
+		z.Mul(z, ten)
+	}
 }
