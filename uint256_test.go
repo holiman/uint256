@@ -788,11 +788,13 @@ func TestRandomSDiv(t *testing.T) {
 
 func TestUdivremQuick(t *testing.T) {
 	//
-	u := []uint64{1, 0, 0, 0, 0}
-	d := Int{0, 1, 0, 0}
-	quot := []uint64{}
+	var (
+		u        = []uint64{1, 0, 0, 0, 0}
+		d        = Int{0, 1, 0, 0}
+		quot     []uint64
+		expected = new(Int)
+	)
 	rem := udivrem(quot, u, &d)
-	expected := new(Int)
 	copy(expected[:], u)
 	if !rem.Eq(expected) {
 		t.Errorf("Wrong remainder: %x, expected %x", rem, expected)
@@ -1646,5 +1648,30 @@ func TestByte32Representation(t *testing.T) {
 		if got != exp {
 			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
 		}
+	}
+}
+
+func testCmpBig(t *testing.T, z *Int, x *big.Int) {
+	want := z.ToBig().Cmp(x)
+	have := z.CmpBig(x)
+	if have != want {
+		t.Errorf("%s.CmpBig( %x ) : have %v want %v", z.Hex(), x, have, want)
+	}
+}
+
+func TestCmpBig(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		z := NewInt(1)
+		z.Lsh(z, i)
+		// z, z
+		testCmpBig(t, z, new(Int).Set(z).ToBig())
+		// z, z + 1
+		testCmpBig(t, z, new(Int).AddUint64(z, 1).ToBig())
+		// z, z - 1
+		testCmpBig(t, z, new(Int).SubUint64(z, 1).ToBig())
+		// z, -z
+		testCmpBig(t, z, new(big.Int).Neg(new(Int).Set(z).ToBig()))
+		// z, z << 256
+		testCmpBig(t, z, new(big.Int).Lsh(new(Int).Set(z).ToBig(), 256))
 	}
 }
