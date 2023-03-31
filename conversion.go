@@ -41,6 +41,7 @@ var (
 )
 
 // ToBig returns a big.Int version of z.
+// Return `nil` if z is nil
 func (z *Int) ToBig() *big.Int {
 	if z == nil {
 		return nil
