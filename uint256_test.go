@@ -1667,5 +1667,9 @@ func TestCmpBig(t *testing.T) {
 		testCmpBig(t, z, new(Int).AddUint64(z, 1).ToBig())
 		// z, z - 1
 		testCmpBig(t, z, new(Int).SubUint64(z, 1).ToBig())
+		// z, -z
+		testCmpBig(t, z, new(big.Int).Neg(new(Int).Set(z).ToBig()))
+		// z, z << 256
+		testCmpBig(t, z, new(big.Int).Lsh(new(Int).Set(z).ToBig(), 256))
 	}
 }
