@@ -938,11 +938,11 @@ func (z *Int) Cmp(x *Int) (r int) {
 //	-1 if z <  x
 //	 0 if z == x
 //	+1 if z >  x
-func (z *Int) CmpUint64(n uint64) int {
-	if z[0] > n || (z[1]|z[2]|z[3]) != 0 {
+func (z *Int) CmpUint64(x uint64) int {
+	if z[0] > x || (z[1]|z[2]|z[3]) != 0 {
 		return 1
 	}
-	if z[0] == n {
+	if z[0] == x {
 		return 0
 	}
 	return -1
