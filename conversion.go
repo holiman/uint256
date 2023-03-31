@@ -76,6 +76,8 @@ func FromBig(b *big.Int) (*Int, bool) {
 
 // MustFromBig is a convenience-constructor from big.Int.
 // Returns a new Int and panics if overflow occurred.
+// OBS: If b is `nil`, this method does _not_ panic, but 
+// instead returns `nil`
 func MustFromBig(b *big.Int) *Int {
 	if b == nil {
 		return nil
