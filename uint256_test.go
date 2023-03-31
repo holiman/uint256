@@ -1648,3 +1648,24 @@ func TestByte32Representation(t *testing.T) {
 		}
 	}
 }
+
+func testCmpBig(t *testing.T, z *Int, x *big.Int) {
+	want := z.ToBig().Cmp(x)
+	have := z.CmpBig(x)
+	if have != want {
+		t.Errorf("%s.CmpBig( %x ) : have %v want %v", z.Hex(), x, have, want)
+	}
+}
+
+func TestCmpBig(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		z := NewInt(1)
+		z.Lsh(z, i)
+		// z, z
+		testCmpBig(t, z, new(Int).Set(z).ToBig())
+		// z, z + 1
+		testCmpBig(t, z, new(Int).AddUint64(z, 1).ToBig())
+		// z, z - 1
+		testCmpBig(t, z, new(Int).SubUint64(z, 1).ToBig())
+	}
+}

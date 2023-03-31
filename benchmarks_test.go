@@ -375,9 +375,32 @@ func benchmark_Cmp_Bit(bench *testing.B) {
 		f2.Cmp(f)
 	}
 }
+
 func BenchmarkCmp(bench *testing.B) {
 	bench.Run("single/big", benchmark_Cmp_Big)
 	bench.Run("single/uint256", benchmark_Cmp_Bit)
+}
+
+func BenchmarkCmpBig(bench *testing.B) {
+	// This bench tests where the Cmp is non-equal
+	bench.Run("nonequal", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			x := &big256Samples[i%len(big256Samples)]
+			z := &int256Samples[len(int256Samples)-(i%len(int256Samples))-1]
+			_ = z.CmpBig(x)
+		}
+	})
+	bench.Run("equal", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			x := &big256Samples[i%len(big256Samples)]
+			z := &int256Samples[i%len(big256Samples)]
+			if z.CmpBig(x) != 0 {
+				b.Fatal("test error")
+			}
+		}
+	})
 }
 
 func BenchmarkLt(b *testing.B) {

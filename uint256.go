@@ -9,6 +9,7 @@ package uint256
 import (
 	"encoding/binary"
 	"math"
+	"math/big"
 	"math/bits"
 )
 
@@ -930,6 +931,24 @@ func (z *Int) Cmp(x *Int) (r int) {
 		return 0
 	}
 	return 1
+}
+
+// CmpBig compares z and x and returns:
+//
+//	-1 if z <  x
+//	 0 if z == x
+//	+1 if z >  x
+func (z *Int) CmpBig(x *big.Int) (r int) {
+	// If x is negative, it's surely smaller (z > x)
+	if x.Sign() == -1 {
+		return 1
+	}
+	y := new(Int)
+	if y.SetFromBig(x) { // overflow
+		// z < x
+		return -1
+	}
+	return z.Cmp(y)
 }
 
 // LtUint64 returns true if z is smaller than n
