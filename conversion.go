@@ -41,7 +41,11 @@ var (
 )
 
 // ToBig returns a big.Int version of z.
+// Return `nil` if z is nil
 func (z *Int) ToBig() *big.Int {
+	if z == nil {
+		return nil
+	}
 	b := new(big.Int)
 	switch maxWords { // Compile-time check.
 	case 4: // 64-bit architectures.
@@ -61,7 +65,11 @@ func (z *Int) ToBig() *big.Int {
 
 // FromBig is a convenience-constructor from big.Int.
 // Returns a new Int and whether overflow occurred.
+// OBS: If b is `nil`, this method returns `nil, false`
 func FromBig(b *big.Int) (*Int, bool) {
+	if b == nil {
+		return nil, false
+	}
 	z := &Int{}
 	overflow := z.SetFromBig(b)
 	return z, overflow
@@ -69,7 +77,12 @@ func FromBig(b *big.Int) (*Int, bool) {
 
 // MustFromBig is a convenience-constructor from big.Int.
 // Returns a new Int and panics if overflow occurred.
+// OBS: If b is `nil`, this method does _not_ panic, but 
+// instead returns `nil`
 func MustFromBig(b *big.Int) *Int {
+	if b == nil {
+		return nil
+	}
 	z := &Int{}
 	if z.SetFromBig(b) {
 		panic("overflow")
