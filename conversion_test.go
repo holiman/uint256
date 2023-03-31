@@ -19,15 +19,27 @@ var (
 )
 
 func TestFromBig(t *testing.T) {
-	a := new(big.Int)
+	var a *big.Int
 	b, o := FromBig(a)
+	if o {
+		t.Fatalf("nil conversion overflowed! big.Int %x", b)
+	}
+	if b != nil {
+		t.Fatalf("got %x, exp %v", b, nil)
+	}
+	b2 := MustFromBig(a)
+	if b2 != nil {
+		t.Fatalf("got %x, exp %v", b2, nil)
+	}
+	a = new(big.Int)
+	b, o = FromBig(a)
 	if o {
 		t.Fatalf("conversion overflowed! big.Int %x", a.Bytes())
 	}
 	if exp, got := a.Bytes(), b.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
-	b2 := MustFromBig(a)
+	b2 = MustFromBig(a)
 	if exp, got := a.Bytes(), b2.Bytes(); !bytes.Equal(got, exp) {
 		t.Fatalf("got %x exp %x", got, exp)
 	}
@@ -211,7 +223,10 @@ func TestFromBigOverflow(t *testing.T) {
 }
 
 func TestToBig(t *testing.T) {
-
+	var uint256Nil *Int
+	if bigNil := uint256Nil.ToBig(); bigNil != nil {
+		t.Errorf("expected big.Int <nil>, got %x", bigNil)
+	}
 	if bigZero := new(Int).ToBig(); bigZero.Cmp(new(big.Int)) != 0 {
 		t.Errorf("expected big.Int 0, got %x", bigZero)
 	}
