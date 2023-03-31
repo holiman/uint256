@@ -1709,34 +1709,57 @@ func BenchmarkLog10(b *testing.B) {
 	})
 }
 
-func TestLogBit(t *testing.T) {
-
-	a := big.NewInt(1)
-	b := big.NewInt(1)
-	m := big.NewInt(10)
-	last := 0
-	fmt.Printf("lut = [257]int{")
-	for i := 0; i < 77; i++ {
-		a.Mul(a, m)
-		b.Sub(a, big.NewInt(1))
-		for j := last; j < a.BitLen(); j++ {
-			fmt.Printf("%d,", i)
-		}
-		//fmt.Printf("bitlength %d has log %d or %d\n,", a.BitLen(), i, i+1)
-		fmt.Printf("%d,", -(i + 1))
-		last = a.BitLen() + 1
+func testCmpU64(t *testing.T, z *Int, x uint64) {
+	want := z.ToBig().Cmp(new(big.Int).SetUint64(x))
+	have := z.CmpUint64(x)
+	if have != want {
+		t.Errorf("%s.CmpUint64( %x ) : have %v want %v", z.Hex(), x, have, want)
 	}
-	fmt.Printf("}\n")
 }
 
-func TestPrintTenPows(t *testing.T) {
-	z := NewInt(1)
-	ten := NewInt(10)
-	for i := uint(0); i < 80; i++ {
-		fmt.Printf("pows[%d] = &Int{ %d, %d, %d, %d }\n", i, z[0], z[1], z[2], z[3])
-		z.Mul(z, ten)
-  }
+func TestCmpUint64(t *testing.T) {
+	for i := uint(0); i < 255; i++ {
+		z := NewInt(1)
+		z.Lsh(z, i)
+		// z, z
+		testCmpU64(t, z, new(Int).Set(z).Uint64())
+		// z, z + 1
+		testCmpU64(t, z, new(Int).AddUint64(z, 1).Uint64())
+		// z, z - 1
+		testCmpU64(t, z, new(Int).SubUint64(z, 1).Uint64())
+		// z, z >> 64
+		testCmpU64(t, z, new(big.Int).Rsh(new(Int).Set(z).ToBig(), 64).Uint64())
+	}
 }
+
+//func TestLogBit(t *testing.T) {
+//
+//	a := big.NewInt(1)
+//	b := big.NewInt(1)
+//	m := big.NewInt(10)
+//	last := 0
+//	fmt.Printf("lut = [257]int{")
+//	for i := 0; i < 77; i++ {
+//		a.Mul(a, m)
+//		b.Sub(a, big.NewInt(1))
+//		for j := last; j < a.BitLen(); j++ {
+//			fmt.Printf("%d,", i)
+//		}
+//		//fmt.Printf("bitlength %d has log %d or %d\n,", a.BitLen(), i, i+1)
+//		fmt.Printf("%d,", -(i + 1))
+//		last = a.BitLen() + 1
+//	}
+//	fmt.Printf("}\n")
+//}
+//
+//func TestPrintTenPows(t *testing.T) {
+//	z := NewInt(1)
+//	ten := NewInt(10)
+//	for i := uint(0); i < 80; i++ {
+//		fmt.Printf("pows[%d] = &Int{ %d, %d, %d, %d }\n", i, z[0], z[1], z[2], z[3])
+//		z.Mul(z, ten)
+//  }
+//}
 
 func testCmpBig(t *testing.T, z *Int, x *big.Int) {
 	want := z.ToBig().Cmp(x)
