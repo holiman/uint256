@@ -64,6 +64,7 @@ func (z *Int) ToBig() *big.Int {
 
 // FromBig is a convenience-constructor from big.Int.
 // Returns a new Int and whether overflow occurred.
+// OBS: If b is `nil`, this method returns `nil, false`
 func FromBig(b *big.Int) (*Int, bool) {
 	if b == nil {
 		return nil, false
