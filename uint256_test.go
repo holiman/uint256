@@ -788,11 +788,13 @@ func TestRandomSDiv(t *testing.T) {
 
 func TestUdivremQuick(t *testing.T) {
 	//
-	u := []uint64{1, 0, 0, 0, 0}
-	d := Int{0, 1, 0, 0}
-	quot := []uint64{}
+	var (
+		u        = []uint64{1, 0, 0, 0, 0}
+		d        = Int{0, 1, 0, 0}
+		quot     []uint64
+		expected = new(Int)
+	)
 	rem := udivrem(quot, u, &d)
-	expected := new(Int)
 	copy(expected[:], u)
 	if !rem.Eq(expected) {
 		t.Errorf("Wrong remainder: %x, expected %x", rem, expected)
