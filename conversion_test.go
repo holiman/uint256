@@ -225,7 +225,7 @@ func TestFromBigOverflow(t *testing.T) {
 func TestToBig(t *testing.T) {
 	var uint256Nil *Int
 	if bigNil := uint256Nil.ToBig(); bigNil != nil {
-		t.Errorf("expected big.Int <nil>, got %x", bigNil)
+		t.Errorf("want big.Int <nil>, have %x", bigNil)
 	}
 	if bigZero := new(Int).ToBig(); bigZero.Cmp(new(big.Int)) != 0 {
 		t.Errorf("expected big.Int 0, got %x", bigZero)
