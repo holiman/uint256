@@ -1663,14 +1663,19 @@ func testLog10(t *testing.T, z *Int) {
 }
 
 func TestLog10(t *testing.T) {
+	testLog10(t, new(Int))
 	for i := uint(0); i < 255; i++ {
 		z := NewInt(1)
 		testLog10(t, z.Lsh(z, i))
+		if i != 0 {
+			testLog10(t, new(Int).SubUint64(z, 1))
+		}
 	}
 	z := NewInt(1)
 	ten := NewInt(10)
 	for i := uint(0); i < 80; i++ {
 		testLog10(t, z.Mul(z, ten))
+		testLog10(t, new(Int).SubUint64(z, 1))
 	}
 }
 
