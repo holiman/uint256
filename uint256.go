@@ -1338,14 +1338,11 @@ func (z *Int) Sqrt(x *Int) *Int {
 }
 
 var (
-	// lut is a lookuptable of bitlength -> log10, used in Log10().
-	lut = [257]int8{0, 0, 0, 0, -1, 1, 1, -2, 2, 2, -3, 3, 3, 3, -4, 4, 4, -5, 5, 5, -6, 6, 6, 6, -7, 7, 7, -8, 8, 8, -9, 9, 9, 9, -10, 10, 10, -11, 11, 11, -12, 12, 12, 12, -13, 13, 13, -14, 14, 14, -15, 15, 15, 15, -16, 16, 16, -17, 17, 17, -18, 18, 18, 18, -19, 19, 19, -20, 20, 20, -21, 21, 21, 21, -22, 22, 22, -23, 23, 23, -24, 24, 24, 24, -25, 25, 25, -26, 26, 26, -27, 27, 27, 27, -28, 28, 28, -29, 29, 29, -30, 30, 30, -31, 31, 31, 31, -32, 32, 32, -33, 33, 33, -34, 34, 34, 34, -35, 35, 35, -36, 36, 36, -37, 37, 37, 37, -38, 38, 38, -39, 39, 39, -40, 40, 40, 40, -41, 41, 41, -42, 42, 42, -43, 43, 43, 43, -44, 44, 44, -45, 45, 45, -46, 46, 46, 46, -47, 47, 47, -48, 48, 48, -49, 49, 49, 49, -50, 50, 50, -51, 51, 51, -52, 52, 52, 52, -53, 53, 53, -54, 54, 54, -55, 55, 55, 55, -56, 56, 56, -57, 57, 57, -58, 58, 58, -59, 59, 59, 59, -60, 60, 60, -61, 61, 61, -62, 62, 62, 62, -63, 63, 63, -64, 64, 64, -65, 65, 65, 65, -66, 66, 66, -67, 67, 67, -68, 68, 68, 68, -69, 69, 69, -70, 70, 70, -71, 71, 71, 71, -72, 72, 72, -73, 73, 73, -74, 74, 74, 74, -75, 75, 75, -76, 76, 76, -77}
-
 	// pows64 contains 10^0 ... 10^19
 	pows64 = [20]uint64{
 		1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19,
 	}
-	// pows contain 1 ** 20 ... 10 ** 80
+	// pows contain 10 ** 20 ... 10 ** 80
 	pows = [60]Int{
 		Int{7766279631452241920, 5, 0, 0}, Int{3875820019684212736, 54, 0, 0}, Int{1864712049423024128, 542, 0, 0}, Int{200376420520689664, 5421, 0, 0}, Int{2003764205206896640, 54210, 0, 0}, Int{1590897978359414784, 542101, 0, 0}, Int{15908979783594147840, 5421010, 0, 0}, Int{11515845246265065472, 54210108, 0, 0}, Int{4477988020393345024, 542101086, 0, 0}, Int{7886392056514347008, 5421010862, 0, 0}, Int{5076944270305263616, 54210108624, 0, 0}, Int{13875954555633532928, 542101086242, 0, 0}, Int{9632337040368467968, 5421010862427, 0, 0},
 		Int{4089650035136921600, 54210108624275, 0, 0}, Int{4003012203950112768, 542101086242752, 0, 0}, Int{3136633892082024448, 5421010862427522, 0, 0}, Int{12919594847110692864, 54210108624275221, 0, 0}, Int{68739955140067328, 542101086242752217, 0, 0}, Int{687399551400673280, 5421010862427522170, 0, 0}, Int{6873995514006732800, 17316620476856118468, 2, 0}, Int{13399722918938673152, 7145508105175220139, 29, 0}, Int{4870020673419870208, 16114848830623546549, 293, 0}, Int{11806718586779598848, 13574535716559052564, 2938, 0},
@@ -1358,33 +1355,23 @@ var (
 // Log10 returns the log in base 10, floored to nearest integer.
 // **OBS** This method returns '0' for '0', not `-Inf`.
 func (z *Int) Log10() uint {
-	// For some bit-lengths, there's only one possible value. Example:
-	// three bits can only represent [100 ... 111], or [4 ... 7]
-	// Ergo, bitlen:3 -> log10 == 0
-	res := lut[z.BitLen()%257]
-	if res >= 0 {
-		return uint(res)
-	}
-	// It was negative, which is a signal that we need to do one more check
-	// do determine which log it is. First remove the negation
-	res = -res
+	// The following algorithm is taken from "Bit twiddling hacks"
+	// https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog10
+	//
+	// The idea is that log10(z) = log2(z) / log2(10)
+	// log2(z) trivially is z.Bitlen()
+	// 1/log2(10) is a constant ~ 1233 / 4096. The approximation is correct up to 5 digit after
+	// the decimal point and it seems no further refinement is needed.
+	// Our tests check all boundary cases anyway.
 
-	// We now lookup via the power of tens. Example:
-	// bitlen 4, [1000 ... 1111], or [8 .. 15]
-	// In order to figure out if it is '0' or '1', we only need to do one comparison,
-	// is it larger or smaller than '10'?
+	bitlen := z.BitLen()
+	if bitlen == 0 {
+		return 0
+	}
 
-	// For bitlengths < 20, we can use the uint64-space
-	if res < 20 {
-		// Uint64-space
-		if z.CmpUint64(pows64[res]) < 0 {
-			return uint(res - 1)
-		}
-		return uint(res)
+	t := (bitlen + 1) * 1233 >> 12
+	if bitlen <= 64 && z[0] < pows64[t] || t >= 20 && z.Lt(&pows[t-20]) {
+		return uint(t - 1)
 	}
-	// Non-uint64 space
-	if z.Cmp(&pows[res-20]) < 0 {
-		return uint(res - 1)
-	}
-	return uint(res)
+	return uint(t)
 }
