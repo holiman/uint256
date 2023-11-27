@@ -77,7 +77,7 @@ func FromBig(b *big.Int) (*Int, bool) {
 
 // MustFromBig is a convenience-constructor from big.Int.
 // Returns a new Int and panics if overflow occurred.
-// OBS: If b is `nil`, this method does _not_ panic, but 
+// OBS: If b is `nil`, this method does _not_ panic, but
 // instead returns `nil`
 func MustFromBig(b *big.Int) *Int {
 	if b == nil {
@@ -135,7 +135,6 @@ func (z *Int) Float64() float64 {
 // - This method does not accept negative zero as valid, e.g "-0x0",
 //   - (this method does not accept any negative input as valid)
 func (z *Int) SetFromHex(hex string) error {
-	z.Clear()
 	return z.fromHex(hex)
 }
 
@@ -147,6 +146,7 @@ func (z *Int) fromHex(hex string) error {
 	if len(hex) > 66 {
 		return ErrBig256Range
 	}
+	z.Clear()
 	end := len(hex)
 	for i := 0; i < 4; i++ {
 		start := end - 16
@@ -188,10 +188,14 @@ func MustFromHex(hex string) *Int {
 	return &z
 }
 
-// UnmarshalText implements encoding.TextUnmarshaler
+// UnmarshalText implements encoding.TextUnmarshaler. This method
+// can unmarshal either hexadecimal or decimal.
+// - For hexadecimal, the input _must_ be prefixed with 0x or 0X
 func (z *Int) UnmarshalText(input []byte) error {
-	z.Clear()
-	return z.fromHex(string(input))
+	if len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X') {
+		return z.fromHex(string(input))
+	}
+	return z.fromDecimal(string(input))
 }
 
 // SetFromBig converts a big.Int to Int and sets the value to z.
@@ -613,26 +617,36 @@ func (z *Int) EncodeRLP(w io.Writer) error {
 }
 
 // MarshalText implements encoding.TextMarshaler
+// MarshalText marshals using the decimal representation (compatible with big.Int)
 func (z *Int) MarshalText() ([]byte, error) {
-	return []byte(z.Hex()), nil
+	return []byte(z.Dec()), nil
 }
 
 // MarshalJSON implements json.Marshaler.
+// MarshalJSON marshals using the 'decimal string' representation. This is _not_ compatible
+// with big.Int: big.Int marshals into JSON 'native' numeric format.
+//
+// The JSON  native format is, on some platforms, (e.g. javascript), limited to 53-bit large
+// integer space. Thus, U256 uses string-format, which is not compatible with
+// big.int (big.Int refuses to unmarshal a string representation).
 func (z *Int) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + z.Hex() + `"`), nil
+	return []byte(`"` + z.Dec() + `"`), nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
+// UnmarshalJSON implements json.Unmarshaler. UnmarshalJSON accepts either
+// - Quoted string: either hexadecimal OR decimal
+// - Not quoted string: only decimal
 func (z *Int) UnmarshalJSON(input []byte) error {
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
-		return ErrNonString
+		// if not quoted, it must be decimal
+		return z.fromDecimal(string(input))
 	}
 	return z.UnmarshalText(input[1 : len(input)-1])
 }
 
-// String returns the hex encoding of b.
+// String returns the decimal encoding of b.
 func (z *Int) String() string {
-	return z.Hex()
+	return z.Dec()
 }
 
 const (
@@ -738,7 +752,6 @@ var (
 	ErrEmptyNumber      = errors.New("hex string \"0x\"")
 	ErrLeadingZero      = errors.New("hex number with leading zero digits")
 	ErrBig256Range      = errors.New("hex number > 256 bits")
-	ErrNonString        = errors.New("non-string")
 	ErrBadBufferLength  = errors.New("bad ssz buffer length")
 	ErrBadEncodedLength = errors.New("bad ssz encoded length")
 )

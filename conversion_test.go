@@ -1196,10 +1196,12 @@ func TestDecode(t *testing.T) {
 		Foo *Int
 	}
 	var jsonDecoded jsonStruct
-	if err := json.Unmarshal([]byte(`{"Foo":0x1}`), &jsonDecoded); err == nil {
-		t.Fatal("Expected error")
+	// This test was previously an "expected error", The U256 behaviour has now
+	// changed, to be compatible with big.Int
+	if err := json.Unmarshal([]byte(`{"Foo":1}`), &jsonDecoded); err != nil {
+		t.Fatalf("Expected no error, have %v", err)
 	}
-	if err := json.Unmarshal([]byte(`{"Foo":1}`), &jsonDecoded); err == nil {
+	if err := json.Unmarshal([]byte(`{"Foo":0x1}`), &jsonDecoded); err == nil {
 		t.Fatal("Expected error")
 	}
 	if err := json.Unmarshal([]byte(`{"Foo":""}`), &jsonDecoded); err == nil {
@@ -1216,38 +1218,61 @@ func TestEnDecode(t *testing.T) {
 	type jsonStruct struct {
 		Foo *Int
 	}
+	type jsonBigStruct struct {
+		Foo *big.Int
+	}
 	var testSample = func(i int, bigSample big.Int, intSample Int) {
 		// Encoding
 		wantHex := fmt.Sprintf("0x%s", bigSample.Text(16))
 		wantDec := bigSample.Text(10)
 
-		if got := intSample.Hex(); wantHex != got {
-			t.Fatalf("test %d #1, got %v, exp %v", i, got, wantHex)
+		if have, want := intSample.Hex(), fmt.Sprintf("0x%s", bigSample.Text(16)); have != want {
+			t.Fatalf("test %d #1, have %v, want %v", i, have, want)
 		}
-		if got := intSample.String(); wantHex != got {
-			t.Fatalf("test %d #2, got %v, exp %v", i, got, wantHex)
+		if have, want := intSample.String(), bigSample.String(); have != want {
+			t.Fatalf("test %d String(), have %v, want %v", i, have, want)
 		}
-		if got, _ := intSample.MarshalText(); wantHex != string(got) {
-			t.Fatalf("test %d #3, got %v, exp %v", i, got, wantHex)
+		{
+			have, _ := intSample.MarshalText()
+			want, _ := bigSample.MarshalText()
+			if !bytes.Equal(have, want) {
+				t.Fatalf("test %d MarshalText, have %q, want %q", i, have, want)
+			}
 		}
-		if got, _ := intSample.Value(); wantDec != got.(string) {
-			t.Fatalf("test %d #4, got %v, exp %v", i, got, wantHex)
+		{
+			have, _ := intSample.MarshalJSON()
+			want := []byte(fmt.Sprintf(`"%s"`, bigSample.Text(10)))
+			if !bytes.Equal(have, want) {
+				t.Fatalf("test %d MarshalJSON, have %q, want %q", i, have, want)
+			}
 		}
-		if got := intSample.Dec(); wantDec != got {
-			t.Fatalf("test %d #5, got %v, exp %v", i, got, wantHex)
+		if have, _ := intSample.Value(); wantDec != have.(string) {
+			t.Fatalf("test %d #4, got %v, exp %v", i, have, wantHex)
+		}
+		if have, want := intSample.Dec(), wantDec; have != want {
+			t.Fatalf("test %d Dec(), have %v, want %v", i, have, want)
 		}
 		{ // Json
 			jsonEncoded, err := json.Marshal(&jsonStruct{&intSample})
 			if err != nil {
-				t.Fatalf("test %d #6, err: %v", i, err)
+				t.Fatalf("test %d: json encoding err: %v", i, err)
 			}
+			jsonEncodedBig, _ := json.Marshal(&jsonBigStruct{&bigSample})
 			var jsonDecoded jsonStruct
 			err = json.Unmarshal(jsonEncoded, &jsonDecoded)
 			if err != nil {
-				t.Fatalf("test %d #7, err: %v", i, err)
+				t.Fatalf("test %d error unmarshaling: %v", i, err)
 			}
 			if jsonDecoded.Foo.Cmp(&intSample) != 0 {
-				t.Fatalf("test %d #8, got %v, exp %v", i, jsonDecoded.Foo, intSample)
+				t.Fatalf("test %d #8, have %v, want %v", i, jsonDecoded.Foo, intSample)
+			}
+			// See if we can also unmarshal from big.Int's non-string format
+			err = json.Unmarshal(jsonEncodedBig, &jsonDecoded)
+			if err != nil {
+				t.Fatalf("test %d unmarshalling from big.Int err: %v", i, err)
+			}
+			if jsonDecoded.Foo.Cmp(&intSample) != 0 {
+				t.Fatalf("test %d have %v, want %v", i, jsonDecoded.Foo, intSample)
 			}
 		}
 		// Decoding
