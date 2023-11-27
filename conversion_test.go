@@ -1239,6 +1239,13 @@ func TestEnDecode(t *testing.T) {
 				t.Fatalf("test %d MarshalText, have %q, want %q", i, have, want)
 			}
 		}
+		{
+			have, _ := intSample.MarshalJSON()
+			want := []byte(fmt.Sprintf(`"%s"`, bigSample.Text(10)))
+			if !bytes.Equal(have, want) {
+				t.Fatalf("test %d MarshalJSON, have %q, want %q", i, have, want)
+			}
+		}
 		if have, _ := intSample.Value(); wantDec != have.(string) {
 			t.Fatalf("test %d #4, got %v, exp %v", i, have, wantHex)
 		}
@@ -1251,13 +1258,13 @@ func TestEnDecode(t *testing.T) {
 				t.Fatalf("test %d: json encoding err: %v", i, err)
 			}
 			jsonEncodedBig, _ := json.Marshal(&jsonBigStruct{&bigSample})
-			if !bytes.Equal(jsonEncoded, jsonEncodedBig) {
-				// big.Int marshals integers without quoting them. This is not always
-				// ideal, since values may be larger than 53 bits, and thus not
-				// expressable in javascript native form.
-				// U256 instead uses string-form
-				t.Logf("Known difference, u256: %q, big: %q", string(jsonEncoded), string(jsonEncodedBig))
-			}
+			//if !bytes.Equal(jsonEncoded, jsonEncodedBig) {
+			// big.Int marshals integers without quoting them. This is not always
+			// ideal, since values may be larger than 53 bits, and thus not
+			// expressable in javascript native form.
+			// U256 instead uses string-form
+			//t.Logf("Known difference, u256: %q, big: %q", string(jsonEncoded), string(jsonEncodedBig))
+			//}
 			var jsonDecoded jsonStruct
 			err = json.Unmarshal(jsonEncoded, &jsonDecoded)
 			if err != nil {

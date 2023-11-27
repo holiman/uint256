@@ -623,16 +623,14 @@ func (z *Int) MarshalText() ([]byte, error) {
 }
 
 // MarshalJSON implements json.Marshaler.
-// MarshalJSON marshals using the hexadecimal representation. This is _not_ compatible
+// MarshalJSON marshals using the 'decimal string' representation. This is _not_ compatible
 // with big.Int: big.Int marshals into JSON 'native' numeric format.
 //
 // The JSON  native format is, on some platforms, (e.g. javascript), limited to 53-bit large
 // integer space. Thus, U256 uses string-format, which is not compatible with
 // big.int (big.Int refuses to unmarshal a string representation).
-// Since we cannot reach compatibility with big.Int _anyway_, we might aswell
-// choose to use hexadecimal representation here anyway.
 func (z *Int) MarshalJSON() ([]byte, error) {
-	return []byte(`"` + z.Hex() + `"`), nil
+	return []byte(`"` + z.Dec() + `"`), nil
 }
 
 // UnmarshalJSON implements json.Unmarshaler. UnmarshalJSON accepts either
