@@ -1241,7 +1241,7 @@ func TestEnDecode(t *testing.T) {
 		}
 		{
 			have, _ := intSample.MarshalJSON()
-			want := []byte(fmt.Sprintf(`"%s"`, bigSample.Text(10)))
+			want := []byte(fmt.Sprintf(`"0x%s"`, bigSample.Text(16)))
 			if !bytes.Equal(have, want) {
 				t.Fatalf("test %d MarshalJSON, have %q, want %q", i, have, want)
 			}
