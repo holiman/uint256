@@ -17,6 +17,9 @@ import (
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
+// Zero is a zero-valued uint256.
+var Zero Int
+
 // NewInt returns a new initialized Int.
 func NewInt(val uint64) *Int {
 	z := &Int{}
