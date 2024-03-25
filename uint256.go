@@ -1184,7 +1184,7 @@ sh192:
 
 // Set sets z to x and returns z.
 func (z *Int) Set(x *Int) *Int {
-	*z = *x
+	z[0], z[1], z[2], z[3] = x[0], x[1], x[2], x[3]
 	return z
 }
 
