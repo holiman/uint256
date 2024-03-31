@@ -593,8 +593,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 	switch x.Cmp(y) {
 	case -1:
 		// x < y
-		copy(z[:], x[:])
-		return z
+		return z.Set(x)
 	case 0:
 		// x == y
 		return z.Clear() // They are equal
@@ -621,6 +620,27 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 	if y.IsZero() {
 		return z.Clear(), m.Clear()
 	}
+
+	switch x.Cmp(y) {
+	case -1:
+		// x < y
+		return z.Clear(), m.Set(x)
+	case 0:
+		// x == y
+		return z.SetOne(), m.Clear()
+	}
+
+	// At this point:
+	// x != 0
+	// y != 0
+	// x > y
+
+	// Shortcut trivial case
+	if x.IsUint64() {
+		x0, y0 := x.Uint64(), y.Uint64()
+		return z.SetUint64(x0 / y0), m.SetUint64(x0 % y0)
+	}
+
 	var quot Int
 	*m = udivrem(quot[:], x[:], y)
 	*z = quot
