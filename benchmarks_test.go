@@ -870,7 +870,8 @@ func BenchmarkMulDivOverflow(b *testing.B) {
 			x := factorsSamples[j]
 
 			for i := 0; i < iter; i++ {
-				x.MulDivOverflow(&x, &factorsSamples[j], &muldivSamples[j])
+				res := new(Int)
+				res.MulDivOverflow(&x, &x, &muldivSamples[j])
 			}
 		}
 	}
@@ -882,8 +883,9 @@ func BenchmarkMulDivOverflow(b *testing.B) {
 			x := factorsSamples[j]
 
 			for i := 0; i < iter; i++ {
-				x.Mul(&x, &factorsSamples[j])
-				x.Div(&x, &muldivSamples[j])
+				res := new(big.Int)
+				res.Mul(&x, &x)
+				res.Div(res, &muldivSamples[j])
 			}
 		}
 	}
