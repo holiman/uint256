@@ -944,3 +944,42 @@ func BenchmarkSet(bench *testing.B) {
 	bench.Run("single/uint256", benchmarkUint256)
 	bench.Run("single/big", benchmarkBig)
 }
+
+func BenchmarkBitLen(bench *testing.B) {
+	// res is a variable to prevent the golang compiler from eliminating the benchmark testing entirely.
+	var res int
+
+	data := []Int{
+		{0, 0, 0, 0xffffffffffffffff},
+		{0, 0, 0xffffffffffffffff, 0},
+		{0, 0xffffffffffffffff, 0, 0},
+		{0xffffffffffffffff, 0, 0, 0},
+	}
+
+	benchmarkBitLenUint256 := func(b *testing.B, num *Int) {
+		var r int
+		for i := 0; i < b.N; i++ {
+			r = num.BitLen()
+		}
+		res = r
+	}
+
+	benchmarkBitLenBig := func(b *testing.B, num *big.Int) {
+		var r int
+		for i := 0; i < b.N; i++ {
+			r = num.BitLen()
+		}
+		res = r
+	}
+
+	res += 1
+
+	bench.Run("BitLen192/uint256", func(b *testing.B) { benchmarkBitLenUint256(b, &data[0])})
+	bench.Run("BitLen128/uint256", func(b *testing.B) { benchmarkBitLenUint256(b, &data[1])})
+	bench.Run("BitLen64/uint256", func(b *testing.B) { benchmarkBitLenUint256(b, &data[2])})
+	bench.Run("BitLen0/uint256", func(b *testing.B) { benchmarkBitLenUint256(b, &data[3])})
+	bench.Run("BitLen192/big", func(b *testing.B) { benchmarkBitLenBig(b, data[0].ToBig())})
+	bench.Run("BitLen128/big", func(b *testing.B) { benchmarkBitLenBig(b, data[1].ToBig())})
+	bench.Run("BitLen64/big", func(b *testing.B) { benchmarkBitLenBig(b, data[2].ToBig())})
+	bench.Run("BitLen0/big", func(b *testing.B) { benchmarkBitLenBig(b, data[3].ToBig())})
+}
