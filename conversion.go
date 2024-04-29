@@ -446,7 +446,7 @@ func (z *Int) SetBytes21(in []byte) *Int {
 }
 
 func (z *Int) SetBytes29(in []byte) *Int {
-	_ = in[23] // bounds check hint to compiler; see golang.org/issue/14808
+	_ = in[28] // bounds check hint to compiler; see golang.org/issue/14808
 	z[3] = bigEndianUint40(in[0:5])
 	z[2] = binary.BigEndian.Uint64(in[5:13])
 	z[1] = binary.BigEndian.Uint64(in[13:21])
