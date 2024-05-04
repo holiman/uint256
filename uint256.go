@@ -1229,25 +1229,49 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 
 // ExtendSign extends length of two’s complement signed integer,
 // sets z to
-//   - x if byteNum > 31
+//   - x if byteNum > 30
 //   - x interpreted as a signed number with sign-bit at (byteNum*8+7), extended to the full 256 bits
 //
 // and returns z.
 func (z *Int) ExtendSign(x, byteNum *Int) *Int {
-	if byteNum.GtUint64(31) {
-		return z.Set(x)
+	// This implementation is based on evmone. See https://github.com/ethereum/evmone/pull/390
+	z.Set(x)
+	if byteNum.GtUint64(30) {
+		return z
 	}
-	bit := uint(byteNum.Uint64()*8 + 7)
 
-	mask := new(Int).SetOne()
-	mask.Lsh(mask, bit)
-	mask.SubUint64(mask, 1)
-	if x.isBitSet(bit) {
-		z.Or(x, mask.Not(mask))
-	} else {
-		z.And(x, mask)
+	e              := byteNum.Uint64()
+	signWordIndex  := e >> 3    // Index of the word with the sign bit.
+	signByteIndex  := e & 7     // Index of the sign byte in the sign word.
+	signWord       := z[signWordIndex]
+	signByteOffset := signByteIndex << 3
+	signByte       := signWord >> signByteOffset    // Move sign byte to position 0.
+
+	// Sign-extend the "sign" byte and move it to the right position. Value bits are zeros.
+	sextByte := uint64(int64(int8(signByte)))
+	sext     := sextByte << signByteOffset
+	signMask := uint64(math.MaxUint64 << signByteOffset)
+	value    := signWord & ^signMask    // Reset extended bytes.
+
+	z[signWordIndex] = sext | value    // Combine the result word.
+
+	// Produce bits (all zeros or ones) for extended words. This is done by SAR of
+        // the sign-extended byte. Shift by any value 7-63 would work.
+	signEx := uint64(int64(sextByte) >> 8)
+
+	switch signWordIndex {
+	case 2:
+		z[3] = signEx
+		return z
+	case 1:
+		z[3], z[2] = signEx, signEx
+		return z
+	case 0:
+		z[3], z[2], z[1] = signEx, signEx, signEx
+		return z
+	default:
+		return z
 	}
-	return z
 }
 
 // Sqrt sets z to ⌊√x⌋, the largest integer such that z² ≤ x, and returns z.
