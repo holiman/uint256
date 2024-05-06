@@ -944,3 +944,19 @@ func BenchmarkSet(bench *testing.B) {
 	bench.Run("single/uint256", benchmarkUint256)
 	bench.Run("single/big", benchmarkBig)
 }
+
+func BenchmarkByte(bench *testing.B) {
+	var (
+		a      = new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
+		num    = NewInt(0)
+		result = new(Int)
+	)
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		for ii := uint64(0); ii < 32; ii++ {
+			result.Set(a)
+			num.SetUint64(ii)
+			_ = result.Byte(num)
+		}
+	}
+}

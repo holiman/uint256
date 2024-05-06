@@ -881,32 +881,27 @@ func TestSRsh(t *testing.T) {
 }
 
 func TestByte(t *testing.T) {
-	z := new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual := z.Byte(NewInt(0))
-	expected := new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ab"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %x, got %x", expected, actual)
+	input, err := FromHex("0x102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual = z.Byte(NewInt(31))
-	expected = new(Int).SetBytes(hex2Bytes("00000000000000000000000000000000000000000000000000000000000000ef"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %x, got %x", expected, actual)
-	}
-
-	z = new(Int).SetBytes(hex2Bytes("ABCDEF09080706050403020100000000000000000000000000000000000000ef"))
-	actual = z.Byte(NewInt(32))
-	expected = new(Int).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %x, got %x", expected, actual)
-	}
-
-	z = new(Int).SetBytes(hex2Bytes("ABCDEF0908070605040302011111111111111111111111111111111111111111"))
-	actual = z.Byte(new(Int).SetBytes(hex2Bytes("f000000000000000000000000000000000000000000000000000000000000001")))
-	expected = new(Int).SetBytes(hex2Bytes("0000000000000000000000000000000000000000000000000000000000000000"))
-	if !actual.Eq(expected) {
-		t.Fatalf("Expected %x, got %x", expected, actual)
+	for i := uint64(0); i < 35; i++ {
+		var (
+			z     = input.Clone()
+			index = NewInt(i)
+			have  = z.Byte(index)
+			want  = NewInt(i)
+		)
+		if i >= 32 {
+			want.Clear()
+		}
+		if !have.Eq(want) {
+			t.Fatalf("index %d: have %#x want %#x", i, have, want)
+		}
+		// Also check that we indeed modified the z
+		if z != have {
+			t.Fatalf("index %d: should return self %v %v", i, z, have)
+		}
 	}
 }
 
