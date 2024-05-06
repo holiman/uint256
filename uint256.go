@@ -1235,12 +1235,12 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 // and returns z.
 func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 	// This implementation is based on evmone. See https://github.com/ethereum/evmone/pull/390
-	z.Set(x)
 	if byteNum.GtUint64(30) {
-		return z
+		return z.Set(x)
 	}
 
 	e := byteNum.Uint64()
+	z.Set(x)
 	signWordIndex := e >> 3 // Index of the word with the sign bit.
 	signByteIndex := e & 7  // Index of the sign byte in the sign word.
 	signWord := z[signWordIndex]
