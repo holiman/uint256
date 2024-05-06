@@ -960,3 +960,17 @@ func BenchmarkByte(bench *testing.B) {
 		}
 	}
 }
+
+func BenchmarkExtendSign(b *testing.B) {
+	a, err := FromHex("0xf123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9")
+	if err != nil {
+		b.Fatal(err)
+	}
+	result := new(Int)
+	n := NewInt(0)
+	b.ResetTimer()
+	for i := uint64(0); i < uint64(b.N); i++ {
+		n.SetUint64(i % 33)
+		result.ExtendSign(a, n)
+	}
+}
