@@ -141,7 +141,7 @@ func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 
 func randNums() (*big.Int, *Int, error) {
 	//How many bits? 0-256
-	nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
+	nbits, _ := rand.Int(rand.Reader, big.NewInt(257))
 	//Max random value, a 130-bits integer, i.e 2^130
 	max := new(big.Int)
 	max.Exp(big.NewInt(2), big.NewInt(nbits.Int64()), nil)
@@ -833,6 +833,28 @@ func TestRandomRsh(t *testing.T) {
 		b.Rsh(b, n)
 		if eq := checkEq(b, f1); !eq {
 			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf= %x\nb= %x\n", f1a, n, f1, b)
+		}
+	}
+}
+
+func TestRandomSRsh(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		b, f1, err := randNums()
+		if err != nil {
+			t.Fatal(err)
+		}
+		neg := f1.isBitSet(255) // is it negative?
+		f1a := f1.Clone()
+		nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
+		n := uint(nbits.Uint64())
+		f1.SRsh(f1, n)
+		if neg {
+			b = S256(b)
+		}
+		b.Rsh(b, n)
+		if eq := checkEq(b, f1); !eq {
+			bf, _ := FromBig(b)
+			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf = %x\nbf= %x\nb = %x\n", f1a, n, f1, bf, b)
 		}
 	}
 }
