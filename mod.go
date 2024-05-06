@@ -8,12 +8,6 @@ import (
 	"math/bits"
 )
 
-// Some utility functions
-
-func leadingZeros(x *Int) int {
-	return 256 - x.BitLen()
-}
-
 // Reciprocal computes a 320-bit value representing 1/m
 //
 // Notes:
