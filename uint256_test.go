@@ -965,7 +965,7 @@ func FuzzSignExtend(f *testing.F) {
 	f.Fuzz(func(t *testing.T, z0, z1, z2, z3 uint64, index uint8) {
 		arg := &Int{z0, z1, z2, z3}
 		n := new(Int).SetUint64(uint64(index))
-		testSignExtend(f, arg, n)
+		testSignExtend(t, arg, n)
 	})
 }
 

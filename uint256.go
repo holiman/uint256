@@ -1240,23 +1240,23 @@ func (z *Int) ExtendSign(x, byteNum *Int) *Int {
 		return z
 	}
 
-	e              := byteNum.Uint64()
-	signWordIndex  := e >> 3    // Index of the word with the sign bit.
-	signByteIndex  := e & 7     // Index of the sign byte in the sign word.
-	signWord       := z[signWordIndex]
+	e := byteNum.Uint64()
+	signWordIndex := e >> 3 // Index of the word with the sign bit.
+	signByteIndex := e & 7  // Index of the sign byte in the sign word.
+	signWord := z[signWordIndex]
 	signByteOffset := signByteIndex << 3
-	signByte       := signWord >> signByteOffset    // Move sign byte to position 0.
+	signByte := signWord >> signByteOffset // Move sign byte to position 0.
 
 	// Sign-extend the "sign" byte and move it to the right position. Value bits are zeros.
 	sextByte := uint64(int64(int8(signByte)))
-	sext     := sextByte << signByteOffset
+	sext := sextByte << signByteOffset
 	signMask := uint64(math.MaxUint64 << signByteOffset)
-	value    := signWord & ^signMask    // Reset extended bytes.
+	value := signWord & ^signMask // Reset extended bytes.
 
-	z[signWordIndex] = sext | value    // Combine the result word.
+	z[signWordIndex] = sext | value // Combine the result word.
 
 	// Produce bits (all zeros or ones) for extended words. This is done by SAR of
-        // the sign-extended byte. Shift by any value 7-63 would work.
+	// the sign-extended byte. Shift by any value 7-63 would work.
 	signEx := uint64(int64(sextByte) >> 8)
 
 	switch signWordIndex {
