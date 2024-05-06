@@ -1025,120 +1025,68 @@ func (z *Int) SetOne() *Int {
 
 // Lsh sets z = x << n and returns z.
 func (z *Int) Lsh(x *Int, n uint) *Int {
-	// n % 64 == 0
-	if n&0x3f == 0 {
-		switch n {
-		case 0:
-			return z.Set(x)
-		case 64:
-			return z.lsh64(x)
-		case 128:
-			return z.lsh128(x)
-		case 192:
-			return z.lsh192(x)
-		default:
-			return z.Clear()
-		}
-	}
-	var (
-		a, b uint64
-	)
-	// Big swaps first
 	switch {
-	case n > 192:
-		if n > 256 {
-			return z.Clear()
-		}
+	case n == 0:
+		return z.Set(x)
+	case n >= 192:
 		z.lsh192(x)
 		n -= 192
-		goto sh192
-	case n > 128:
+		z[3] <<= n
+		return z
+	case n >= 128:
 		z.lsh128(x)
 		n -= 128
-		goto sh128
-	case n > 64:
+		z[3] = (z[3] << n) | (z[2] >> (64 - n))
+		z[2] <<= n
+		return z
+	case n >= 64:
 		z.lsh64(x)
 		n -= 64
-		goto sh64
+		z[3] = (z[3] << n) | (z[2] >> (64 - n))
+		z[2] = (z[2] << n) | (z[1] >> (64 - n))
+		z[1] <<= n
+		return z
 	default:
 		z.Set(x)
+		z[3] = (z[3] << n) | (z[2] >> (64 - n))
+		z[2] = (z[2] << n) | (z[1] >> (64 - n))
+		z[1] = (z[1] << n) | (z[0] >> (64 - n))
+		z[0] <<= n
+		return z
 	}
-
-	// remaining shifts
-	a = z[0] >> (64 - n)
-	z[0] = z[0] << n
-
-sh64:
-	b = z[1] >> (64 - n)
-	z[1] = (z[1] << n) | a
-
-sh128:
-	a = z[2] >> (64 - n)
-	z[2] = (z[2] << n) | b
-
-sh192:
-	z[3] = (z[3] << n) | a
-
-	return z
 }
 
 // Rsh sets z = x >> n and returns z.
 func (z *Int) Rsh(x *Int, n uint) *Int {
-	// n % 64 == 0
-	if n&0x3f == 0 {
-		switch n {
-		case 0:
-			return z.Set(x)
-		case 64:
-			return z.rsh64(x)
-		case 128:
-			return z.rsh128(x)
-		case 192:
-			return z.rsh192(x)
-		default:
-			return z.Clear()
-		}
-	}
-	var (
-		a, b uint64
-	)
-	// Big swaps first
 	switch {
-	case n > 192:
-		if n > 256 {
-			return z.Clear()
-		}
+	case n == 0:
+		return z.Set(x)
+	case n >= 192:
 		z.rsh192(x)
 		n -= 192
-		goto sh192
-	case n > 128:
+		z[0] >>= n
+		return z
+	case n >= 128:
 		z.rsh128(x)
 		n -= 128
-		goto sh128
-	case n > 64:
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] >>= n
+		return z
+	case n >= 64:
 		z.rsh64(x)
 		n -= 64
-		goto sh64
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] >>= n
+		return z
 	default:
 		z.Set(x)
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] = (z[2] >> n) | (z[3] << (64 - n))
+		z[3] >>= n
+		return z
 	}
-
-	// remaining shifts
-	a = z[3] << (64 - n)
-	z[3] = z[3] >> n
-
-sh64:
-	b = z[2] << (64 - n)
-	z[2] = (z[2] >> n) | a
-
-sh128:
-	a = z[1] << (64 - n)
-	z[1] = (z[1] >> n) | b
-
-sh192:
-	z[0] = (z[0] >> n) | a
-
-	return z
 }
 
 // SRsh (Signed/Arithmetic right shift)
@@ -1149,57 +1097,39 @@ func (z *Int) SRsh(x *Int, n uint) *Int {
 	if !x.isBitSet(255) {
 		return z.Rsh(x, n)
 	}
-	if n%64 == 0 {
-		switch n {
-		case 0:
-			return z.Set(x)
-		case 64:
-			return z.srsh64(x)
-		case 128:
-			return z.srsh128(x)
-		case 192:
-			return z.srsh192(x)
-		default:
-			return z.SetAllOne()
-		}
-	}
-	var (
-		a uint64 = math.MaxUint64 << (64 - n%64)
-	)
-	// Big swaps first
+	var a uint64 = math.MaxUint64 << (64 - n%64)
+
 	switch {
-	case n > 192:
-		if n > 256 {
-			return z.SetAllOne()
-		}
+	case n == 0:
+		return z.Set(x)
+	case n >= 256:
+		return z.SetAllOne()
+	case n >= 192:
 		z.srsh192(x)
 		n -= 192
-		goto sh192
-	case n > 128:
+		z[0] = (z[0] >> n) | a
+		return z
+	case n >= 128:
 		z.srsh128(x)
 		n -= 128
-		goto sh128
-	case n > 64:
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | a
+		return z
+	case n >= 64:
 		z.srsh64(x)
 		n -= 64
-		goto sh64
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] = (z[2] >> n) | a
+		return z
 	default:
 		z.Set(x)
+		z[0] = (z[0] >> n) | (z[1] << (64 - n))
+		z[1] = (z[1] >> n) | (z[2] << (64 - n))
+		z[2] = (z[2] >> n) | (z[3] << (64 - n))
+		z[3] = (z[3] >> n) | a
+		return z
 	}
-
-	// remaining shifts
-	z[3], a = (z[3]>>n)|a, z[3]<<(64-n)
-
-sh64:
-	z[2], a = (z[2]>>n)|a, z[2]<<(64-n)
-
-sh128:
-	z[1], a = (z[1]>>n)|a, z[1]<<(64-n)
-
-sh192:
-	z[0] = (z[0] >> n) | a
-
-	return z
 }
 
 // Set sets z to x and returns z.
