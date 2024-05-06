@@ -1240,16 +1240,16 @@ func (z *Int) Xor(x, y *Int) *Int {
 // if n >= 32, z is set to 0
 // Example: z=5, n=31 => 5
 func (z *Int) Byte(n *Int) *Int {
-	// in z, z[0] is the least significant
-	//
-	if index, overflow := n.Uint64WithOverflow(); !overflow && index < 32 {
-		number := z[4-1-index/8]
-		offset := (index & 0x7) << 3 // 8 * (index % 8)
-		z[0] = (number >> (56 - offset)) & 0xff
-		z[3], z[2], z[1] = 0, 0, 0
-		return z
+	index, overflow := n.Uint64WithOverflow()
+	if overflow || index >= 32 {
+		return z.Clear()
 	}
-	return z.Clear()
+	// in z, z[0] is the least significant
+	number := z[4-1-index/8]
+	offset := (index & 0x7) << 3 // 8 * (index % 8)
+	z[0] = (number >> (56 - offset)) & 0xff
+	z[3], z[2], z[1] = 0, 0, 0
+	return z
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
