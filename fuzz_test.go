@@ -56,6 +56,17 @@ var unaryOpFuncs = []struct {
 	{"Not", (*Int).Not, (*big.Int).Not},
 	{"Neg", (*Int).Neg, (*big.Int).Neg},
 	{"Sqrt", (*Int).Sqrt, (*big.Int).Sqrt},
+	{"square", func(x *Int, y *Int) *Int {
+		res := y.Clone()
+		res.squared()
+		return x.Set(res)
+	}, func(b1 *big.Int, b2 *big.Int) *big.Int {
+		return b1.Mul(b2, b2)
+	}},
+	{"Abs", (*Int).Abs, func(b *big.Int, b2 *big.Int) *big.Int {
+		return b.Abs(S256(b2))
+	},
+	},
 }
 
 var binaryOpFuncs = []struct {

@@ -139,6 +139,17 @@ func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	return nil
 }
 
+func randNum() *Int {
+	//How many bits? 0-256
+	nbits, _ := rand.Int(rand.Reader, big.NewInt(257))
+	//Max random value, a 130-bits integer, i.e 2^130
+	max := new(big.Int)
+	max.Exp(big.NewInt(2), big.NewInt(nbits.Int64()), nil)
+	b, _ := rand.Int(rand.Reader, max)
+	f, _ := FromBig(b)
+	return f
+}
+
 func randNums() (*big.Int, *Int, error) {
 	//How many bits? 0-256
 	nbits, _ := rand.Int(rand.Reader, big.NewInt(257))
@@ -175,60 +186,6 @@ func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
 	return true
 }
 
-func testRandomOp(t *testing.T, nativeFunc func(a, b, c *Int) *Int, bigintFunc func(a, b, c *big.Int) *big.Int) {
-	for i := 0; i < 10000; i++ {
-		b1, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b2, f2, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		{ // Tests the op on the form: a.foo( a, b)
-			f1a, f2a := f1.Clone(), f2.Clone()
-			b1a, b2a := new(big.Int).Set(b1), new(big.Int).Set(b2)
-			nativeFunc(f1a, f1a, f2a)
-			bigintFunc(b1a, b1a, b2a)
-			//checkOverflow(b, f1, overflow)
-			if eq := checkEq(b1a, f1a); !eq {
-				bf, _ := FromBig(b1)
-				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f2a, f1, bf, b1a)
-			}
-		}
-		{ // Tests the op on the form: a.foo( b, a)
-			f1a, f2a := f1.Clone(), f2.Clone()
-			b1a, b2a := new(big.Int).Set(b1), new(big.Int).Set(b2)
-			nativeFunc(f1a, f2a, f1a)
-			bigintFunc(b1a, b2a, b1a)
-			if eq := checkEq(b1a, f1a); !eq {
-				bf, _ := FromBig(b1)
-				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f2a, f1, bf, b1a)
-			}
-		}
-		{ // Tests the op on the form: a.foo( a , a)
-			f1a := f1.Clone()
-			b1a := new(big.Int).Set(b1)
-			nativeFunc(f1a, f1a, f1a)
-			bigintFunc(b1a, b1a, b1a)
-			if eq := checkEq(b1a, f1a); !eq {
-				bf, _ := FromBig(b1)
-				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f1a, f1a, f1, bf, b1a)
-			}
-		}
-		{ // Tests the op on the form: a.foo( b , b)
-			f1a, f2a := f1.Clone(), f2.Clone()
-			b1a, b2a := new(big.Int).Set(b1), new(big.Int).Set(b2)
-			nativeFunc(f1a, f2a, f2a)
-			bigintFunc(b1a, b2a, b2a)
-			if eq := checkEq(b1a, f1a); !eq {
-				bf, _ := FromBig(b1)
-				t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ op ]==\nf = %x\nbf= %x\nb = %x\n", f2a, f2a, f1, bf, b1a)
-			}
-		}
-	}
-}
-
 func TestRandomSubOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -253,20 +210,6 @@ func TestRandomSubOverflow(t *testing.T) {
 	}
 }
 
-func TestRandomBinOp(t *testing.T) {
-	t.Run("Add", func(t *testing.T) { testRandomOp(t, (*Int).Add, (*big.Int).Add) })
-	t.Run("Sub", func(t *testing.T) { testRandomOp(t, (*Int).Sub, (*big.Int).Sub) })
-	t.Run("Mul", func(t *testing.T) { testRandomOp(t, (*Int).Mul, (*big.Int).Mul) })
-	t.Run("Div", func(t *testing.T) { testRandomOp(t, (*Int).Div, bigDiv) })
-	t.Run("Mod", func(t *testing.T) { testRandomOp(t, (*Int).Mod, bigMod) })
-	t.Run("SDiv", func(t *testing.T) { testRandomOp(t, (*Int).SDiv, bigSDiv) })
-	t.Run("SMod", func(t *testing.T) { testRandomOp(t, (*Int).SMod, bigSMod) })
-	t.Run("DivMod/Div", func(t *testing.T) { testRandomOp(t, divModDiv, bigDiv) })
-	t.Run("DivMod/Mod", func(t *testing.T) { testRandomOp(t, divModMod, bigMod) })
-	t.Run("udivrem/Div", func(t *testing.T) { testRandomOp(t, udivremDiv, bigDiv) })
-	t.Run("udivrem/Mod", func(t *testing.T) { testRandomOp(t, udivremMod, bigMod) })
-}
-
 func TestRandomMulOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1, err := randNums()
@@ -287,18 +230,6 @@ func TestRandomMulOverflow(t *testing.T) {
 			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f1, b)
 		}
 	}
-}
-
-func TestRandomSquare(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) *Int {
-			f1.squared()
-			return f1
-		},
-		func(b1, b2, b3 *big.Int) *big.Int {
-			return b1.Mul(b1, b1)
-		},
-	)
 }
 
 // divModDiv wraps DivMod and returns quotient only
@@ -331,17 +262,6 @@ func udivremMod(z, x, y *Int) *Int {
 	var quot Int
 	rem := udivrem(quot[:], x[:], y)
 	return z.Set(&rem)
-}
-
-func TestRandomSqrt(t *testing.T) {
-	testRandomOp(t,
-		func(f1, f2, f3 *Int) *Int {
-			return f1.Sqrt(f2)
-		},
-		func(b1, b2, b3 *big.Int) *big.Int {
-			return b1.Sqrt(b2)
-		},
-	)
 }
 
 func set3Int(s1, s2, s3, d1, d2, d3 *Int) {
@@ -1186,7 +1106,7 @@ func TestRandomExp(t *testing.T) {
 	}
 }
 
-func testUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
+func checkUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
 	var (
 		b1        = x.ToBig()
 		f1        = x.Clone()
@@ -1208,7 +1128,7 @@ func testUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bi
 		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
 	}
 	if !have.Eq(want) {
-		t.Fatalf("%v\n on argument reuse x.op(y,x)\nwant : %#x\nhave : %#x\n", operation, want, have)
+		t.Fatalf("%v\n on argument reuse x.op(x)\nwant : %#x\nhave : %#x\n", operation, want, have)
 	}
 }
 
@@ -1216,9 +1136,7 @@ func TestUnaryOperations(t *testing.T) {
 	for _, tc := range unaryOpFuncs {
 		for _, arg := range unTestCases {
 			f1 := MustFromHex(arg)
-			t.Run(tc.name, func(t *testing.T) {
-				testUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1)
-			})
+			checkUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1)
 		}
 	}
 }
@@ -1227,14 +1145,12 @@ func FuzzUnaryOperations(f *testing.F) {
 	f.Fuzz(func(t *testing.T, x0, x1, x2, x3 uint64) {
 		x := Int{x0, x1, x2, x3}
 		for _, tc := range unaryOpFuncs {
-			t.Run(tc.name, func(t *testing.T) {
-				testUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x)
-			})
+			checkUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x)
 		}
 	})
 }
 
-func testBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
+func checkBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
 	var (
 		b1        = x.ToBig()
 		b2        = y.ToBig()
@@ -1279,9 +1195,17 @@ func TestBinaryOperations(t *testing.T) {
 		for _, inputs := range binTestCases {
 			f1 := MustFromHex(inputs[0])
 			f2 := MustFromHex(inputs[1])
-			t.Run(tc.name, func(t *testing.T) {
-				testBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
-			})
+			checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
+		}
+	}
+}
+
+func Test10KRandomBinaryOperations(t *testing.T) {
+	for _, tc := range binaryOpFuncs {
+		for i := 0; i < 10000; i++ {
+			f1 := randNum()
+			f2 := randNum()
+			checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
 		}
 	}
 }
@@ -1291,12 +1215,12 @@ func FuzzBinaryOperations(f *testing.F) {
 		x := Int{x0, x1, x2, x3}
 		y := Int{y0, y1, y2, y3}
 		for _, tc := range binaryOpFuncs {
-			testBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
+			checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
 		}
 	})
 }
 
-func testTernaryOperation(t *testing.T, opName string, op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
+func checkTernaryOperation(t *testing.T, opName string, op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
 	var (
 		f1orig    = x.Clone()
 		f2orig    = y.Clone()
@@ -1351,7 +1275,7 @@ func TestTernaryOperations(t *testing.T) {
 			f2 := MustFromHex(inputs[1])
 			f3 := MustFromHex(inputs[2])
 			t.Run(tc.name, func(t *testing.T) {
-				testTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2, *f3)
+				checkTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2, *f3)
 			})
 		}
 	}
@@ -1367,12 +1291,12 @@ func FuzzTernaryOperations(f *testing.F) {
 		y := Int{y0, y1, y2, y3}
 		z := Int{z0, z1, z2, z3}
 		for _, tc := range ternaryOpFuncs {
-			testTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y, z)
+			checkTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y, z)
 		}
 	})
 }
 
-func testCompareOperation(t *testing.T, opName string, op opCmpArgFunc, bigOp bigCmpArgFunc, x, y Int) {
+func checkCompareOperation(t *testing.T, opName string, op opCmpArgFunc, bigOp bigCmpArgFunc, x, y Int) {
 	var (
 		f1orig    = x.Clone()
 		f2orig    = y.Clone()
@@ -1402,9 +1326,7 @@ func TestCompareOperations(t *testing.T) {
 		for _, inputs := range binTestCases {
 			f1 := MustFromHex(inputs[0])
 			f2 := MustFromHex(inputs[1])
-			t.Run(tc.name, func(t *testing.T) {
-				testCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
-			})
+			checkCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
 		}
 	}
 }
@@ -1414,7 +1336,7 @@ func FuzzCompareOperations(f *testing.F) {
 		x := Int{x0, x1, x2, x3}
 		y := Int{y0, y1, y2, y3}
 		for _, tc := range cmpOpFuncs {
-			testCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
+			checkCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
 		}
 	})
 }
