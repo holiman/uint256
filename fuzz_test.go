@@ -139,13 +139,6 @@ func FuzzSignExtend(f *testing.F) {
 	})
 }
 
-func FuzzUnaryOp(f *testing.F) {
-	f.Fuzz(func(t *testing.T, x0, x1, x2, x3 uint64) {
-		x := Int{x0, x1, x2, x3}
-		checkUnaryOp((*Int).Sqrt, (*big.Int).Sqrt, x)
-	})
-}
-
 func u256Lsh(z, x, y *Int) *Int {
 	return z.Lsh(x, uint(y.Uint64()&0x1FF))
 }
@@ -167,6 +160,16 @@ func bigSRsh(z, x, y *big.Int) *big.Int {
 	n := uint(y.Uint64() & 0x1FF)
 	x = S256(x)
 	return z.Rsh(x, n)
+}
+
+var unaryOpFuncs = []struct {
+	name   string
+	u256Fn opUnaryArgFunc
+	bigFn  bigUnaryArgFunc
+}{
+	{"Not", (*Int).Not, (*big.Int).Not},
+	{"Neg", (*Int).Neg, (*big.Int).Neg},
+	{"Sqrt", (*Int).Sqrt, (*big.Int).Sqrt},
 }
 
 var binaryOpFuncs = []struct {
@@ -196,18 +199,6 @@ var binaryOpFuncs = []struct {
 
 	{"ExtendSign", (*Int).ExtendSign, bigExtendSign},
 }
-
-//func FuzzBinaryOperations(f *testing.F) {
-//	f.Fuzz(func(t *testing.T, x0, x1, x2, x3, y0, y1, y2, y3 uint64) {
-//
-//		x := Int{x0, x1, x2, x3}
-//		y := Int{y0, y1, y2, y3}
-//
-//		for _, tc := range binaryOpFuncs {
-//			checkDualArgOp(tc.u256Fn, tc.bigFn, x, y)
-//		}
-//	})
-//}
 
 func bigintMulMod(b1, b2, b3, b4 *big.Int) *big.Int {
 	return b1.Mod(big.NewInt(0).Mul(b2, b3), b4)

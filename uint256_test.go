@@ -19,8 +19,8 @@ var (
 	bigtt255 = new(big.Int).Lsh(big.NewInt(1), 255)
 
 	unTestCases = []string{
-		"0",
-		"1",
+		"0x0",
+		"0x1",
 		"0x80000000000000000000000000000000",
 		"0x80000000000000010000000000000000",
 		"0x80000000000000000000000000000001",
@@ -1186,62 +1186,68 @@ func TestRandomExp(t *testing.T) {
 	}
 }
 
-func TestUnOp(t *testing.T) {
-	proc := func(t *testing.T, op func(a, b *Int) *Int, bigOp func(a, b *big.Int) *big.Int) {
-		for i := 0; i < len(unTestCases); i++ {
-			b1, _ := new(big.Int).SetString(unTestCases[i], 0)
-			f1orig, _ := FromBig(b1)
-			f1 := new(Int).Set(f1orig)
+func testUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
+	var (
+		f1orig    = x.Clone()
+		b1        = x.ToBig()
+		f1        = new(Int).Set(f1orig)
+		operation = fmt.Sprintf("op: %v ( %v ) ", opName, x.Hex())
+		want, _   = FromBig(bigOp(new(big.Int), b1))
+		have      = op(new(Int), f1)
+	)
+	// Compare result with big.Int.
+	if !have.Eq(want) {
+		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
+	// Check if arguments are unmodified.
+	if !f1.Eq(f1orig) {
+		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
+	}
+	// Check if reusing args as result works correctly.
+	have = op(f1, f1)
+	if have != f1 {
+		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
+	}
+	if !have.Eq(want) {
+		t.Fatalf("%v\n on argument reuse x.op(y,x)\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
+}
 
-			// Compare result with big.Int.
-			expected, _ := FromBig(bigOp(new(big.Int), b1))
-			result := op(new(Int), f1)
-			if !result.Eq(expected) {
-				t.Logf("arg : %s\n", unTestCases[i])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-
-			// Check if arguments are unmodified.
-			if !f1.Eq(f1orig) {
-				t.Logf("arg : %s\n", unTestCases[i])
-				t.Errorf("first argument had been modified: %x\n", f1)
-			}
-
-			// Check if reusing args as result works correctly.
-			result = op(f1, f1)
-			if result != f1 {
-				t.Logf("arg : %s\n", unTestCases[i])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
-			}
-			if !result.Eq(expected) {
-				t.Logf("arg : %s\n", unTestCases[i])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
+func TestUnaryOperations(t *testing.T) {
+	for _, tc := range unaryOpFuncs {
+		for _, arg := range unTestCases {
+			f1 := MustFromHex(arg)
+			t.Run(tc.name, func(t *testing.T) {
+				testUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1)
+			})
 		}
 	}
+}
 
-	t.Run("Not", func(t *testing.T) { proc(t, (*Int).Not, (*big.Int).Not) })
-	t.Run("Neg", func(t *testing.T) { proc(t, (*Int).Neg, (*big.Int).Neg) })
-	t.Run("Sqrt", func(t *testing.T) { proc(t, (*Int).Sqrt, (*big.Int).Sqrt) })
+func FuzzUnaryOperations(f *testing.F) {
+	f.Fuzz(func(t *testing.T, x0, x1, x2, x3 uint64) {
+		x := Int{x0, x1, x2, x3}
+		for _, tc := range unaryOpFuncs {
+			t.Run(tc.name, func(t *testing.T) {
+				testUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x)
+			})
+		}
+	})
 }
 
 func testBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
 	var (
-		f1orig = x.Clone()
-		f2orig = y.Clone()
-		b1     = x.ToBig()
-		b2     = y.ToBig()
-		f1     = new(Int).Set(f1orig)
-		f2     = new(Int).Set(f2orig)
+		f1orig    = x.Clone()
+		f2orig    = y.Clone()
+		b1        = x.ToBig()
+		b2        = y.ToBig()
+		f1        = new(Int).Set(f1orig)
+		f2        = new(Int).Set(f2orig)
+		operation = fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
+		want, _   = FromBig(bigOp(new(big.Int), b1, b2))
+		have      = op(new(Int), f1, f2)
 	)
-	operation := fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
 	// Compare result with big.Int.
-	want, _ := FromBig(bigOp(new(big.Int), b1, b2))
-	have := op(new(Int), f1, f2)
 	if !have.Eq(want) {
 		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
 	}
@@ -1273,8 +1279,7 @@ func testBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bi
 
 func TestBinaryOperations(t *testing.T) {
 	for _, tc := range binaryOpFuncs {
-		for i := 0; i < len(binTestCases); i++ {
-			inputs := binTestCases[i]
+		for _, inputs := range binTestCases {
 			f1 := MustFromHex(inputs[0])
 			f2 := MustFromHex(inputs[1])
 			t.Run(tc.name, func(t *testing.T) {
