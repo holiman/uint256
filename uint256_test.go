@@ -131,7 +131,7 @@ func randNum() *Int {
 	return f
 }
 
-func randNums() (*big.Int, *Int, error) {
+func randNums() (*big.Int, *Int) {
 	//How many bits? 0-256
 	nbits, _ := rand.Int(rand.Reader, big.NewInt(257))
 	//Max random value, a 130-bits integer, i.e 2^130
@@ -139,10 +139,13 @@ func randNums() (*big.Int, *Int, error) {
 	max.Exp(big.NewInt(2), big.NewInt(nbits.Int64()), nil)
 	b, _ := rand.Int(rand.Reader, max)
 	f, overflow := FromBig(b)
-	return b, f, checkOverflow(b, f, overflow)
+	if err := checkOverflow(b, f, overflow); err != nil {
+		panic(err)
+	}
+	return b, f
 }
 
-func randHighNums() (*big.Int, *Int, error) {
+func randHighNums() (*big.Int, *Int) {
 	//How many bits? 0-256
 	nbits := int64(256)
 	//Max random value, a 130-bits integer, i.e 2^130
@@ -151,8 +154,12 @@ func randHighNums() (*big.Int, *Int, error) {
 	//Generate cryptographically strong pseudo-random between 0 - max
 	b, _ := rand.Int(rand.Reader, max)
 	f, overflow := FromBig(b)
-	return b, f, checkOverflow(b, f, overflow)
+	if err := checkOverflow(b, f, overflow); err != nil {
+		panic(err)
+	}
+	return b, f
 }
+
 func checkEq(b *big.Int, f *Int) bool {
 	f2, _ := FromBig(b)
 	return f.Eq(f2)
@@ -169,14 +176,8 @@ func requireEq(t *testing.T, exp *big.Int, got *Int, txt string) bool {
 
 func TestRandomSubOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		b, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b2, f2, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
+		b, f1 := randNums()
+		b2, f2 := randNums()
 		f1a, f2a := f1.Clone(), f2.Clone()
 		_, overflow := f1.SubOverflow(f1, f2)
 		b.Sub(b, b2)
@@ -193,14 +194,9 @@ func TestRandomSubOverflow(t *testing.T) {
 
 func TestRandomMulOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		b, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b2, f2, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
+		b, f1 := randNums()
+		b2, f2 := randNums()
+
 		f1a, f2a := f1.Clone(), f2.Clone()
 		_, overflow := f1.MulOverflow(f1, f2)
 		b.Mul(b, b2)
@@ -259,27 +255,12 @@ func set3Big(s1, s2, s3, d1, d2, d3 *big.Int) {
 
 func TestRandomMulMod(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		b1, f1, err := randNums()
-		if err != nil {
-			t.Fatalf("Error getting a random number: %v", err)
-		}
-
-		b2, f2, err := randNums()
-		if err != nil {
-			t.Fatalf("Error getting a random number: %v", err)
-		}
-
-		b3, f3, err := randNums()
-		if err != nil {
-			t.Fatalf("Error getting a random number: %v", err)
-		}
-
-		b4, f4, _ := randNums()
+		b1, f1 := randNums()
+		b2, f2 := randNums()
+		b3, f3 := randNums()
+		b4, f4 := randNums()
 		for b4.Cmp(big.NewInt(0)) == 0 {
-			b4, f4, err = randNums()
-			if err != nil {
-				t.Fatalf("Error getting a random number: %v", err)
-			}
+			b4, f4 = randNums()
 		}
 
 		f1.MulMod(f2, f3, f4)
@@ -314,26 +295,14 @@ func TestRandomMulMod(t *testing.T) {
 		b1 := b.Lsh(b, i)
 		f1 := f.Lsh(f, i)
 
-		b2, f2, err := randNums()
-		if err != nil {
-			t.Fatalf("Error getting a random number: %v", err)
-		}
+		b2, f2 := randNums()
 		for b2.Cmp(big.NewInt(0)) == 0 {
-			b2, f2, err = randNums()
-			if err != nil {
-				t.Fatalf("Error getting a random number: %v", err)
-			}
+			b2, f2 = randNums()
 		}
 
-		b3, f3, err := randNums()
-		if err != nil {
-			t.Fatalf("Error getting a random number: %v", err)
-		}
+		b3, f3 := randNums()
 		for b3.Cmp(big.NewInt(0)) == 0 {
-			b3, f3, err = randNums()
-			if err != nil {
-				t.Fatalf("Error getting a random number: %v", err)
-			}
+			b3, f3 = randNums()
 		}
 
 		// Tests with one operand a power of 2
@@ -605,18 +574,10 @@ func TestRandomMulMod(t *testing.T) {
 
 func TestRandomMulDivOverflow(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		b1, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b2, f2, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b3, f3, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
+		b1, f1 := randNums()
+		b2, f2 := randNums()
+		b3, f3 := randNums()
+
 		f1a, f2a, f3a := f1.Clone(), f2.Clone(), f3.Clone()
 
 		_, overflow := f1.MulDivOverflow(f1, f2, f3)
@@ -645,11 +606,7 @@ func S256(x *big.Int) *big.Int {
 
 func TestRandomAbs(t *testing.T) {
 	for i := 0; i < 10000; i++ {
-		b, f1, err := randHighNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		u256(b)
+		b, f1 := randHighNums()
 		b2 := S256(big.NewInt(0).Set(b))
 		b2.Abs(b2)
 		f1a := new(Int).Abs(f1)
@@ -662,14 +619,11 @@ func TestRandomAbs(t *testing.T) {
 }
 
 func TestUdivremQuick(t *testing.T) {
-	//
 	var (
 		u        = []uint64{1, 0, 0, 0, 0}
-		d        = Int{0, 1, 0, 0}
-		quot     []uint64
 		expected = new(Int)
 	)
-	rem := udivrem(quot, u, &d)
+	rem := udivrem([]uint64{}, u, &Int{0, 1, 0, 0})
 	copy(expected[:], u)
 	if !rem.Eq(expected) {
 		t.Errorf("Wrong remainder: %x, expected %x", rem, expected)
@@ -694,7 +648,7 @@ func test10KRandom(t *testing.T, name string) {
 func TestSRsh(t *testing.T) {
 	type testCase struct {
 		arg string
-		n   uint
+		n   uint64
 	}
 	testCases := []testCase{
 		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 0},
@@ -712,20 +666,11 @@ func TestSRsh(t *testing.T) {
 		{"0x7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16},
 		{"0x7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256},
 	}
+	op := lookupBinary("SRsh")
 	for _, tc := range testCases {
 		arg := MustFromHex(tc.arg)
-		result := new(Int).SRsh(arg, tc.n)
-		expectedBig := bigSRsh(new(big.Int), arg.ToBig(), big.NewInt(int64(tc.n)))
-		expected, _ := FromBig(expectedBig)
-		if !result.Eq(expected) {
-			t.Logf("args: %s, %d\n", tc.arg, tc.n)
-			t.Logf("exp : %x\n", expected)
-			t.Logf("got : %x\n\n", result)
-			t.Fail()
-		}
-		if !arg.Eq(MustFromHex(tc.arg)) {
-			t.Errorf("Argument has been modified\n")
-		}
+		n := NewInt(tc.n)
+		checkBinaryOperation(t, op.name, op.u256Fn, op.bigFn, *arg, *n)
 	}
 }
 
@@ -754,41 +699,6 @@ func TestByte(t *testing.T) {
 	}
 }
 
-func bigExtendSign(result, num, byteNum *big.Int) *big.Int {
-	if byteNum.Cmp(big.NewInt(31)) >= 0 {
-		return result.Set(num)
-	}
-	bit := uint(byteNum.Uint64()*8 + 7)
-	mask := byteNum.Lsh(big.NewInt(1), bit)
-	mask.Sub(mask, big.NewInt(1))
-	if num.Bit(int(bit)) > 0 {
-		result.Or(num, mask.Not(mask))
-	} else {
-		result.And(num, mask)
-	}
-	return result
-}
-
-func testSignExtend(tf testing.TB, arg, n *Int) {
-	var (
-		argCopy = new(Int).Set(arg)
-		nCopy   = new(Int).Set(n)
-		wantBig = new(big.Int)
-	)
-	wantBig = u256(bigExtendSign(wantBig, arg.ToBig(), n.ToBig()))
-	want, _ := FromBig(wantBig)
-	have := new(Int).SetAllOne().ExtendSign(arg, n)
-	if !have.Eq(want) {
-		tf.Fatalf("have: %#x want %#x\n", have, want)
-	}
-	if !arg.Eq(argCopy) {
-		tf.Errorf("First argument has been modified\n")
-	}
-	if !n.Eq(nCopy) {
-		tf.Errorf("Second argument has been modified\n")
-	}
-}
-
 func TestSignExtend(t *testing.T) {
 	type testCase struct {
 		arg string
@@ -813,10 +723,11 @@ func TestSignExtend(t *testing.T) {
 		{"4040404040404040404040404040404040404040404040404040404040404040", 31},
 		{"4040404040404040404040404040404040404040404040404040404040404040", 32},
 	}
+	op := lookupBinary("ExtendSign")
 	for _, tc := range testCases {
 		arg := new(Int).SetBytes(hex2Bytes(tc.arg))
 		n := new(Int).SetUint64(tc.n)
-		testSignExtend(t, arg, n)
+		checkBinaryOperation(t, op.name, op.u256Fn, op.bigFn, *arg, *n)
 	}
 }
 
@@ -897,329 +808,6 @@ var (
 // u256 encodes as a 256 bit two's complement number. This operation is destructive.
 func u256(x *big.Int) *big.Int {
 	return x.And(x, tt256m1)
-}
-
-// bigExp implements exponentiation by squaring.
-// The result is truncated to 256 bits.
-func bigExp(result, base, exponent *big.Int) *big.Int {
-	result.SetUint64(1)
-
-	for _, word := range exponent.Bits() {
-		for i := 0; i < wordBits; i++ {
-			if word&1 == 1 {
-				u256(result.Mul(result, base))
-			}
-			u256(base.Mul(base, base))
-			word >>= 1
-		}
-	}
-	return result
-}
-
-// bigDiv implements uint256/EVM compatible division for big.Int: returns 0 when dividing by 0
-func bigDiv(z, x, y *big.Int) *big.Int {
-	if y.Sign() == 0 {
-		return z.SetUint64(0)
-	}
-	return z.Div(x, y)
-}
-
-// bigMod implements uint256/EVM compatible mod for big.Int: returns 0 when dividing by 0
-func bigMod(z, x, y *big.Int) *big.Int {
-	if y.Sign() == 0 {
-		return z.SetUint64(0)
-	}
-	return z.Mod(x, y)
-}
-
-// bigSDiv implements EVM-compatible SDIV operation on big.Int
-func bigSDiv(result, x, y *big.Int) *big.Int {
-	if y.Sign() == 0 {
-		return result.SetUint64(0)
-	}
-	sx := S256(x)
-	sy := S256(y)
-
-	n := new(big.Int)
-	if sx.Sign() == sy.Sign() {
-		n.SetInt64(1)
-	} else {
-		n.SetInt64(-1)
-	}
-	result.Div(sx.Abs(sx), sy.Abs(sy))
-	result.Mul(result, n)
-	return result
-}
-
-// bigSMod implements EVM-compatible SMOD operation on big.Int
-func bigSMod(result, x, y *big.Int) *big.Int {
-	if y.Sign() == 0 {
-		return result.SetUint64(0)
-	}
-
-	sx := S256(x)
-	sy := S256(y)
-	neg := sx.Sign() < 0
-
-	result.Mod(sx.Abs(sx), sy.Abs(sy))
-	if neg {
-		result.Neg(result)
-	}
-	return u256(result)
-}
-
-func bigAddMod(result, x, y, mod *big.Int) *big.Int {
-	if mod.Sign() == 0 {
-		return result.SetUint64(0)
-	}
-	return result.Mod(result.Add(x, y), mod)
-}
-
-func bigMulMod(result, x, y, mod *big.Int) *big.Int {
-	if mod.Sign() == 0 {
-		return result.SetUint64(0)
-	}
-	return result.Mod(result.Mul(x, y), mod)
-}
-
-func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
-	mu := Reciprocal(mod)
-	return z.MulModWithReciprocal(x, y, mod, &mu)
-}
-
-func checkUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
-	var (
-		b1        = x.ToBig()
-		f1        = x.Clone()
-		operation = fmt.Sprintf("op: %v ( %v ) ", opName, x.Hex())
-		want, _   = FromBig(bigOp(new(big.Int), b1))
-		have      = op(new(Int), f1)
-	)
-	// Compare result with big.Int.
-	if !have.Eq(want) {
-		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-	// Check if arguments are unmodified.
-	if !f1.Eq(x.Clone()) {
-		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
-	}
-	// Check if reusing args as result works correctly.
-	have = op(f1, f1)
-	if have != f1 {
-		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
-	}
-	if !have.Eq(want) {
-		t.Fatalf("%v\n on argument reuse x.op(x)\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-}
-
-func TestUnaryOperations(t *testing.T) {
-	for _, tc := range unaryOpFuncs {
-		for _, arg := range unTestCases {
-			f1 := MustFromHex(arg)
-			checkUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1)
-		}
-	}
-}
-
-func FuzzUnaryOperations(f *testing.F) {
-	f.Fuzz(func(t *testing.T, x0, x1, x2, x3 uint64) {
-		x := Int{x0, x1, x2, x3}
-		for _, tc := range unaryOpFuncs {
-			checkUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x)
-		}
-	})
-}
-
-func checkBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
-	var (
-		b1        = x.ToBig()
-		b2        = y.ToBig()
-		f1        = x.Clone()
-		f2        = y.Clone()
-		operation = fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
-		want, _   = FromBig(bigOp(new(big.Int), b1, b2))
-		have      = op(new(Int), f1, f2)
-	)
-	// Compare result with big.Int.
-	if !have.Eq(want) {
-		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-
-	// Check if arguments are unmodified.
-	if !f1.Eq(x.Clone()) {
-		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
-	}
-	if !f2.Eq(y.Clone()) {
-		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
-	}
-
-	// Check if reusing args as result works correctly.
-	have = op(f1, f1, y.Clone())
-	if have != f1 {
-		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
-	}
-	if !have.Eq(want) {
-		t.Fatalf("%v\non argument reuse x.op(x,y)\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-	have = op(f2, x.Clone(), f2)
-	if have != f2 {
-		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f2)
-	}
-	if !have.Eq(want) {
-		t.Fatalf("%v\n on argument reuse x.op(y,x)\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-}
-
-func TestBinaryOperations(t *testing.T) {
-	for _, tc := range binaryOpFuncs {
-		for _, inputs := range binTestCases {
-			f1 := MustFromHex(inputs[0])
-			f2 := MustFromHex(inputs[1])
-			checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
-		}
-	}
-}
-
-func Test10KRandomBinaryOperations(t *testing.T) {
-	for _, tc := range binaryOpFuncs {
-		for i := 0; i < 10000; i++ {
-			f1 := randNum()
-			f2 := randNum()
-			checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
-		}
-	}
-}
-
-func FuzzBinaryOperations(f *testing.F) {
-	f.Fuzz(func(t *testing.T, x0, x1, x2, x3, y0, y1, y2, y3 uint64) {
-		x := Int{x0, x1, x2, x3}
-		y := Int{y0, y1, y2, y3}
-		for _, tc := range binaryOpFuncs {
-			checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
-		}
-	})
-}
-
-func checkTernaryOperation(t *testing.T, opName string, op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
-	var (
-		f1orig    = x.Clone()
-		f2orig    = y.Clone()
-		f3orig    = z.Clone()
-		b1        = x.ToBig()
-		b2        = y.ToBig()
-		b3        = z.ToBig()
-		f1        = new(Int).Set(f1orig)
-		f2        = new(Int).Set(f2orig)
-		f3        = new(Int).Set(f3orig)
-		operation = fmt.Sprintf("op: %v ( %v, %v, %v ) ", opName, x.Hex(), y.Hex(), z.Hex())
-		want, _   = FromBig(bigOp(new(big.Int), b1, b2, b3))
-		have      = op(new(Int), f1, f2, f3)
-	)
-	if !have.Eq(want) {
-		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-	// Check if arguments are unmodified.
-	if !f1.Eq(f1orig) {
-		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
-	}
-	if !f2.Eq(f2orig) {
-		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
-	}
-	if !f3.Eq(f3orig) {
-		t.Fatalf("%v\nthird argument had been modified: %x", operation, f3)
-	}
-	// Check if reusing args as result works correctly.
-	if have = op(f1, f1, f2orig, f3orig); have != f1 {
-		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
-	} else if !have.Eq(want) {
-		t.Fatalf("%v\non argument reuse x.op(x,y,z)\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-
-	if have = op(f2, f1orig, f2, f3orig); have != f2 {
-		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f2)
-	} else if !have.Eq(want) {
-		t.Fatalf("%v\non argument reuse y.op(x,y,z)\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-
-	if have = op(f3, f1orig, f2orig, f3); have != f3 {
-		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f3)
-	} else if !have.Eq(want) {
-		t.Fatalf("%v\non argument reuse z.op(x,y,z)\nwant : %#x\nhave : %#x\n", operation, want, have)
-	}
-}
-
-func TestTernaryOperations(t *testing.T) {
-	for _, tc := range ternaryOpFuncs {
-		for _, inputs := range ternTestCases {
-			f1 := MustFromHex(inputs[0])
-			f2 := MustFromHex(inputs[1])
-			f3 := MustFromHex(inputs[2])
-			t.Run(tc.name, func(t *testing.T) {
-				checkTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2, *f3)
-			})
-		}
-	}
-}
-
-func FuzzTernaryOperations(f *testing.F) {
-	f.Fuzz(func(t *testing.T,
-		x0, x1, x2, x3,
-		y0, y1, y2, y3,
-		z0, z1, z2, z3 uint64) {
-
-		x := Int{x0, x1, x2, x3}
-		y := Int{y0, y1, y2, y3}
-		z := Int{z0, z1, z2, z3}
-		for _, tc := range ternaryOpFuncs {
-			checkTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y, z)
-		}
-	})
-}
-
-func checkCompareOperation(t *testing.T, opName string, op opCmpArgFunc, bigOp bigCmpArgFunc, x, y Int) {
-	var (
-		f1orig    = x.Clone()
-		f2orig    = y.Clone()
-		b1        = x.ToBig()
-		b2        = y.ToBig()
-		f1        = new(Int).Set(f1orig)
-		f2        = new(Int).Set(f2orig)
-		operation = fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
-		want      = bigOp(b1, b2)
-		have      = op(f1, f2)
-	)
-	// Compare result with big.Int.
-	if have != want {
-		t.Fatalf("%v\nwant : %v\nhave : %v\n", operation, want, have)
-	}
-	// Check if arguments are unmodified.
-	if !f1.Eq(f1orig) {
-		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
-	}
-	if !f2.Eq(f2orig) {
-		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
-	}
-}
-
-func TestCompareOperations(t *testing.T) {
-	for _, tc := range cmpOpFuncs {
-		for _, inputs := range binTestCases {
-			f1 := MustFromHex(inputs[0])
-			f2 := MustFromHex(inputs[1])
-			checkCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
-		}
-	}
-}
-
-func FuzzCompareOperations(f *testing.F) {
-	f.Fuzz(func(t *testing.T, x0, x1, x2, x3, y0, y1, y2, y3 uint64) {
-		x := Int{x0, x1, x2, x3}
-		y := Int{y0, y1, y2, y3}
-		for _, tc := range cmpOpFuncs {
-			checkCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
-		}
-	})
 }
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.

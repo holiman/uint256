@@ -555,6 +555,23 @@ func BenchmarkRsh(bench *testing.B) {
 	bench.Run("n_gt_0/uint256", benchmark_Rsh_Bit_N_GT_0)
 }
 
+// bigExp implements exponentiation by squaring.
+// The result is truncated to 256 bits.
+func bigExp(result, base, exponent *big.Int) *big.Int {
+	result.SetUint64(1)
+
+	for _, word := range exponent.Bits() {
+		for i := 0; i < wordBits; i++ {
+			if word&1 == 1 {
+				u256(result.Mul(result, base))
+			}
+			u256(base.Mul(base, base))
+			word >>= 1
+		}
+	}
+	return result
+}
+
 func benchmark_Exp_Big(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
