@@ -79,16 +79,16 @@ var (
 
 	// A collection of interesting input values for ternary operators (addmod, mulmod).
 	ternTestCases = [][3]string{
-		{"0", "0", "0"},
-		{"1", "0", "0"},
-		{"1", "1", "0"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0"},
+		{"0x0", "0x0", "0x0"},
+		{"0x1", "0x0", "0x0"},
+		{"0x1", "0x1", "0x0"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0x0"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "3", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0x3", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
-		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "2"},
-		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "1"},
+		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x2"},
+		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x1"},
 		{"0xffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000002"},
 		{"0xffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"},
 		{"0xffffffffffffffffffffffffffff000004020041fffffffffc00000060000020", "0xffffffffffffffffffffffffffffffe6000000ffffffe60000febebeffffffff", "0xffffffffffffffffffe6000000ffffffe60000febebeffffffffffffffffffff"},
@@ -98,11 +98,11 @@ var (
 		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000001000000000000000000000000000000000000000000000000", "0x8000000000000000000000000000000000000000000000000000000000000000"},
 		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000001000000000000000000000000000000000000000000000000", "0x8000000000000001000000000000000000000000000000000000000000000000"},
 		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000000000000000000000100000000000000000000000000000000", "0x8000000000000000000000000000000000000000000000000000000000000001"},
-		{"1", "1", "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff"},
-		{"1", "1", "0x1000000003030303030303030303030303030303030303030303030303030"},
-		{"1", "1", "0x4000000000000000130303030303030303030303030303030303030303030"},
-		{"1", "1", "0x8000000000000000000000000000000043030303000000000"},
-		{"1", "1", "0x8000000000000000000000000000000003030303030303030"},
+		{"0x1", "0x1", "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff"},
+		{"0x1", "0x1", "0x1000000003030303030303030303030303030303030303030303030303030"},
+		{"0x1", "0x1", "0x4000000000000000130303030303030303030303030303030303030303030"},
+		{"0x1", "0x1", "0x8000000000000000000000000000000043030303000000000"},
+		{"0x1", "0x1", "0x8000000000000000000000000000000003030303030303030"},
 	}
 )
 
@@ -1188,9 +1188,8 @@ func TestRandomExp(t *testing.T) {
 
 func testUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
 	var (
-		f1orig    = x.Clone()
 		b1        = x.ToBig()
-		f1        = new(Int).Set(f1orig)
+		f1        = x.Clone()
 		operation = fmt.Sprintf("op: %v ( %v ) ", opName, x.Hex())
 		want, _   = FromBig(bigOp(new(big.Int), b1))
 		have      = op(new(Int), f1)
@@ -1200,7 +1199,7 @@ func testUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bi
 		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
 	}
 	// Check if arguments are unmodified.
-	if !f1.Eq(f1orig) {
+	if !f1.Eq(x.Clone()) {
 		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
 	}
 	// Check if reusing args as result works correctly.
@@ -1237,12 +1236,10 @@ func FuzzUnaryOperations(f *testing.F) {
 
 func testBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
 	var (
-		f1orig    = x.Clone()
-		f2orig    = y.Clone()
 		b1        = x.ToBig()
 		b2        = y.ToBig()
-		f1        = new(Int).Set(f1orig)
-		f2        = new(Int).Set(f2orig)
+		f1        = x.Clone()
+		f2        = y.Clone()
 		operation = fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
 		want, _   = FromBig(bigOp(new(big.Int), b1, b2))
 		have      = op(new(Int), f1, f2)
@@ -1253,22 +1250,22 @@ func testBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bi
 	}
 
 	// Check if arguments are unmodified.
-	if !f1.Eq(f1orig) {
+	if !f1.Eq(x.Clone()) {
 		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
 	}
-	if !f2.Eq(f2orig) {
+	if !f2.Eq(y.Clone()) {
 		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
 	}
 
 	// Check if reusing args as result works correctly.
-	have = op(f1, f1, f2orig)
+	have = op(f1, f1, y.Clone())
 	if have != f1 {
 		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
 	}
 	if !have.Eq(want) {
 		t.Fatalf("%v\non argument reuse x.op(x,y)\nwant : %#x\nhave : %#x\n", operation, want, have)
 	}
-	have = op(f2, f1orig, f2)
+	have = op(f2, x.Clone(), f2)
 	if have != f2 {
 		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f2)
 	}
@@ -1299,144 +1296,126 @@ func FuzzBinaryOperations(f *testing.F) {
 	})
 }
 
-func TestTernOp(t *testing.T) {
-	proc := func(t *testing.T, op func(a, b, c, d *Int) *Int, bigOp func(a, b, c, d *big.Int) *big.Int) {
-		for i := 0; i < len(ternTestCases); i++ {
-			b1, _ := new(big.Int).SetString(ternTestCases[i][0], 0)
-			b2, _ := new(big.Int).SetString(ternTestCases[i][1], 0)
-			b3, _ := new(big.Int).SetString(ternTestCases[i][2], 0)
-			f1orig, _ := FromBig(b1)
-			f2orig, _ := FromBig(b2)
-			f3orig, _ := FromBig(b3)
-			f1 := new(Int).Set(f1orig)
-			f2 := new(Int).Set(f2orig)
-			f3 := new(Int).Set(f3orig)
-
-			// Compare result with big.Int.
-			expected, _ := FromBig(bigOp(new(big.Int), b1, b2, b3))
-			result := op(new(Int), f1, f2, f3)
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-
-			// Check if arguments are unmodified.
-			if !f1.Eq(f1orig) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Errorf("first argument had been modified: %x\n", f1)
-			}
-			if !f2.Eq(f2orig) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Errorf("second argument had been modified: %x\n", f2)
-			}
-			if !f3.Eq(f3orig) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Errorf("third argument had been modified: %x\n", f3)
-			}
-
-			// Check if reusing args as result works correctly.
-			result = op(f1, f1, f2orig, f3orig)
-			if result != f1 {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
-			}
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-			result = op(f2, f1orig, f2, f3orig)
-			if result != f2 {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2)
-			}
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-			result = op(f3, f1orig, f2orig, f3)
-			if result != f3 {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f3)
-			}
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s, %s\n", ternTestCases[i][0], ternTestCases[i][1], ternTestCases[i][2])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-		}
+func testTernaryOperation(t *testing.T, opName string, op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
+	var (
+		f1orig    = x.Clone()
+		f2orig    = y.Clone()
+		f3orig    = z.Clone()
+		b1        = x.ToBig()
+		b2        = y.ToBig()
+		b3        = z.ToBig()
+		f1        = new(Int).Set(f1orig)
+		f2        = new(Int).Set(f2orig)
+		f3        = new(Int).Set(f3orig)
+		operation = fmt.Sprintf("op: %v ( %v, %v, %v ) ", opName, x.Hex(), y.Hex(), z.Hex())
+		want, _   = FromBig(bigOp(new(big.Int), b1, b2, b3))
+		have      = op(new(Int), f1, f2, f3)
+	)
+	if !have.Eq(want) {
+		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
 	}
-	t.Run("AddMod", func(t *testing.T) { proc(t, (*Int).AddMod, bigAddMod) })
-	t.Run("MulMod", func(t *testing.T) { proc(t, (*Int).MulMod, bigMulMod) })
-	t.Run("MulModWithReciprocal", func(t *testing.T) { proc(t, (*Int).mulModWithReciprocalWrapper, bigMulMod) })
+	// Check if arguments are unmodified.
+	if !f1.Eq(f1orig) {
+		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
+	}
+	if !f2.Eq(f2orig) {
+		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
+	}
+	if !f3.Eq(f3orig) {
+		t.Fatalf("%v\nthird argument had been modified: %x", operation, f3)
+	}
+	// Check if reusing args as result works correctly.
+	if have = op(f1, f1, f2orig, f3orig); have != f1 {
+		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
+	} else if !have.Eq(want) {
+		t.Fatalf("%v\non argument reuse x.op(x,y,z)\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
+
+	if have = op(f2, f1orig, f2, f3orig); have != f2 {
+		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f2)
+	} else if !have.Eq(want) {
+		t.Fatalf("%v\non argument reuse y.op(x,y,z)\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
+
+	if have = op(f3, f1orig, f2orig, f3); have != f3 {
+		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f3)
+	} else if !have.Eq(want) {
+		t.Fatalf("%v\non argument reuse z.op(x,y,z)\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
 }
 
-func TestCmpOp(t *testing.T) {
-	proc := func(t *testing.T, op func(a, b *Int) bool, bigOp func(a, b *big.Int) bool) {
-		for i := 0; i < len(binTestCases); i++ {
-			b1, _ := new(big.Int).SetString(binTestCases[i][0], 0)
-			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
-			f1orig, _ := FromBig(b1)
-			f2orig, _ := FromBig(b2)
-			f1 := new(Int).Set(f1orig)
-			f2 := new(Int).Set(f2orig)
-
-			// Compare result with big.Int.
-			expected := bigOp(b1, b2)
-			result := op(f1, f2)
-			if result != expected {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Logf("exp : %t\n", expected)
-				t.Logf("got : %t\n\n", result)
-				t.Fail()
-			}
-
-			// Check if arguments are unmodified.
-			if !f1.Eq(f1orig) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Errorf("first argument had been modified: %x\n", f1)
-			}
-			if !f2.Eq(f2orig) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Errorf("second argument had been modified: %x\n", f2)
-			}
+func TestTernaryOperations(t *testing.T) {
+	for _, tc := range ternaryOpFuncs {
+		for _, inputs := range ternTestCases {
+			f1 := MustFromHex(inputs[0])
+			f2 := MustFromHex(inputs[1])
+			f3 := MustFromHex(inputs[2])
+			t.Run(tc.name, func(t *testing.T) {
+				testTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2, *f3)
+			})
 		}
 	}
+}
 
-	t.Run("Eq", func(t *testing.T) { proc(t, (*Int).Eq, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }) })
-	t.Run("Lt", func(t *testing.T) { proc(t, (*Int).Lt, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }) })
-	t.Run("Gt", func(t *testing.T) { proc(t, (*Int).Gt, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }) })
-	t.Run("SLt", func(t *testing.T) { proc(t, (*Int).Slt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) < 0 }) })
-	t.Run("SGt", func(t *testing.T) { proc(t, (*Int).Sgt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) > 0 }) })
-	t.Run("CmpEq", func(t *testing.T) {
-		proc(t, func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 })
-	})
-	t.Run("CmpLt", func(t *testing.T) {
-		proc(t, func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 })
-	})
-	t.Run("CmpGt", func(t *testing.T) {
-		proc(t, func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 })
-	})
+func FuzzTernaryOperations(f *testing.F) {
+	f.Fuzz(func(t *testing.T,
+		x0, x1, x2, x3,
+		y0, y1, y2, y3,
+		z0, z1, z2, z3 uint64) {
 
-	t.Run("LtUint64", func(t *testing.T) {
-		proc(t, func(a, b *Int) bool {
-			return a.LtUint64(b.Uint64())
-		}, func(a, b *big.Int) bool {
-			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) < 0
-		})
+		x := Int{x0, x1, x2, x3}
+		y := Int{y0, y1, y2, y3}
+		z := Int{z0, z1, z2, z3}
+		for _, tc := range ternaryOpFuncs {
+			testTernaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y, z)
+		}
 	})
-	t.Run("GtUint64", func(t *testing.T) {
-		proc(t, func(a, b *Int) bool {
-			return a.GtUint64(b.Uint64())
-		}, func(a, b *big.Int) bool {
-			return a.Cmp(new(big.Int).SetUint64(b.Uint64())) > 0
-		})
+}
+
+func testCompareOperation(t *testing.T, opName string, op opCmpArgFunc, bigOp bigCmpArgFunc, x, y Int) {
+	var (
+		f1orig    = x.Clone()
+		f2orig    = y.Clone()
+		b1        = x.ToBig()
+		b2        = y.ToBig()
+		f1        = new(Int).Set(f1orig)
+		f2        = new(Int).Set(f2orig)
+		operation = fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
+		want      = bigOp(b1, b2)
+		have      = op(f1, f2)
+	)
+	// Compare result with big.Int.
+	if have != want {
+		t.Fatalf("%v\nwant : %v\nhave : %v\n", operation, want, have)
+	}
+	// Check if arguments are unmodified.
+	if !f1.Eq(f1orig) {
+		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
+	}
+	if !f2.Eq(f2orig) {
+		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
+	}
+}
+
+func TestCompareOperations(t *testing.T) {
+	for _, tc := range cmpOpFuncs {
+		for _, inputs := range binTestCases {
+			f1 := MustFromHex(inputs[0])
+			f2 := MustFromHex(inputs[1])
+			t.Run(tc.name, func(t *testing.T) {
+				testCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
+			})
+		}
+	}
+}
+
+func FuzzCompareOperations(f *testing.F) {
+	f.Fuzz(func(t *testing.T, x0, x1, x2, x3, y0, y1, y2, y3 uint64) {
+		x := Int{x0, x1, x2, x3}
+		y := Int{y0, y1, y2, y3}
+		for _, tc := range cmpOpFuncs {
+			testCompareOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
+		}
 	})
 }
 
@@ -1463,7 +1442,7 @@ func TestFixedExpReusedArgs(t *testing.T) {
 	requireEq(t, big.NewInt(3*3*3), fr, "")
 }
 
-func TestByteRepresentation(t *testing.T) {
+func TestPaddingRepresentation(t *testing.T) {
 	a := big.NewInt(0xFF0AFcafe)
 	aa := new(Int).SetUint64(0xFF0afcafe)
 	bb := new(Int).SetBytes(a.Bytes())
@@ -1606,7 +1585,7 @@ func bytesToHash(b []byte) gethHash {
 	return a
 }
 
-func TestByte20Representation(t *testing.T) {
+func TestByteRepresentation(t *testing.T) {
 	for i, tt := range []string{
 		"1337fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
 		"fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
@@ -1621,45 +1600,21 @@ func TestByte20Representation(t *testing.T) {
 		"00",
 	} {
 		bytearr := hex2Bytes(tt)
-		// big.Int -> address
+		// big.Int -> address, hash
 		a := big.NewInt(0).SetBytes(bytearr)
-		exp := bytesToAddress(a.Bytes())
+		want20 := bytesToAddress(a.Bytes())
+		want32 := bytesToHash(a.Bytes())
 
 		// uint256.Int -> address
 		b := new(Int).SetBytes(bytearr)
-		got := gethAddress(b.Bytes20())
+		have20 := gethAddress(b.Bytes20())
+		have32 := gethHash(b.Bytes32())
 
-		if got != exp {
-			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		if have, want := want20, have20; have != want {
+			t.Errorf("test %d: have %x want %x", i, have, want)
 		}
-	}
-}
-
-func TestByte32Representation(t *testing.T) {
-	for i, tt := range []string{
-		"1337fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
-		"fafafa0e320219838e859b2f9f18b72e3d4073ca50b37d",
-		"0e320219838e859b2f9f18b72e3d4073ca50b37d",
-		"320219838e859b2f9f18b72e3d4073ca50b37d",
-		"838e859b2f9f18b72e3d4073ca50b37d",
-		"38e859b2f9f18b72e3d4073ca50b37d",
-		"f18b72e3d4073ca50b37d",
-		"b37d",
-		"01",
-		"",
-		"00",
-	} {
-		bytearr := hex2Bytes(tt)
-		// big.Int -> hash
-		a := big.NewInt(0).SetBytes(bytearr)
-		exp := bytesToHash(a.Bytes())
-
-		// uint256.Int -> address
-		b := new(Int).SetBytes(bytearr)
-		got := gethHash(b.Bytes32())
-
-		if got != exp {
-			t.Errorf("testcase %d: got %x exp %x", i, got, exp)
+		if have, want := want32, have32; have != want {
+			t.Errorf("test %d: have %x want %x", i, have, want)
 		}
 	}
 }
