@@ -111,25 +111,6 @@ func hex2Bytes(str string) []byte {
 	return h
 }
 
-// toSatUint converts x to saturated uint value.
-func toSatUint(x *Int) uint {
-	maxUint := ^uint(0)
-	z, overflow := x.Uint64WithOverflow()
-	if overflow || z > uint64(maxUint) {
-		return maxUint
-	}
-	return uint(z)
-}
-
-// bigToSatUint converts x to saturated uint value.
-func bigToShiftAmount(x *big.Int) uint {
-	max := uint(256) // 256 is enough to zero the result.
-	if x.Cmp(new(big.Int).SetUint64(uint64(max))) > 0 {
-		return max
-	}
-	return uint(x.Uint64())
-}
-
 func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	max := big.NewInt(0).SetBytes(hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
 	shouldOverflow := b.Cmp(max) > 0
@@ -680,33 +661,6 @@ func TestRandomAbs(t *testing.T) {
 	}
 }
 
-func TestRandomSDiv(t *testing.T) {
-	for i := 0; i < 10000; i++ {
-		b, f1, err := randHighNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b2, f2, err := randHighNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		u256(b)
-		u256(b2)
-
-		f1a, f2a := f1.Clone(), f2.Clone()
-
-		f1aAbs, f2aAbs := new(Int).Abs(f1), new(Int).Abs(f2)
-
-		f1.SDiv(f1, f2)
-		b = bigSDiv(b, b, b2)
-		if eq := checkEq(b, f1); !eq {
-			bf, _ := FromBig(b)
-			t.Fatalf("Expected equality:\nf1  = %x\nf2  = %x\n\n\nabs1= %x\nabs2= %x\n[sdiv]==\nf   = %x\nbf  = %x\nb   = %x\n",
-				f1a, f2a, f1aAbs, f2aAbs, f1, bf, b)
-		}
-	}
-}
-
 func TestUdivremQuick(t *testing.T) {
 	//
 	var (
@@ -722,60 +676,18 @@ func TestUdivremQuick(t *testing.T) {
 	}
 }
 
-func TestRandomLsh(t *testing.T) {
-	for i := 0; i < 10000; i++ {
-		b, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		f1a := f1.Clone()
-		nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
-		n := uint(nbits.Uint64())
-		f1.Lsh(f1, n)
-		b.Lsh(b, n)
-		if eq := checkEq(b, f1); !eq {
-			bf, _ := FromBig(b)
-			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf = %x\nbf= %x\nb = %x\n", f1a, n, f1, bf, b)
-		}
-	}
-}
+func Test10KRandomSDiv(t *testing.T) { test10KRandom(t, "SDiv") }
+func Test10KRandomLsh(t *testing.T)  { test10KRandom(t, "Lsh") }
+func Test10KRandomRsh(t *testing.T)  { test10KRandom(t, "Rsh") }
+func Test10KRandomSRsh(t *testing.T) { test10KRandom(t, "SRsh") }
+func Test10KRandomExp(t *testing.T)  { test10KRandom(t, "Exp") }
 
-func TestRandomRsh(t *testing.T) {
+func test10KRandom(t *testing.T, name string) {
+	tc := lookupBinary(name)
 	for i := 0; i < 10000; i++ {
-		b, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		f1a := f1.Clone()
-		nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
-		n := uint(nbits.Uint64())
-		f1.Rsh(f1, n)
-		b.Rsh(b, n)
-		if eq := checkEq(b, f1); !eq {
-			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ >> ]==\nf= %x\nb= %x\n", f1a, n, f1, b)
-		}
-	}
-}
-
-func TestRandomSRsh(t *testing.T) {
-	for i := 0; i < 10000; i++ {
-		b, f1, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		neg := f1.isBitSet(255) // is it negative?
-		f1a := f1.Clone()
-		nbits, _ := rand.Int(rand.Reader, big.NewInt(256))
-		n := uint(nbits.Uint64())
-		f1.SRsh(f1, n)
-		if neg {
-			b = S256(b)
-		}
-		b.Rsh(b, n)
-		if eq := checkEq(b, f1); !eq {
-			bf, _ := FromBig(b)
-			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ s>> ]==\nf = %x\nbf= %x\nb = %x\n", f1a, n, f1, bf, b)
-		}
+		f1 := randNum()
+		f2 := randNum()
+		checkBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
 	}
 }
 
@@ -1073,37 +985,6 @@ func bigMulMod(result, x, y, mod *big.Int) *big.Int {
 func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
 	mu := Reciprocal(mod)
 	return z.MulModWithReciprocal(x, y, mod, &mu)
-}
-
-func referenceExp(base, exponent *big.Int) *big.Int {
-	// TODO: Maybe use the Exp() procedure from above?
-	res := new(big.Int)
-	return res.Exp(base, exponent, bigtt256)
-}
-
-func TestRandomExp(t *testing.T) {
-	for i := 0; i < 10000; i++ {
-		b_base, base, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		b_exp, exp, err := randNums()
-		if err != nil {
-			t.Fatal(err)
-		}
-		basecopy, expcopy := base.Clone(), exp.Clone()
-
-		f_res, overflow := FromBig(referenceExp(base.ToBig(), exp.ToBig()))
-		if overflow {
-			t.Fatal("FromBig(exp) overflow")
-		}
-
-		b_res := bigExp(new(big.Int), b_base, b_exp)
-		if eq := checkEq(b_res, f_res); !eq {
-			bf, _ := FromBig(b_res)
-			t.Fatalf("Expected equality:\nbase= %x\nexp = %x\n[ ^ ]==\nf = %x\nbf= %x\nb = %x\n", basecopy, expcopy, f_res, bf, b_res)
-		}
-	}
 }
 
 func checkUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {

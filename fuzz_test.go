@@ -1,6 +1,7 @@
 package uint256
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 )
@@ -69,11 +70,13 @@ var unaryOpFuncs = []struct {
 	},
 }
 
-var binaryOpFuncs = []struct {
+type binaryOpEntry struct {
 	name   string
 	u256Fn opDualArgFunc
 	bigFn  bigDualArgFunc
-}{
+}
+
+var binaryOpFuncs = []binaryOpEntry{
 	{"Add", (*Int).Add, (*big.Int).Add},
 	{"Sub", (*Int).Sub, (*big.Int).Sub},
 	{"Mul", (*Int).Mul, (*big.Int).Mul},
@@ -85,6 +88,10 @@ var binaryOpFuncs = []struct {
 	{"Or", (*Int).Or, (*big.Int).Or},
 	{"Xor", (*Int).Xor, (*big.Int).Xor},
 
+	{"Exp", (*Int).Exp, func(b *big.Int, b2 *big.Int, b3 *big.Int) *big.Int {
+		return b.Exp(b2, b3, bigtt256)
+	}},
+
 	{"Lsh", u256Lsh, bigLsh},
 	{"Rsh", u256Rsh, bigRsh},
 	{"SRsh", u256SRsh, bigSRsh},
@@ -95,6 +102,15 @@ var binaryOpFuncs = []struct {
 	{"udivremMod", udivremMod, bigMod},
 
 	{"ExtendSign", (*Int).ExtendSign, bigExtendSign},
+}
+
+func lookupBinary(name string) binaryOpEntry {
+	for _, tc := range binaryOpFuncs {
+		if tc.name == name {
+			return tc
+		}
+	}
+	panic(fmt.Sprintf("%v not found", name))
 }
 
 var cmpOpFuncs = []struct {
@@ -122,22 +138,4 @@ var ternaryOpFuncs = []struct {
 	{"AddMod", (*Int).AddMod, bigAddMod},
 	{"MulMod", (*Int).MulMod, bigMulMod},
 	{"MulModWithReciprocal", (*Int).mulModWithReciprocalWrapper, bigMulMod},
-}
-
-func bigintMulMod(b1, b2, b3, b4 *big.Int) *big.Int {
-	return b1.Mod(big.NewInt(0).Mul(b2, b3), b4)
-}
-
-func bigintAddMod(b1, b2, b3, b4 *big.Int) *big.Int {
-	return b1.Mod(big.NewInt(0).Add(b2, b3), b4)
-}
-
-func bigintMulDiv(b1, b2, b3, b4 *big.Int) *big.Int {
-	b1.Mul(b2, b3)
-	return b1.Div(b1, b4)
-}
-
-func intMulDiv(f1, f2, f3, f4 *Int) *Int {
-	f1.MulDivOverflow(f2, f3, f4)
-	return f1
 }
