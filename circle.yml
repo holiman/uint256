@@ -71,7 +71,7 @@ jobs:
 
   bigendian:
     docker:
-      - image: cimg/base
+      - image: cimg/base:current
     steps:
       - run:
           name: "Install QEMU"
@@ -109,10 +109,12 @@ workflows:
   version: 2
   uint256:
     jobs:
-      - go122
-      - go121
-      - go120
       - go119
+      - go120
+      - go121
+      - go122:
+          requires:
+            - go121
       - bigendian:
           requires:
             - go122
