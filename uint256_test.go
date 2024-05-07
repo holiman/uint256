@@ -832,7 +832,7 @@ func TestRandomRsh(t *testing.T) {
 		f1.Rsh(f1, n)
 		b.Rsh(b, n)
 		if eq := checkEq(b, f1); !eq {
-			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf= %x\nb= %x\n", f1a, n, f1, b)
+			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ >> ]==\nf= %x\nb= %x\n", f1a, n, f1, b)
 		}
 	}
 }
@@ -854,7 +854,7 @@ func TestRandomSRsh(t *testing.T) {
 		b.Rsh(b, n)
 		if eq := checkEq(b, f1); !eq {
 			bf, _ := FromBig(b)
-			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ << ]==\nf = %x\nbf= %x\nb = %x\n", f1a, n, f1, bf, b)
+			t.Fatalf("Expected equality:\nf1= %x\n n= %v\n[ s>> ]==\nf = %x\nbf= %x\nb = %x\n", f1a, n, f1, bf, b)
 		}
 	}
 }
@@ -1726,79 +1726,39 @@ func BenchmarkLog10(b *testing.B) {
 	})
 }
 
-func testCmpU64(t *testing.T, z *Int, x uint64) {
-	want := z.ToBig().Cmp(new(big.Int).SetUint64(x))
-	have := z.CmpUint64(x)
-	if have != want {
-		t.Errorf("%s.CmpUint64( %x ) : have %v want %v", z.Hex(), x, have, want)
-	}
-}
-
 func TestCmpUint64(t *testing.T) {
+	check := func(z *Int, x uint64) {
+		want := z.ToBig().Cmp(new(big.Int).SetUint64(x))
+		have := z.CmpUint64(x)
+		if have != want {
+			t.Errorf("%s.CmpUint64( %x ) : have %v want %v", z.Hex(), x, have, want)
+		}
+	}
 	for i := uint(0); i < 255; i++ {
 		z := NewInt(1)
 		z.Lsh(z, i)
-		// z, z
-		testCmpU64(t, z, new(Int).Set(z).Uint64())
-		// z, z + 1
-		testCmpU64(t, z, new(Int).AddUint64(z, 1).Uint64())
-		// z, z - 1
-		testCmpU64(t, z, new(Int).SubUint64(z, 1).Uint64())
-		// z, z >> 64
-		testCmpU64(t, z, new(big.Int).Rsh(new(Int).Set(z).ToBig(), 64).Uint64())
-	}
-}
-
-//func TestLogBit(t *testing.T) {
-//
-//	a := big.NewInt(1)
-//	b := big.NewInt(1)
-//	m := big.NewInt(10)
-//	last := 0
-//	fmt.Printf("lut = [257]int{")
-//	for i := 0; i < 77; i++ {
-//		a.Mul(a, m)
-//		b.Sub(a, big.NewInt(1))
-//		for j := last; j < a.BitLen(); j++ {
-//			fmt.Printf("%d,", i)
-//		}
-//		//fmt.Printf("bitlength %d has log %d or %d\n,", a.BitLen(), i, i+1)
-//		fmt.Printf("%d,", -(i + 1))
-//		last = a.BitLen() + 1
-//	}
-//	fmt.Printf("}\n")
-//}
-//
-//func TestPrintTenPows(t *testing.T) {
-//	z := NewInt(1)
-//	ten := NewInt(10)
-//	for i := uint(0); i < 80; i++ {
-//		fmt.Printf("pows[%d] = &Int{ %d, %d, %d, %d }\n", i, z[0], z[1], z[2], z[3])
-//		z.Mul(z, ten)
-//  }
-//}
-
-func testCmpBig(t *testing.T, z *Int, x *big.Int) {
-	want := z.ToBig().Cmp(x)
-	have := z.CmpBig(x)
-	if have != want {
-		t.Errorf("%s.CmpBig( %x ) : have %v want %v", z.Hex(), x, have, want)
+		check(z, new(Int).Set(z).Uint64())                               // z, z
+		check(z, new(Int).AddUint64(z, 1).Uint64())                      // z, z + 1
+		check(z, new(Int).SubUint64(z, 1).Uint64())                      // z, z - 1
+		check(z, new(big.Int).Rsh(new(Int).Set(z).ToBig(), 64).Uint64()) // z, z >> 64
 	}
 }
 
 func TestCmpBig(t *testing.T) {
+	check := func(z *Int, x *big.Int) {
+		want := z.ToBig().Cmp(x)
+		have := z.CmpBig(x)
+		if have != want {
+			t.Errorf("%s.CmpBig( %x ) : have %v want %v", z.Hex(), x, have, want)
+		}
+	}
 	for i := uint(0); i < 255; i++ {
 		z := NewInt(1)
 		z.Lsh(z, i)
-		// z, z
-		testCmpBig(t, z, new(Int).Set(z).ToBig())
-		// z, z + 1
-		testCmpBig(t, z, new(Int).AddUint64(z, 1).ToBig())
-		// z, z - 1
-		testCmpBig(t, z, new(Int).SubUint64(z, 1).ToBig())
-		// z, -z
-		testCmpBig(t, z, new(big.Int).Neg(new(Int).Set(z).ToBig()))
-		// z, z << 256
-		testCmpBig(t, z, new(big.Int).Lsh(new(Int).Set(z).ToBig(), 256))
+		check(z, new(Int).Set(z).ToBig())                        // z, z
+		check(z, new(Int).AddUint64(z, 1).ToBig())               // z, z + 1
+		check(z, new(Int).SubUint64(z, 1).ToBig())               // z, z - 1
+		check(z, new(big.Int).Neg(new(Int).Set(z).ToBig()))      // z, -z
+		check(z, new(big.Int).Lsh(new(Int).Set(z).ToBig(), 256)) // z, z << 256
 	}
 }
