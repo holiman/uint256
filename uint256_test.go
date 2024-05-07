@@ -33,13 +33,13 @@ var (
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
 	binTestCases = [][2]string{
-		{"0", "0"},
-		{"1", "0"},
-		{"1", "0x767676767676767676000000767676767676"},
-		{"2", "0"},
-		{"2", "1"},
-		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0x00000c76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
-		{"0x10000000000000000", "2"},
+		{"0x0", "0x0"},
+		{"0x1", "0x0"},
+		{"0x1", "0x767676767676767676000000767676767676"},
+		{"0x2", "0x0"},
+		{"0x2", "0x1"},
+		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0xc76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
+		{"0x10000000000000000", "0x2"},
 		{"0x7000000000000000", "0x8000000000000000"},
 		{"0x8000000000000000", "0x8000000000000000"},
 		{"0x8000000000000001", "0x8000000000000000"},
@@ -51,29 +51,29 @@ var (
 		{"0xfffff716b61616160b0b0b2b0b0b0becf4bef50a0df4f48b090b2b0bc60a0a00", "0xfffff716b61616160b0b0b2b0b230b000008010d0a2b00"},
 		{"0x50beb1c60141a0000dc2b0b0b0b0b0b410a0a0df4f40b090b2b0bc60a0a00", "0x2000110000000d0a300e750a000000090a0a"},
 		{"0x4b00000b41000b0b0b2b0b0b0b0b0b410a0aeff4f40b090b2b0bc60a0a1000", "0x4b00000b41000b0b0b2b0b0b0b0b0b410a0aeff4f40b0a0a"},
-		{"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "7"},
+		{"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "0x7"},
 		{"0xf6376770abd3a36b20394c5664afef1194c801c3f05e42566f085ed24d002bb0", "0xb368d219438b7f3f"},
-		{"0", "0x10900000000000000000000000000000000000000000000000000"},
+		{"0x0", "0x10900000000000000000000000000000000000000000000000000"},
 		{"0x77676767676760000000000000001002e000000000000040000000e000000000", "0xfffc000000000000767676240000000000002b0576047"},
 		{"0x767676767676000000000076000000000000005600000000000000000000", "0x767676767676000000000076000000760000"},
 		{"0x8200000000000000000000000000000000000000000000000000000000000000", "0x8200000000000000fe000004000000ffff000000fffff700"},
 		{"0xdac7fff9ffd9e1322626262626262600", "0xd021262626262626"},
 		{"0x8000000000000001800000000000000080000000000000008000000000000000", "0x800000000000000080000000000000008000000000000000"},
-		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0x00e8e8e8e2000100000009ea02000000000000ff3ffffff800000010002280ff"},
-		{"0x000000c9700000000000000000023f00c00014ff000000000000000022300805", "0x00000000c9700000000000000000023f00c00014ff002c000000000000223108"},
+		{"0xe8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xe8e8e8e2000100000009ea02000000000000ff3ffffff800000010002280ff"},
+		{"0xc9700000000000000000023f00c00014ff000000000000000022300805", "0xc9700000000000000000023f00c00014ff002c000000000000223108"},
 		{"0x40000000fd000000db0000000000000000000000000000000000000000000001", "0x40000000fd000000db0000000000000000000040000000fd000000db000001"},
 		{"0x40000000fd000000db0000000000000000000000000000000000000000000001", "0x40000000fd000000db0000000000000000000040000000fd000000db0000d3"},
-		{"0x001f000000000000000000000000000000200000000100000000000000000000", "0x0000000000000000000100000000ffffffffffffffff0000000000002e000000"},
+		{"0x1f000000000000000000000000000000200000000100000000000000000000", "0x100000000ffffffffffffffff0000000000002e000000"},
 		{"0x7effffff80000000000000000000000000020000440000000000000000000001", "0x7effffff800000007effffff800000008000ff0000010000"},
 		{"0x5fd8fffffffffffffffffffffffffffffc090000ce700004d0c9ffffff000001", "0x2ffffffffffffffffffffffffffffffffff000000030000"},
 		{"0x62d8fffffffffffffffffffffffffffffc18000000000000000000ca00000001", "0x2ffffffffffffffffffffffffffffffffff200000000000"},
 		{"0x7effffff8000000000000000000000000000000000000000d900000000000001", "0x7effffff8000000000000000000000000000000000008001"},
-		{"0x0000000000000006400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x00000000000000210000000000000022"},
-		{"0x00000000000000000000000000000000000000000000006d5adef08547abf7eb", "0x000000000000000000013590cab83b779e708b533b0eef3561483ddeefc841f5"},
+		{"0x6400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x210000000000000022"},
+		{"0x6d5adef08547abf7eb", "0x13590cab83b779e708b533b0eef3561483ddeefc841f5"},
 		{"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0x00e8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
+		{"0xe8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
 		{"0x1ce97e1ab91a", "0x66aa0a5319bcf5cb4"}, // regression test for udivrem() where len(x) < len(y)
 	}
 
@@ -861,42 +861,37 @@ func TestRandomSRsh(t *testing.T) {
 
 func TestSRsh(t *testing.T) {
 	type testCase struct {
-		arg      string
-		n        uint
-		expected string
+		arg string
+		n   uint
 	}
 	testCases := []testCase{
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 0, "FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16, "FFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 64, "FFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 96, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 127, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFDDDDBBBB99997777555533331110"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 128, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCCBBBBAAAA99998888"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 129, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF7776EEEE6665DDDD5554CCCC444"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 192, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEEEEDDDDCCCC"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", 254, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE"},
-		{"8000000000000000000000000000000000000000000000000000000000000000", 255, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"},
-		{"FFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 300, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"},
-		{"7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16, "7FFFEEEEDDDDCCCCBBBBAAAA999988887777666655554444333322221111"},
-		{"7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256, ""},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 0},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 64},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 96},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 127},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 128},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 129},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 192},
+		{"0x8000000000000000000000000000000000000000000000000000000000000000", 254},
+		{"0x8000000000000000000000000000000000000000000000000000000000000000", 255},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256},
+		{"0xFFFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 300},
+		{"0x7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 16},
+		{"0x7FFFEEEEDDDDCCCCBBBBAAAA9999888877776666555544443333222211110000", 256},
 	}
-
-	for i := 0; i < len(testCases); i++ {
-		tc := &testCases[i]
-		arg := new(Int).SetBytes(hex2Bytes(tc.arg))
-		argCopy := new(Int).Set(arg)
-		expected := new(Int).SetBytes(hex2Bytes(tc.expected))
+	for _, tc := range testCases {
+		arg := MustFromHex(tc.arg)
 		result := new(Int).SRsh(arg, tc.n)
-
+		expectedBig := bigSRsh(new(big.Int), arg.ToBig(), big.NewInt(int64(tc.n)))
+		expected, _ := FromBig(expectedBig)
 		if !result.Eq(expected) {
 			t.Logf("args: %s, %d\n", tc.arg, tc.n)
 			t.Logf("exp : %x\n", expected)
 			t.Logf("got : %x\n\n", result)
 			t.Fail()
 		}
-
-		if !arg.Eq(argCopy) {
+		if !arg.Eq(MustFromHex(tc.arg)) {
 			t.Errorf("Argument has been modified\n")
 		}
 	}
@@ -927,17 +922,17 @@ func TestByte(t *testing.T) {
 	}
 }
 
-func bigExtendSign(num, byteNum *big.Int) *big.Int {
-	var result = new(big.Int).Set(num)
-	if byteNum.Cmp(big.NewInt(31)) < 0 {
-		bit := uint(byteNum.Uint64()*8 + 7)
-		mask := byteNum.Lsh(big.NewInt(1), bit)
-		mask.Sub(mask, big.NewInt(1))
-		if num.Bit(int(bit)) > 0 {
-			result.Or(num, mask.Not(mask))
-		} else {
-			result.And(num, mask)
-		}
+func bigExtendSign(result, num, byteNum *big.Int) *big.Int {
+	if byteNum.Cmp(big.NewInt(31)) >= 0 {
+		return result.Set(num)
+	}
+	bit := uint(byteNum.Uint64()*8 + 7)
+	mask := byteNum.Lsh(big.NewInt(1), bit)
+	mask.Sub(mask, big.NewInt(1))
+	if num.Bit(int(bit)) > 0 {
+		result.Or(num, mask.Not(mask))
+	} else {
+		result.And(num, mask)
 	}
 	return result
 }
@@ -946,10 +941,11 @@ func testSignExtend(tf testing.TB, arg, n *Int) {
 	var (
 		argCopy = new(Int).Set(arg)
 		nCopy   = new(Int).Set(n)
-		wantBig = u256(bigExtendSign(arg.ToBig(), n.ToBig()))
-		want, _ = FromBig(wantBig)
-		have    = new(Int).ExtendSign(arg, n)
+		wantBig = new(big.Int)
 	)
+	wantBig = u256(bigExtendSign(wantBig, arg.ToBig(), n.ToBig()))
+	want, _ := FromBig(wantBig)
+	have := new(Int).SetAllOne().ExtendSign(arg, n)
 	if !have.Eq(want) {
 		tf.Fatalf("have: %#x want %#x\n", have, want)
 	}
@@ -961,20 +957,13 @@ func testSignExtend(tf testing.TB, arg, n *Int) {
 	}
 }
 
-func FuzzSignExtend(f *testing.F) {
-	f.Fuzz(func(t *testing.T, z0, z1, z2, z3 uint64, index uint8) {
-		arg := &Int{z0, z1, z2, z3}
-		n := new(Int).SetUint64(uint64(index))
-		testSignExtend(t, arg, n)
-	})
-}
-
 func TestSignExtend(t *testing.T) {
 	type testCase struct {
 		arg string
 		n   uint64
 	}
 	testCases := []testCase{
+		{"10000000000000000", 2},
 		{"8080808080808080808080808080808080808080808080808080808080808080", 0},
 		{"8080808080808080808080808080808080808080808080808080808080808080", 1},
 		{"8080808080808080808080808080808080808080808080808080808080808080", 2},
@@ -1240,92 +1229,68 @@ func TestUnOp(t *testing.T) {
 	t.Run("Sqrt", func(t *testing.T) { proc(t, (*Int).Sqrt, (*big.Int).Sqrt) })
 }
 
-func TestBinOp(t *testing.T) {
-	proc := func(t *testing.T, op func(a, b, c *Int) *Int, bigOp func(a, b, c *big.Int) *big.Int) {
-		for i := 0; i < len(binTestCases); i++ {
-			b1, _ := new(big.Int).SetString(binTestCases[i][0], 0)
-			b2, _ := new(big.Int).SetString(binTestCases[i][1], 0)
-			f1orig, _ := FromBig(b1)
-			f2orig, _ := FromBig(b2)
-			f1 := new(Int).Set(f1orig)
-			f2 := new(Int).Set(f2orig)
-
-			// Compare result with big.Int.
-			expected, _ := FromBig(bigOp(new(big.Int), b1, b2))
-			result := op(new(Int), f1, f2)
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-
-			// Check if arguments are unmodified.
-			if !f1.Eq(f1orig) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Errorf("first argument had been modified: %x\n", f1)
-			}
-			if !f2.Eq(f2orig) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Errorf("second argument had been modified: %x\n", f2)
-			}
-
-			// Check if reusing args as result works correctly.
-			result = op(f1, f1, f2orig)
-			if result != f1 {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f1)
-			}
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-			result = op(f2, f1orig, f2)
-			if result != f2 {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Errorf("unexpected pointer returned: %p, expected: %p\n", result, f2)
-			}
-			if !result.Eq(expected) {
-				t.Logf("args: %s, %s\n", binTestCases[i][0], binTestCases[i][1])
-				t.Logf("exp : %x\n", expected)
-				t.Logf("got : %x\n\n", result)
-				t.Fail()
-			}
-		}
+func testBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
+	var (
+		f1orig = x.Clone()
+		f2orig = y.Clone()
+		b1     = x.ToBig()
+		b2     = y.ToBig()
+		f1     = new(Int).Set(f1orig)
+		f2     = new(Int).Set(f2orig)
+	)
+	operation := fmt.Sprintf("op: %v ( %v, %v ) ", opName, x.Hex(), y.Hex())
+	// Compare result with big.Int.
+	want, _ := FromBig(bigOp(new(big.Int), b1, b2))
+	have := op(new(Int), f1, f2)
+	if !have.Eq(want) {
+		t.Fatalf("%v\nwant : %#x\nhave : %#x\n", operation, want, have)
 	}
 
-	t.Run("Add", func(t *testing.T) { proc(t, (*Int).Add, (*big.Int).Add) })
-	t.Run("Sub", func(t *testing.T) { proc(t, (*Int).Sub, (*big.Int).Sub) })
-	t.Run("Mul", func(t *testing.T) { proc(t, (*Int).Mul, (*big.Int).Mul) })
-	t.Run("Div", func(t *testing.T) { proc(t, (*Int).Div, bigDiv) })
-	t.Run("Mod", func(t *testing.T) { proc(t, (*Int).Mod, bigMod) })
-	t.Run("SDiv", func(t *testing.T) { proc(t, (*Int).SDiv, bigSDiv) })
-	t.Run("SMod", func(t *testing.T) { proc(t, (*Int).SMod, bigSMod) })
-	t.Run("DivMod/Div", func(t *testing.T) { proc(t, divModDiv, bigDiv) })
-	t.Run("DivMod/Mod", func(t *testing.T) { proc(t, divModMod, bigMod) })
-	t.Run("udivrem/Div", func(t *testing.T) { proc(t, udivremDiv, bigDiv) })
-	t.Run("udivrem/Mod", func(t *testing.T) { proc(t, udivremMod, bigMod) })
-	t.Run("Exp", func(t *testing.T) { proc(t, (*Int).Exp, bigExp) })
+	// Check if arguments are unmodified.
+	if !f1.Eq(f1orig) {
+		t.Fatalf("%v\nfirst argument had been modified: %x", operation, f1)
+	}
+	if !f2.Eq(f2orig) {
+		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
+	}
 
-	t.Run("And", func(t *testing.T) { proc(t, (*Int).And, (*big.Int).And) })
-	t.Run("Or", func(t *testing.T) { proc(t, (*Int).Or, (*big.Int).Or) })
-	t.Run("Xor", func(t *testing.T) { proc(t, (*Int).Xor, (*big.Int).Xor) })
+	// Check if reusing args as result works correctly.
+	have = op(f1, f1, f2orig)
+	if have != f1 {
+		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f1)
+	}
+	if !have.Eq(want) {
+		t.Fatalf("%v\non argument reuse x.op(x,y)\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
+	have = op(f2, f1orig, f2)
+	if have != f2 {
+		t.Fatalf("%v\nunexpected pointer returned: %p, expected: %p\n", operation, have, f2)
+	}
+	if !have.Eq(want) {
+		t.Fatalf("%v\n on argument reuse x.op(y,x)\nwant : %#x\nhave : %#x\n", operation, want, have)
+	}
+}
 
-	t.Run("Lsh", func(t *testing.T) {
-		proc(t, func(z, x, y *Int) *Int {
-			return z.Lsh(x, toSatUint(y))
-		}, func(z, x, y *big.Int) *big.Int {
-			return z.Lsh(x, bigToShiftAmount(y))
-		})
-	})
-	t.Run("Rsh", func(t *testing.T) {
-		proc(t, func(z, x, y *Int) *Int {
-			return z.Rsh(x, toSatUint(y))
-		}, func(z, x, y *big.Int) *big.Int {
-			return z.Rsh(x, bigToShiftAmount(y))
-		})
+func TestBinaryOperations(t *testing.T) {
+	for _, tc := range binaryOpFuncs {
+		for i := 0; i < len(binTestCases); i++ {
+			inputs := binTestCases[i]
+			f1 := MustFromHex(inputs[0])
+			f2 := MustFromHex(inputs[1])
+			t.Run(tc.name, func(t *testing.T) {
+				testBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, *f1, *f2)
+			})
+		}
+	}
+}
+
+func FuzzBinaryOperations(f *testing.F) {
+	f.Fuzz(func(t *testing.T, x0, x1, x2, x3, y0, y1, y2, y3 uint64) {
+		x := Int{x0, x1, x2, x3}
+		y := Int{y0, y1, y2, y3}
+		for _, tc := range binaryOpFuncs {
+			testBinaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x, y)
+		}
 	})
 }
 
