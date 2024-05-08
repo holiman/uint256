@@ -14,98 +14,6 @@ import (
 	"testing"
 )
 
-var (
-	bigtt256 = new(big.Int).Lsh(big.NewInt(1), 256)
-	bigtt255 = new(big.Int).Lsh(big.NewInt(1), 255)
-
-	unTestCases = []string{
-		"0x0",
-		"0x1",
-		"0x80000000000000000000000000000000",
-		"0x80000000000000010000000000000000",
-		"0x80000000000000000000000000000001",
-		"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5",
-		"0x8000000000000000000000000000000000000000000000000000000000000000",
-		"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe",
-		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-	}
-
-	// A collection of interesting input values for binary operators (especially for division).
-	// No expected results as big.Int can be used as the source of truth.
-	binTestCases = [][2]string{
-		{"0x0", "0x0"},
-		{"0x1", "0x0"},
-		{"0x1", "0x767676767676767676000000767676767676"},
-		{"0x2", "0x0"},
-		{"0x2", "0x1"},
-		{"0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5", "0xc76f4afb041407a8ea478d65024f5c3dfe1db1a1bb10c5ea8bec314ccf9"},
-		{"0x10000000000000000", "0x2"},
-		{"0x7000000000000000", "0x8000000000000000"},
-		{"0x8000000000000000", "0x8000000000000000"},
-		{"0x8000000000000001", "0x8000000000000000"},
-		{"0x80000000000000010000000000000000", "0x80000000000000000000000000000000"},
-		{"0x80000000000000000000000000000000", "0x80000000000000000000000000000001"},
-		{"0x478392145435897052", "0x111"},
-		{"0x767676767676767676000000767676767676", "0x2900760076761e00020076760000000076767676000000"},
-		{"0x12121212121212121212121212121212", "0x232323232323232323"},
-		{"0xfffff716b61616160b0b0b2b0b0b0becf4bef50a0df4f48b090b2b0bc60a0a00", "0xfffff716b61616160b0b0b2b0b230b000008010d0a2b00"},
-		{"0x50beb1c60141a0000dc2b0b0b0b0b0b410a0a0df4f40b090b2b0bc60a0a00", "0x2000110000000d0a300e750a000000090a0a"},
-		{"0x4b00000b41000b0b0b2b0b0b0b0b0b410a0aeff4f40b090b2b0bc60a0a1000", "0x4b00000b41000b0b0b2b0b0b0b0b0b410a0aeff4f40b0a0a"},
-		{"0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", "0x7"},
-		{"0xf6376770abd3a36b20394c5664afef1194c801c3f05e42566f085ed24d002bb0", "0xb368d219438b7f3f"},
-		{"0x0", "0x10900000000000000000000000000000000000000000000000000"},
-		{"0x77676767676760000000000000001002e000000000000040000000e000000000", "0xfffc000000000000767676240000000000002b0576047"},
-		{"0x767676767676000000000076000000000000005600000000000000000000", "0x767676767676000000000076000000760000"},
-		{"0x8200000000000000000000000000000000000000000000000000000000000000", "0x8200000000000000fe000004000000ffff000000fffff700"},
-		{"0xdac7fff9ffd9e1322626262626262600", "0xd021262626262626"},
-		{"0x8000000000000001800000000000000080000000000000008000000000000000", "0x800000000000000080000000000000008000000000000000"},
-		{"0xe8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xe8e8e8e2000100000009ea02000000000000ff3ffffff800000010002280ff"},
-		{"0xc9700000000000000000023f00c00014ff000000000000000022300805", "0xc9700000000000000000023f00c00014ff002c000000000000223108"},
-		{"0x40000000fd000000db0000000000000000000000000000000000000000000001", "0x40000000fd000000db0000000000000000000040000000fd000000db000001"},
-		{"0x40000000fd000000db0000000000000000000000000000000000000000000001", "0x40000000fd000000db0000000000000000000040000000fd000000db0000d3"},
-		{"0x1f000000000000000000000000000000200000000100000000000000000000", "0x100000000ffffffffffffffff0000000000002e000000"},
-		{"0x7effffff80000000000000000000000000020000440000000000000000000001", "0x7effffff800000007effffff800000008000ff0000010000"},
-		{"0x5fd8fffffffffffffffffffffffffffffc090000ce700004d0c9ffffff000001", "0x2ffffffffffffffffffffffffffffffffff000000030000"},
-		{"0x62d8fffffffffffffffffffffffffffffc18000000000000000000ca00000001", "0x2ffffffffffffffffffffffffffffffffff200000000000"},
-		{"0x7effffff8000000000000000000000000000000000000000d900000000000001", "0x7effffff8000000000000000000000000000000000008001"},
-		{"0x6400aff20ff00200004e7fd1eff08ffca0afd1eff08ffca0a", "0x210000000000000022"},
-		{"0x6d5adef08547abf7eb", "0x13590cab83b779e708b533b0eef3561483ddeefc841f5"},
-		{"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0xe8e8e8e2000100000009ea02000000000000ff3ffffff80000001000220000", "0xffffffffffffffff7effffff800000007effffff800000008000ff0000010000"},
-		{"0x1ce97e1ab91a", "0x66aa0a5319bcf5cb4"}, // regression test for udivrem() where len(x) < len(y)
-	}
-
-	// A collection of interesting input values for ternary operators (addmod, mulmod).
-	ternTestCases = [][3]string{
-		{"0x0", "0x0", "0x0"},
-		{"0x1", "0x0", "0x0"},
-		{"0x1", "0x1", "0x0"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0x0"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd", "0x3", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
-		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe"},
-		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x2"},
-		{"0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x1"},
-		{"0xffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000002"},
-		{"0xffffffffffffffffffffffffffffffff", "0xffffffffffffffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffe00000000000000000000000000000001"},
-		{"0xffffffffffffffffffffffffffff000004020041fffffffffc00000060000020", "0xffffffffffffffffffffffffffffffe6000000ffffffe60000febebeffffffff", "0xffffffffffffffffffe6000000ffffffe60000febebeffffffffffffffffffff"},
-		{"0xffffffffffffffffffffffffffffffff00ffffe6ff0000000000000060000020", "0xffffffffffffffffffffffffffffffffffe6000000ffff00e60000febebeffff", "0xffffffffffffffffffe6000000ffff00e60000fe0000ffff00e60000febebeff"},
-		{"0xfffffffffffffffffffffffff600000000005af50100bebe000000004a00be0a", "0xffffffffffffffffffffffffffffeaffdfd9fffffffffffff5f60000000000ff", "0xffffffffffffffffffffffeaffdfd9fffffffffffffff60000000000ffffffff"},
-		{"0x8000000000000001000000000000000000000000000000000000000000000000", "0x800000000000000100000000000000000000000000000000000000000000000b", "0x8000000000000000000000000000000000000000000000000000000000000000"},
-		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000001000000000000000000000000000000000000000000000000", "0x8000000000000000000000000000000000000000000000000000000000000000"},
-		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000001000000000000000000000000000000000000000000000000", "0x8000000000000001000000000000000000000000000000000000000000000000"},
-		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000000000000000000000100000000000000000000000000000000", "0x8000000000000000000000000000000000000000000000000000000000000001"},
-		{"0x1", "0x1", "0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff"},
-		{"0x1", "0x1", "0x1000000003030303030303030303030303030303030303030303030303030"},
-		{"0x1", "0x1", "0x4000000000000000130303030303030303030303030303030303030303030"},
-		{"0x1", "0x1", "0x8000000000000000000000000000000043030303000000000"},
-		{"0x1", "0x1", "0x8000000000000000000000000000000003030303030303030"},
-	}
-)
-
 func hex2Bytes(str string) []byte {
 	h, _ := hex.DecodeString(str)
 	return h
@@ -118,17 +26,6 @@ func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 		return fmt.Errorf("Overflow should be %v, was %v\nf= %x\nb= %x\b", shouldOverflow, overflow, f, b)
 	}
 	return nil
-}
-
-func randNum() *Int {
-	//How many bits? 0-256
-	nbits, _ := rand.Int(rand.Reader, big.NewInt(257))
-	//Max random value, a 130-bits integer, i.e 2^130
-	max := new(big.Int)
-	max.Exp(big.NewInt(2), big.NewInt(nbits.Int64()), nil)
-	b, _ := rand.Int(rand.Reader, max)
-	f, _ := FromBig(b)
-	return f
 }
 
 func randNums() (*big.Int, *Int) {
@@ -207,38 +104,6 @@ func TestRandomMulOverflow(t *testing.T) {
 			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f1, b)
 		}
 	}
-}
-
-// divModDiv wraps DivMod and returns quotient only
-func divModDiv(z, x, y *Int) *Int {
-	var m Int
-	z.DivMod(x, y, &m)
-	return z
-}
-
-// divModMod wraps DivMod and returns modulus only
-func divModMod(z, x, y *Int) *Int {
-	new(Int).DivMod(x, y, z)
-	return z
-}
-
-// udivremDiv wraps udivrem and returns quotient
-func udivremDiv(z, x, y *Int) *Int {
-	var quot Int
-	if !y.IsZero() {
-		udivrem(quot[:], x[:], y)
-	}
-	return z.Set(&quot)
-}
-
-// udivremMod wraps udivrem and returns remainder
-func udivremMod(z, x, y *Int) *Int {
-	if y.IsZero() {
-		return z.Clear()
-	}
-	var quot Int
-	rem := udivrem(quot[:], x[:], y)
-	return z.Set(&rem)
 }
 
 func set3Int(s1, s2, s3, d1, d2, d3 *Int) {
@@ -596,18 +461,10 @@ func TestRandomMulDivOverflow(t *testing.T) {
 	}
 }
 
-func S256(x *big.Int) *big.Int {
-	if x.Cmp(bigtt255) < 0 {
-		return x
-	} else {
-		return new(big.Int).Sub(x, bigtt256)
-	}
-}
-
 func TestRandomAbs(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1 := randHighNums()
-		b2 := S256(big.NewInt(0).Set(b))
+		b2 := bigS256(big.NewInt(0).Set(b))
 		b2.Abs(b2)
 		f1a := new(Int).Abs(f1)
 
@@ -757,7 +614,7 @@ func TestAddSubUint64(t *testing.T) {
 		bigArg, _ := new(big.Int).SetString(tc.arg, 0)
 		arg, _ := FromBig(bigArg)
 		{ // SubUint64
-			want, _ := FromBig(u256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			want, _ := FromBig(bigU256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
 			have := new(Int).SetAllOne().SubUint64(arg, tc.n)
 			if !have.Eq(want) {
 				t.Logf("args: %s, %d\n", tc.arg, tc.n)
@@ -767,7 +624,7 @@ func TestAddSubUint64(t *testing.T) {
 			}
 		}
 		{ // AddUint64
-			want, _ := FromBig(u256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
+			want, _ := FromBig(bigU256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
 			have := new(Int).AddUint64(arg, tc.n)
 			if !have.Eq(want) {
 				t.Logf("args: %s, %d\n", tc.arg, tc.n)
@@ -800,15 +657,6 @@ const (
 	// number of bits in a big.Word
 	wordBits = 32 << (uint64(^big.Word(0)) >> 63)
 )
-
-var (
-	tt256m1 = new(big.Int).Sub(bigtt256, big.NewInt(1))
-)
-
-// u256 encodes as a 256 bit two's complement number. This operation is destructive.
-func u256(x *big.Int) *big.Int {
-	return x.And(x, tt256m1)
-}
 
 // TestFixedExpReusedArgs tests the cases in Exp() where the arguments (including result) alias the same objects.
 func TestFixedExpReusedArgs(t *testing.T) {
@@ -1107,50 +955,4 @@ func TestCmpBig(t *testing.T) {
 		check(z, new(big.Int).Neg(new(Int).Set(z).ToBig()))      // z, -z
 		check(z, new(big.Int).Lsh(new(Int).Set(z).ToBig(), 256)) // z, z << 256
 	}
-}
-
-func testSetFromDecForFuzzing(tc string) error {
-	a := new(Int).SetAllOne()
-	err := a.SetFromDecimal(tc)
-	// If input is negative, we should eror
-	if len(tc) > 0 && tc[0] == '-' {
-		if err == nil {
-			return fmt.Errorf("want error on negative input")
-		}
-		return nil
-	}
-	// Need to compare with big.Int
-	bigA, ok := big.NewInt(0).SetString(tc, 10)
-	if !ok {
-		if err == nil {
-			return fmt.Errorf("want error")
-		}
-		return nil // both agree that input is bad
-	}
-	if bigA.BitLen() > 256 {
-		if err == nil {
-			return fmt.Errorf("want error (bitlen > 256)")
-		}
-		return nil
-	}
-	want := bigA.String()
-	have := a.Dec()
-	if want != have {
-		return fmt.Errorf("want %v, have %v", want, have)
-	}
-	if _, err := a.Value(); err != nil {
-		return fmt.Errorf("fail to Value() %s, got err %s", tc, err)
-	}
-	return nil
-}
-
-func FuzzSetString(f *testing.F) {
-	f.Fuzz(func(t *testing.T, data []byte) {
-		if len(data) > 512 {
-			return
-		}
-		if err := testSetFromDecForFuzzing(string(data)); err != nil {
-			t.Fatal(err)
-		}
-	})
 }
