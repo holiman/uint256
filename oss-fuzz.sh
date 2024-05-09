@@ -3,6 +3,8 @@
 # This sets the -coverpgk for the coverage report when the corpus is executed through go test
 coverpkg="github.com/holiman/uint256/..."
 
+(cd /src/ && git clone https://github.com/holiman/gofuzz-shim.git )
+
 function coverbuild {
   path=$1
   function=$2
@@ -14,7 +16,7 @@ function coverbuild {
   fi
   cd $path
   fuzzed_package=`pwd | rev | cut -d'/' -f 1 | rev`
-  cp $GOPATH/ossfuzz_coverage_runner.go ./"${function,,}"_test.go
+  cp /src/gofuzz-shim/coverage_runner_template.txt ./"${function,,}"_test.go
   sed -i -e 's/FuzzFunction/'$function'/' ./"${function,,}"_test.go
   sed -i -e 's/mypackagebeingfuzzed/'$fuzzed_package'/' ./"${function,,}"_test.go
   sed -i -e 's/TestFuzzCorpus/Test'$function'Corpus/' ./"${function,,}"_test.go
