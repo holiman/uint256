@@ -26,7 +26,7 @@ var unaryOpFuncs = []struct {
 		res.squared()
 		return x.Set(res)
 	}, func(b1, b2 *big.Int) *big.Int { return b1.Mul(b2, b2) }},
-	{"Abs", (*Int).Abs, func(b1, b2 *big.Int) *big.Int { return b1.Abs(S256(b2)) }},
+	{"Abs", (*Int).Abs, func(b1, b2 *big.Int) *big.Int { return b1.Abs(bigS256(b2)) }},
 }
 
 func checkUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {

@@ -22,6 +22,15 @@ type binaryOpEntry struct {
 	bigFn  bigDualArgFunc
 }
 
+func lookupBinary(name string) binaryOpEntry {
+	for _, tc := range binaryOpFuncs {
+		if tc.name == name {
+			return tc
+		}
+	}
+	panic(fmt.Sprintf("%v not found", name))
+}
+
 var binaryOpFuncs = []binaryOpEntry{
 	{"Add", (*Int).Add, (*big.Int).Add},
 	{"Sub", (*Int).Sub, (*big.Int).Sub},
@@ -52,22 +61,13 @@ var cmpOpFuncs = []struct {
 	{"Eq", (*Int).Eq, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }},
 	{"Lt", (*Int).Lt, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }},
 	{"Gt", (*Int).Gt, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }},
-	{"Slt", (*Int).Slt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) < 0 }},
-	{"Sgt", (*Int).Sgt, func(a, b *big.Int) bool { return S256(a).Cmp(S256(b)) > 0 }},
+	{"Slt", (*Int).Slt, func(a, b *big.Int) bool { return bigS256(a).Cmp(bigS256(b)) < 0 }},
+	{"Sgt", (*Int).Sgt, func(a, b *big.Int) bool { return bigS256(a).Cmp(bigS256(b)) > 0 }},
 	{"CmpEq", func(a, b *Int) bool { return a.Cmp(b) == 0 }, func(a, b *big.Int) bool { return a.Cmp(b) == 0 }},
 	{"CmpLt", func(a, b *Int) bool { return a.Cmp(b) < 0 }, func(a, b *big.Int) bool { return a.Cmp(b) < 0 }},
 	{"CmpGt", func(a, b *Int) bool { return a.Cmp(b) > 0 }, func(a, b *big.Int) bool { return a.Cmp(b) > 0 }},
 	{"LtUint64", func(a, b *Int) bool { return a.LtUint64(b.Uint64()) }, func(a, b *big.Int) bool { return a.Cmp(new(big.Int).SetUint64(b.Uint64())) < 0 }},
 	{"GtUint64", func(a, b *Int) bool { return a.GtUint64(b.Uint64()) }, func(a, b *big.Int) bool { return a.Cmp(new(big.Int).SetUint64(b.Uint64())) > 0 }},
-}
-
-func lookupBinary(name string) binaryOpEntry {
-	for _, tc := range binaryOpFuncs {
-		if tc.name == name {
-			return tc
-		}
-	}
-	panic(fmt.Sprintf("%v not found", name))
 }
 
 func checkBinaryOperation(t *testing.T, opName string, op opDualArgFunc, bigOp bigDualArgFunc, x, y Int) {
@@ -159,7 +159,7 @@ func bigLsh(z, x, y *big.Int) *big.Int {
 }
 
 func bigSRsh(z, x, y *big.Int) *big.Int {
-	return z.Rsh(S256(x), uint(y.Uint64()&0x1FF))
+	return z.Rsh(bigS256(x), uint(y.Uint64()&0x1FF))
 }
 
 func bigExtendSign(result, num, byteNum *big.Int) *big.Int {
@@ -198,8 +198,8 @@ func bigSDiv(result, x, y *big.Int) *big.Int {
 	if y.Sign() == 0 {
 		return result.SetUint64(0)
 	}
-	sx := S256(x)
-	sy := S256(y)
+	sx := bigS256(x)
+	sy := bigS256(y)
 
 	n := new(big.Int)
 	if sx.Sign() == sy.Sign() {
@@ -218,15 +218,47 @@ func bigSMod(result, x, y *big.Int) *big.Int {
 		return result.SetUint64(0)
 	}
 
-	sx := S256(x)
-	sy := S256(y)
+	sx := bigS256(x)
+	sy := bigS256(y)
 	neg := sx.Sign() < 0
 
 	result.Mod(sx.Abs(sx), sy.Abs(sy))
 	if neg {
 		result.Neg(result)
 	}
-	return u256(result)
+	return bigU256(result)
+}
+
+// divModDiv wraps DivMod and returns quotient only
+func divModDiv(z, x, y *Int) *Int {
+	var m Int
+	z.DivMod(x, y, &m)
+	return z
+}
+
+// divModMod wraps DivMod and returns modulus only
+func divModMod(z, x, y *Int) *Int {
+	new(Int).DivMod(x, y, z)
+	return z
+}
+
+// udivremDiv wraps udivrem and returns quotient
+func udivremDiv(z, x, y *Int) *Int {
+	var quot Int
+	if !y.IsZero() {
+		udivrem(quot[:], x[:], y)
+	}
+	return z.Set(&quot)
+}
+
+// udivremMod wraps udivrem and returns remainder
+func udivremMod(z, x, y *Int) *Int {
+	if y.IsZero() {
+		return z.Clear()
+	}
+	var quot Int
+	rem := udivrem(quot[:], x[:], y)
+	return z.Set(&rem)
 }
 
 func checkCompareOperation(t *testing.T, opName string, op opCmpArgFunc, bigOp bigCmpArgFunc, x, y Int) {
