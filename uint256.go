@@ -244,12 +244,10 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 
 		// final sub was unnecessary
 		if c1 == 0 && c2 != 0 {
-			copy((*z)[:], res[:])
-			return z
+			return z.Set(&res)
 		}
 
-		copy((*z)[:], tmp[:])
-		return z
+		return z.Set(&tmp)
 	}
 
 	if m.IsZero() {

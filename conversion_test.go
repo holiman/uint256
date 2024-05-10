@@ -401,7 +401,7 @@ func BenchmarkSetBytes(b *testing.B) {
 			val.SetBytes(bytearr[:27])
 			val.SetBytes(bytearr[:28])
 			val.SetBytes(bytearr[:29])
-			val.SetBytes(bytearr[:20])
+			val.SetBytes(bytearr[:30])
 			val.SetBytes(bytearr[:31])
 			val.SetBytes(bytearr[:32])
 		}
