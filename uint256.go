@@ -337,9 +337,8 @@ func umulHop(z, x, y uint64) (hi, lo uint64) {
 }
 
 // umul computes full 256 x 256 -> 512 multiplication.
-func umul(x, y *Int) [8]uint64 {
+func umul(x, y *Int, res *[8]uint64) {
 	var (
-		res                           [8]uint64
 		carry, carry4, carry5, carry6 uint64
 		res1, res2, res3, res4, res5  uint64
 	)
@@ -363,8 +362,6 @@ func umul(x, y *Int) [8]uint64 {
 	carry, res[4] = umulStep(res4, x[1], y[3], carry)
 	carry, res[5] = umulStep(res5, x[2], y[3], carry)
 	res[7], res[6] = umulStep(carry6, x[3], y[3], carry)
-
-	return res
 }
 
 // Mul sets z to the product x*y
@@ -394,7 +391,8 @@ func (z *Int) Mul(x, y *Int) *Int {
 
 // MulOverflow sets z to the product x*y, and returns z and  whether overflow occurred
 func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 	copy(z[:], p[:4])
 	return z, (p[4] | p[5] | p[6] | p[7]) != 0
 }
@@ -675,7 +673,8 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 
 	if m[3] != 0 {
 		r := reduce4(p, m, *mu)
@@ -706,7 +705,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	if x.IsZero() || y.IsZero() || m.IsZero() {
 		return z.Clear()
 	}
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 
 	if m[3] != 0 {
 		mu := Reciprocal(m)
@@ -737,7 +737,8 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	if x.IsZero() || y.IsZero() || d.IsZero() {
 		return z.Clear(), false
 	}
-	p := umul(x, y)
+	var p [8]uint64
+	umul(x, y, &p)
 
 	var quot [8]uint64
 	udivrem(quot[:], p[:], d)
