@@ -367,25 +367,22 @@ func umul(x, y *Int, res *[8]uint64) {
 // Mul sets z to the product x*y
 func (z *Int) Mul(x, y *Int) *Int {
 	var (
-		carry                  uint64
-		res0, res1, res2, res3 uint64
+		carry0, carry1, carry2 uint64
+		res1, res2 uint64
+		x0, x1, x2, x3 = x[0], x[1], x[2], x[3]
+		y0, y1, y2, y3 = y[0], y[1], y[2], y[3]
 	)
 
-	carry, res0 = bits.Mul64(x[0], y[0])
-	carry, res1 = umulHop(carry, x[1], y[0])
-	carry, res2 = umulHop(carry, x[2], y[0])
-	res3 = x[3]*y[0] + carry
+	carry0, z[0] = bits.Mul64(x0, y0)
+	carry0, res1 = umulHop(carry0, x1, y0)
+	carry0, res2 = umulHop(carry0, x2, y0)
 
-	carry, res1 = umulHop(res1, x[0], y[1])
-	carry, res2 = umulStep(res2, x[1], y[1], carry)
-	res3 = res3 + x[2]*y[1] + carry
+	carry1, z[1] = umulHop(res1, x0, y1)
+	carry1, res2 = umulStep(res2, x1, y1, carry1)
 
-	carry, res2 = umulHop(res2, x[0], y[2])
-	res3 = res3 + x[1]*y[2] + carry
+	carry2, z[2] = umulHop(res2, x0, y2)
 
-	res3 = res3 + x[0]*y[3]
-
-	z[0], z[1], z[2], z[3] = res0, res1, res2, res3
+	z[3] = x3*y0 + x2*y1 + x0*y3 + x1*y2 + carry0 + carry1 + carry2
 	return z
 }
 
