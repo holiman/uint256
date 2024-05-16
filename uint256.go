@@ -421,9 +421,10 @@ func (z *Int) isBitSet(n uint) bool {
 }
 
 // addTo computes x += y.
-// Requires len(x) >= len(y).
+// Requires len(x) >= len(y) > 0.
 func addTo(x, y []uint64) uint64 {
 	var carry uint64
+	_ = x[len(y)-1] // bounds check hint to compiler; see golang.org/issue/14808
 	for i := 0; i < len(y); i++ {
 		x[i], carry = bits.Add64(x[i], y[i], carry)
 	}
@@ -431,10 +432,10 @@ func addTo(x, y []uint64) uint64 {
 }
 
 // subMulTo computes x -= y * multiplier.
-// Requires len(x) >= len(y).
+// Requires len(x) >= len(y) > 0.
 func subMulTo(x, y []uint64, multiplier uint64) uint64 {
-
 	var borrow uint64
+	_ = x[len(y)-1] // bounds check hint to compiler; see golang.org/issue/14808
 	for i := 0; i < len(y); i++ {
 		s, carry1 := bits.Sub64(x[i], borrow, 0)
 		ph, pl := bits.Mul64(y[i], multiplier)
