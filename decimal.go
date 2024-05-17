@@ -80,7 +80,7 @@ func (z *Int) PrettyDec(separator byte) string {
 	)
 	for {
 		var quot, rem Int
-		rem := udivrem(quot[:], y[:], divisor, &rem)
+		udivrem(quot[:], y[:], divisor, &rem)
 		y.Set(&quot) // Set Q for next loop
 		buf = strconv.AppendUint(buf[:0], rem.Uint64(), 10)
 		for j := len(buf) - 1; j >= 0; j-- {
