@@ -246,7 +246,7 @@ func divModMod(z, x, y *Int) *Int {
 func udivremDiv(z, x, y *Int) *Int {
 	var quot Int
 	if !y.IsZero() {
-		udivrem(quot[:], x[:], y)
+		udivrem(quot[:], x[:], y, nil)
 	}
 	return z.Set(&quot)
 }
@@ -256,8 +256,8 @@ func udivremMod(z, x, y *Int) *Int {
 	if y.IsZero() {
 		return z.Clear()
 	}
-	var quot Int
-	rem := udivrem(quot[:], x[:], y)
+	var quot, rem Int
+	udivrem(quot[:], x[:], y, &rem)
 	return z.Set(&rem)
 }
 
