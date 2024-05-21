@@ -259,7 +259,8 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	if _, overflow := z.AddOverflow(x, y); overflow {
 		sum := [5]uint64{z[0], z[1], z[2], z[3], 1}
 		var quot [5]uint64
-		rem := udivrem(quot[:], sum[:], m)
+		var rem Int
+		udivrem(quot[:], sum[:], m, &rem)
 		return z.Set(&rem)
 	}
 	return z.Mod(z, m)
@@ -499,7 +500,7 @@ func udivremKnuth(quot, u, d []uint64) {
 // The quotient is stored in provided quot - len(u)-len(d)+1 words.
 // It loosely follows the Knuth's division algorithm (sometimes referenced as "schoolbook" division) using 64-bit words.
 // See Knuth, Volume 2, section 4.3.1, Algorithm D.
-func udivrem(quot, u []uint64, d *Int) (rem Int) {
+func udivrem(quot, u []uint64, d, rem *Int) {
 	var dLen int
 	for i := len(d) - 1; i >= 0; i-- {
 		if d[i] != 0 {
@@ -526,8 +527,10 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 	}
 
 	if uLen < dLen {
-		copy(rem[:], u)
-		return rem
+		if rem != nil {
+			copy(rem[:], u)
+		}
+		return
 	}
 
 	var unStorage [9]uint64
@@ -542,18 +545,20 @@ func udivrem(quot, u []uint64, d *Int) (rem Int) {
 
 	if dLen == 1 {
 		r := udivremBy1(quot, un, dn[0])
-		rem.SetUint64(r >> shift)
-		return rem
+		if rem != nil {
+			rem.SetUint64(r >> shift)
+		}
+		return
 	}
 
 	udivremKnuth(quot, un, dn)
 
-	for i := 0; i < dLen-1; i++ {
-		rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
+	if rem != nil {
+		for i := 0; i < dLen-1; i++ {
+			rem[i] = (un[i] >> shift) | (un[i+1] << (64 - shift))
+		}
+		rem[dLen-1] = un[dLen-1] >> shift
 	}
-	rem[dLen-1] = un[dLen-1] >> shift
-
-	return rem
 }
 
 // Div sets z to the quotient x/y for returns z.
@@ -574,7 +579,7 @@ func (z *Int) Div(x, y *Int) *Int {
 	// x/y ; x > y > 0
 
 	var quot Int
-	udivrem(quot[:], x[:], y)
+	udivrem(quot[:], x[:], y, nil)
 	return z.Set(&quot)
 }
 
@@ -603,9 +608,9 @@ func (z *Int) Mod(x, y *Int) *Int {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
 
-	var quot Int
-	*z = udivrem(quot[:], x[:], y)
-	return z
+	var quot, rem Int
+	udivrem(quot[:], x[:], y, &rem)
+	return z.Set(&rem)
 }
 
 // DivMod sets z to the quotient x div y and m to the modulus x mod y and returns the pair (z, m) for y != 0.
@@ -635,10 +640,9 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 		return z.SetUint64(x0 / y0), m.SetUint64(x0 % y0)
 	}
 
-	var quot Int
-	*m = udivrem(quot[:], x[:], y)
-	*z = quot
-	return z, m
+	var quot, rem Int
+	udivrem(quot[:], x[:], y, &rem)
+	return z.Set(&quot), m.Set(&rem)
 }
 
 // SMod interprets x and y as two's complement signed integers,
@@ -683,8 +687,8 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 		pl Int
 		ph Int
 	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
+	pl[0], pl[1], pl[2], pl[3] = p[0], p[1], p[2], p[3]
+	ph[0], ph[1], ph[2], ph[3] = p[4], p[5], p[6], p[7]
 
 	// If the multiplication is within 256 bits use Mod().
 	if ph.IsZero() {
@@ -692,7 +696,8 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	}
 
 	var quot [8]uint64
-	rem := udivrem(quot[:], p[:], m)
+	var rem Int
+	udivrem(quot[:], p[:], m, &rem)
 	return z.Set(&rem)
 }
 
@@ -716,8 +721,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		pl Int
 		ph Int
 	)
-	copy(pl[:], p[:4])
-	copy(ph[:], p[4:])
+	pl[0], pl[1], pl[2], pl[3] = p[0], p[1], p[2], p[3]
+	ph[0], ph[1], ph[2], ph[3] = p[4], p[5], p[6], p[7]
 
 	// If the multiplication is within 256 bits use Mod().
 	if ph.IsZero() {
@@ -725,7 +730,8 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	}
 
 	var quot [8]uint64
-	rem := udivrem(quot[:], p[:], m)
+	var rem Int
+	udivrem(quot[:], p[:], m, &rem)
 	return z.Set(&rem)
 }
 
@@ -739,9 +745,9 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	umul(x, y, &p)
 
 	var quot [8]uint64
-	udivrem(quot[:], p[:], d)
+	udivrem(quot[:], p[:], d, nil)
 
-	copy(z[:], quot[:4])
+	z[0], z[1], z[2], z[3] = quot[0], quot[1], quot[2], quot[3]
 
 	return z, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
 }

@@ -479,8 +479,9 @@ func TestUdivremQuick(t *testing.T) {
 	var (
 		u        = []uint64{1, 0, 0, 0, 0}
 		expected = new(Int)
+		rem Int
 	)
-	rem := udivrem([]uint64{}, u, &Int{0, 1, 0, 0})
+	udivrem([]uint64{}, u, &Int{0, 1, 0, 0}, &rem)
 	copy(expected[:], u)
 	if !rem.Eq(expected) {
 		t.Errorf("Wrong remainder: %x, expected %x", rem, expected)
