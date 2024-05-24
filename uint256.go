@@ -1284,7 +1284,7 @@ func (z *Int) Sqrt(x *Int) *Int {
 		var (
 			x0 uint64 = x.Uint64()
 			z1 uint64 = 1 << ((bits.Len64(x0)+1)/2)
-			z2 uint64 = 0
+			z2 uint64
 		)
 		if x0 < 2 {
 			return z.SetUint64(x0)
