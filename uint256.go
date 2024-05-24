@@ -586,18 +586,12 @@ func (z *Int) Div(x, y *Int) *Int {
 // Mod sets z to the modulus x%y for y != 0 and returns z.
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) Mod(x, y *Int) *Int {
-	if x.IsZero() || y.IsZero() {
+	if y.IsZero() || x.Eq(y) {
 		return z.Clear()
 	}
-	switch x.Cmp(y) {
-	case -1:
-		// x < y
+	if x.Lt(y) {
 		return z.Set(x)
-	case 0:
-		// x == y
-		return z.Clear() // They are equal
 	}
-
 	// At this point:
 	// x != 0
 	// y != 0
@@ -619,14 +613,11 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 	if y.IsZero() {
 		return z.Clear(), m.Clear()
 	}
-
-	switch x.Cmp(y) {
-	case -1:
-		// x < y
-		return z.Clear(), m.Set(x)
-	case 0:
-		// x == y
+	if x.Eq(y) {
 		return z.SetOne(), m.Clear()
+	}
+	if x.Lt(y) {
+		return z.Clear(), m.Set(x)
 	}
 
 	// At this point:
