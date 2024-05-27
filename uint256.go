@@ -1298,23 +1298,23 @@ func (z *Int) Sqrt(x *Int) *Int {
 		}
 	}
 
-	flag := false
 	z1 := NewInt(1)
 	z2 := NewInt(0)
 
 	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
 	z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
+
+	// We can do the first division outside the loop
+	z2.Rsh(x, uint(x.BitLen()+1)/2) // The first div is equal to a right shift
+	first := true
+
 	for {
 		// z2.Div(x, z1) -- x > MaxUint64, x > z1 > 0
-		if flag {
+		if !first { // first division was done outside the loop
 			z2.Clear()
 			udivrem(z2[:], x[:], z1, nil)
-		} else {
-			// The first div is equal to a right shift
-			z2.Rsh(x, uint(x.BitLen()+1)/2)
-			flag = true
 		}
-
+		first = false
 		z2.Add(z2, z1)
 		
 		// z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
