@@ -679,8 +679,7 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	umul(x, y, &p)
 
 	if m[3] != 0 {
-		r := reduce4(p, m, *mu)
-		return z.Set(&r)
+		return z.reduce4(&p, m, mu)
 	}
 
 	var (
@@ -713,8 +712,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 
 	if m[3] != 0 {
 		mu := Reciprocal(m)
-		r := reduce4(p, m, mu)
-		return z.Set(&r)
+		return z.reduce4(&p, m, &mu)
 	}
 
 	var (
