@@ -1283,7 +1283,7 @@ func (z *Int) Sqrt(x *Int) *Int {
 	if x.IsUint64() {
 		var (
 			x0 uint64 = x.Uint64()
-			z1 uint64 = 1 << ((bits.Len64(x0)+1)/2)
+			z1 uint64 = 1 << ((bits.Len64(x0) + 1) / 2)
 			z2 uint64
 		)
 		if x0 < 2 {
@@ -1302,19 +1302,12 @@ func (z *Int) Sqrt(x *Int) *Int {
 	z2 := NewInt(0)
 
 	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
-	z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
+	z1.Lsh(z1, uint(x.BitLen() + 1) / 2) // must be ≥ √x
 
 	// We can do the first division outside the loop
-	z2.Rsh(x, uint(x.BitLen()+1)/2) // The first div is equal to a right shift
-	first := true
+	z2.Rsh(x, uint(x.BitLen() + 1) / 2) // The first div is equal to a right shift
 
 	for {
-		// z2.Div(x, z1) -- x > MaxUint64, x > z1 > 0
-		if !first { // first division was done outside the loop
-			z2.Clear()
-			udivrem(z2[:], x[:], z1, nil)
-		}
-		first = false
 		z2.Add(z2, z1)
 		
 		// z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
@@ -1327,6 +1320,11 @@ func (z *Int) Sqrt(x *Int) *Int {
 			return z.Set(z1)
 		}
 		z1.Set(z2)
+
+		// Next iteration of the loop
+		// z2.Div(x, z1) -- x > MaxUint64, x > z1 > 0
+		z2.Clear()
+		udivrem(z2[:], x[:], z1, nil)
 	}
 }
 
