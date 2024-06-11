@@ -540,8 +540,20 @@ func bigEndianUint56(b []byte) uint64 {
 		uint64(b[2])<<32 | uint64(b[1])<<40 | uint64(b[0])<<48
 }
 
-// MarshalSSZTo implements the fastssz.Marshaler interface, serializes and appends
-// the integer to the dst buffer, and returns the (potentially reallocated) buffer.
+// MarshalSSZAppend _almost_ implements the fastssz.Marshaler (see below) interface.
+// Originally, this method was named `MarshalSSZTo`, and ostensibly implemented the interface.
+// However, it was noted (https://github.com/holiman/uint256/issues/170) that the
+// actual implementation did not match the intended semantics of the interface: it
+// inserted the data instead of appending.
+//
+// Therefore, the `MarshalSSZTo` has been removed: to force users into making a choice:
+//   - Use `MarshalSSZAppend`: this is the method that appends to the destination buffer,
+//     and returns a potentially newly allocated buffer. This method will become `MarshalSSZTo`
+//     in some future release.
+//   - Or use `MarshalSSZInto`: this is the original method which places the data into
+//     the destination buffer, without ever reallocating.
+//
+// fastssz.Marshaler interface:
 //
 //	 https://github.com/ferranbt/fastssz/blob/main/interface.go#L4
 //		type Marshaler interface {
@@ -549,7 +561,7 @@ func bigEndianUint56(b []byte) uint64 {
 //			MarshalSSZ() ([]byte, error)
 //			SizeSSZ() int
 //		}
-func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
+func (z *Int) MarshalSSZAppend(dst []byte) ([]byte, error) {
 	dst = binary.LittleEndian.AppendUint64(dst, z[0])
 	dst = binary.LittleEndian.AppendUint64(dst, z[1])
 	dst = binary.LittleEndian.AppendUint64(dst, z[2])
@@ -557,10 +569,27 @@ func (z *Int) MarshalSSZTo(dst []byte) ([]byte, error) {
 	return dst, nil
 }
 
+// MarshalSSZInto is the first attempt to implement the fastssz.Marshaler interface,
+// but which does not obey the intended semantics. See MarshalSSZAppend and
+// - https://github.com/holiman/uint256/pull/171
+// - https://github.com/holiman/uint256/issues/170
+// @deprecated
+func (z *Int) MarshalSSZInto(dst []byte) ([]byte, error) {
+	if len(dst) < 32 {
+		return nil, fmt.Errorf("%w: have %d, want %d bytes", ErrBadBufferLength, len(dst), 32)
+	}
+	binary.LittleEndian.PutUint64(dst[0:8], z[0])
+	binary.LittleEndian.PutUint64(dst[8:16], z[1])
+	binary.LittleEndian.PutUint64(dst[16:24], z[2])
+	binary.LittleEndian.PutUint64(dst[24:32], z[3])
+
+	return dst[32:], nil
+}
+
 // MarshalSSZ implements the fastssz.Marshaler interface and returns the integer
 // marshalled into a newly allocated byte slice.
 func (z *Int) MarshalSSZ() ([]byte, error) {
-	blob, _ := z.MarshalSSZTo(make([]byte, 0, 32)) // ignore error, cannot fail, surely have 32 byte space in blob
+	blob, _ := z.MarshalSSZAppend(make([]byte, 0, 32)) // ignore error, cannot fail, surely have 32 byte space in blob
 	return blob, nil
 }
 
@@ -586,7 +615,7 @@ func (z *Int) UnmarshalSSZ(buf []byte) error {
 
 // HashTreeRoot implements the fastssz.HashRoot interface's non-dependent part.
 func (z *Int) HashTreeRoot() ([32]byte, error) {
-	b, _ := z.MarshalSSZTo(make([]byte, 0, 32)) // ignore error, cannot fail
+	b, _ := z.MarshalSSZAppend(make([]byte, 0, 32)) // ignore error, cannot fail
 	var hash [32]byte
 	copy(hash[:], b)
 	return hash, nil
@@ -755,6 +784,7 @@ var (
 	ErrEmptyNumber      = errors.New("hex string \"0x\"")
 	ErrLeadingZero      = errors.New("hex number with leading zero digits")
 	ErrBig256Range      = errors.New("hex number > 256 bits")
+	ErrBadBufferLength  = errors.New("bad ssz buffer length")
 	ErrBadEncodedLength = errors.New("bad ssz encoded length")
 )
 
