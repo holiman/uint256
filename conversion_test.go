@@ -753,6 +753,9 @@ func TestSSZEncodeDecodeErrors(t *testing.T) {
 	if err := new(Int).UnmarshalSSZ(large); !errors.Is(err, ErrBadEncodedLength) {
 		t.Fatalf("overflow unmarshal error mismatch: have %v, want %v", err, ErrBadEncodedLength)
 	}
+	if _, err := new(Int).MarshalSSZInto(large); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 }
 
 func TestRLPEncode(t *testing.T) {
