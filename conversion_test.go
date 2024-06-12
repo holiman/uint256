@@ -719,7 +719,7 @@ func TestSSZEncodeDecodeHash(t *testing.T) {
 			t.Fatal(err)
 		}
 		if exp := hex2Bytes(tt.exp); !bytes.Equal(b, exp) {
-			t.Errorf("testcase %d, encoding got:\n%x\nexp:%x\n", i, b, exp)
+			t.Errorf("testcase %d, encoding\nhave: %x\nwant: %x\n", i, b, exp)
 		}
 		z2 := new(Int)
 		if err := z2.UnmarshalSSZ(b); err != nil {
@@ -733,25 +733,28 @@ func TestSSZEncodeDecodeHash(t *testing.T) {
 			t.Fatal(err)
 		}
 		if exp := hex2Bytes(tt.exp); !bytes.Equal(r[:], exp) {
-			t.Errorf("testcase %d, hashing got:\n%x\nexp:%x\n", i, r, exp)
+			t.Errorf("testcase %d, hashing\nhave: %x\nwant: %x\n", i, r, exp)
 		}
 	}
 }
 
 func TestSSZEncodeDecodeErrors(t *testing.T) {
 	small := make([]byte, 31)
-	if _, err := new(Int).MarshalSSZTo(small); !errors.Is(err, ErrBadBufferLength) {
+	if _, err := new(Int).MarshalSSZInto(small); !errors.Is(err, ErrBadBufferLength) {
 		t.Fatalf("overflow marshal error mismatch: have %v, want %v", err, ErrBadBufferLength)
 	}
 	if err := new(Int).UnmarshalSSZ(small); !errors.Is(err, ErrBadEncodedLength) {
 		t.Fatalf("underflow unmarshal error mismatch: have %v, want %v", err, ErrBadEncodedLength)
 	}
 	large := make([]byte, 33)
-	if _, err := new(Int).MarshalSSZTo(large); err != nil {
+	if _, err := new(Int).MarshalSSZAppend(large); err != nil {
 		t.Fatalf("underflow marshal error mismatch: have %v, want %v", err, nil)
 	}
 	if err := new(Int).UnmarshalSSZ(large); !errors.Is(err, ErrBadEncodedLength) {
 		t.Fatalf("overflow unmarshal error mismatch: have %v, want %v", err, ErrBadEncodedLength)
+	}
+	if _, err := new(Int).MarshalSSZInto(large); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
