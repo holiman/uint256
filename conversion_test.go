@@ -324,6 +324,28 @@ func BenchmarkToBig(bench *testing.B) {
 	bench.Run("4words", func(bench *testing.B) { benchToBig(bench, param4) })
 }
 
+func benchIntoBig(bench *testing.B, f *Int) *big.Int {
+	var b *big.Int
+	for i := 0; i < bench.N; i++ {
+		f.IntoBig(&b)
+	}
+	return b
+}
+
+func BenchmarkIntoBig(bench *testing.B) {
+	param1 := new(Int).SetUint64(0xff)
+	bench.Run("1word", func(bench *testing.B) { benchIntoBig(bench, param1) })
+
+	param2 := new(Int).Lsh(param1, 64)
+	bench.Run("2words", func(bench *testing.B) { benchIntoBig(bench, param2) })
+
+	param3 := new(Int).Lsh(param2, 64)
+	bench.Run("3words", func(bench *testing.B) { benchIntoBig(bench, param3) })
+
+	param4 := new(Int).Lsh(param3, 64)
+	bench.Run("4words", func(bench *testing.B) { benchIntoBig(bench, param4) })
+}
+
 func TestFormat(t *testing.T) {
 	testCases := []string{
 		"0",
