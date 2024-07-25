@@ -369,9 +369,9 @@ func umul(x, y *Int, res *[8]uint64) {
 func (z *Int) Mul(x, y *Int) *Int {
 	var (
 		carry0, carry1, carry2 uint64
-		res1, res2 uint64
-		x0, x1, x2, x3 = x[0], x[1], x[2], x[3]
-		y0, y1, y2, y3 = y[0], y[1], y[2], y[3]
+		res1, res2             uint64
+		x0, x1, x2, x3         = x[0], x[1], x[2], x[3]
+		y0, y1, y2, y3         = y[0], y[1], y[2], y[3]
 	)
 
 	carry0, z[0] = bits.Mul64(x0, y0)
@@ -610,6 +610,11 @@ func (z *Int) Mod(x, y *Int) *Int {
 // DivMod sets z to the quotient x div y and m to the modulus x mod y and returns the pair (z, m) for y != 0.
 // If y == 0, both z and m are set to 0 (OBS: differs from the big.Int)
 func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
+	if z == m {
+		// We return both z and m as results, if they are aliased, we have to
+		// un-alias them to be able to return separate results.
+		m = new(Int).Set(m)
+	}
 	if y.IsZero() {
 		return z.Clear(), m.Clear()
 	}
@@ -617,7 +622,8 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 		return z.SetOne(), m.Clear()
 	}
 	if x.Lt(y) {
-		return z.Clear(), m.Set(x)
+		m.Set(x)
+		return z.Clear(), m
 	}
 
 	// At this point:
@@ -1279,7 +1285,7 @@ func (z *Int) Sqrt(x *Int) *Int {
 			return z.SetUint64(x0)
 		}
 		for {
-			z2 = (z1 + x0 / z1) >> 1
+			z2 = (z1 + x0/z1) >> 1
 			if z2 >= z1 {
 				return z.SetUint64(z1)
 			}
@@ -1291,18 +1297,18 @@ func (z *Int) Sqrt(x *Int) *Int {
 	z2 := NewInt(0)
 
 	// Start with value known to be too large and repeat "z = ⌊(z + ⌊x/z⌋)/2⌋" until it stops getting smaller.
-	z1.Lsh(z1, uint(x.BitLen() + 1) / 2) // must be ≥ √x
+	z1.Lsh(z1, uint(x.BitLen()+1)/2) // must be ≥ √x
 
 	// We can do the first division outside the loop
-	z2.Rsh(x, uint(x.BitLen() + 1) / 2) // The first div is equal to a right shift
+	z2.Rsh(x, uint(x.BitLen()+1)/2) // The first div is equal to a right shift
 
 	for {
 		z2.Add(z2, z1)
-		
+
 		// z2 = z2.Rsh(z2, 1) -- the code below does a 1-bit rsh faster
-		z2[0] = (z2[0] >> 1) | z2[1] << 63
-		z2[1] = (z2[1] >> 1) | z2[2] << 63
-		z2[2] = (z2[2] >> 1) | z2[3] << 63
+		z2[0] = (z2[0] >> 1) | z2[1]<<63
+		z2[1] = (z2[1] >> 1) | z2[2]<<63
+		z2[2] = (z2[2] >> 1) | z2[3]<<63
 		z2[3] >>= 1
 
 		if !z2.Lt(z1) {

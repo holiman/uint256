@@ -21,6 +21,8 @@ var ternaryOpFuncs = []struct {
 	{"AddMod", (*Int).AddMod, bigAddMod},
 	{"MulMod", (*Int).MulMod, bigMulMod},
 	{"MulModWithReciprocal", (*Int).mulModWithReciprocalWrapper, bigMulMod},
+	{"DivModZ", divModZ, bigDivModZ},
+	{"DivModM", divModM, bigDivModM},
 }
 
 func checkTernaryOperation(t *testing.T, opName string, op opThreeArgFunc, bigOp bigThreeArgFunc, x, y, z Int) {
@@ -49,7 +51,10 @@ func checkTernaryOperation(t *testing.T, opName string, op opThreeArgFunc, bigOp
 		t.Fatalf("%v\nsecond argument had been modified: %x", operation, f2)
 	}
 	if !f3.Eq(f3orig) {
-		t.Fatalf("%v\nthird argument had been modified: %x", operation, f3)
+		if opName != "DivModZ" && opName != "DivModM" {
+			// DivMod takes m as third argument, modifies it, and returns it. That is by design.
+			t.Fatalf("%v\nthird argument had been modified: %x", operation, f3)
+		}
 	}
 	// Check if reusing args as result works correctly.
 	if have = op(f1, f1, f2orig, f3orig); have != f1 {
@@ -116,4 +121,30 @@ func bigMulMod(result, x, y, mod *big.Int) *big.Int {
 func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
 	mu := Reciprocal(mod)
 	return z.MulModWithReciprocal(x, y, mod, &mu)
+}
+
+func divModZ(z, x, y, m *Int) *Int {
+	z2, _ := z.DivMod(x, y, m)
+	return z2
+}
+
+func bigDivModZ(result, x, y, mod *big.Int) *big.Int {
+	if y.Sign() == 0 {
+		return result.SetUint64(0)
+	}
+	z2, _ := result.DivMod(x, y, mod)
+	return z2
+}
+
+func divModM(z, x, y, m *Int) *Int {
+	_, m2 := z.DivMod(x, y, m)
+	return z.Set(m2)
+}
+
+func bigDivModM(result, x, y, mod *big.Int) *big.Int {
+	if y.Sign() == 0 {
+		return result.SetUint64(0)
+	}
+	_, m2 := result.DivMod(x, y, mod)
+	return result.Set(m2)
 }
