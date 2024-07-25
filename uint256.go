@@ -617,7 +617,8 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 		return z.SetOne(), m.Clear()
 	}
 	if x.Lt(y) {
-		return z.Clear(), m.Set(x)
+		m.Set(x)
+		return z.Clear(), m
 	}
 
 	// At this point:
