@@ -243,6 +243,30 @@ func TestToBig(t *testing.T) {
 	}
 }
 
+func TestIntoBig(t *testing.T) {
+	var uint256Nil *Int
+
+	bigNil := new(big.Int)
+	if uint256Nil.IntoBig(&bigNil); bigNil != nil {
+		t.Errorf("want big.Int <nil>, have %x", bigNil)
+	}
+	var bigZero *big.Int
+	if new(Int).IntoBig(&bigZero); bigZero.Cmp(new(big.Int)) != 0 {
+		t.Errorf("expected big.Int 0, got %x", bigZero)
+	}
+	var b *big.Int
+	for i := uint(0); i < 256; i++ {
+		f := new(Int).SetUint64(1)
+		f.Lsh(f, i)
+		f.IntoBig(&b)
+		expected := big.NewInt(1)
+		expected.Lsh(expected, i)
+		if b.Cmp(expected) != 0 {
+			t.Fatalf("expected %x, got %x", expected, b)
+		}
+	}
+}
+
 func BenchmarkScanScientific(b *testing.B) {
 	intsub1 := new(Int)
 	_ = intsub1.fromDecimal(twoPow256Sub1)
@@ -322,6 +346,28 @@ func BenchmarkToBig(bench *testing.B) {
 
 	param4 := new(Int).Lsh(param3, 64)
 	bench.Run("4words", func(bench *testing.B) { benchToBig(bench, param4) })
+}
+
+func benchIntoBig(bench *testing.B, f *Int) *big.Int {
+	var b *big.Int
+	for i := 0; i < bench.N; i++ {
+		f.IntoBig(&b)
+	}
+	return b
+}
+
+func BenchmarkIntoBig(bench *testing.B) {
+	param1 := new(Int).SetUint64(0xff)
+	bench.Run("1word", func(bench *testing.B) { benchIntoBig(bench, param1) })
+
+	param2 := new(Int).Lsh(param1, 64)
+	bench.Run("2words", func(bench *testing.B) { benchIntoBig(bench, param2) })
+
+	param3 := new(Int).Lsh(param2, 64)
+	bench.Run("3words", func(bench *testing.B) { benchIntoBig(bench, param3) })
+
+	param4 := new(Int).Lsh(param3, 64)
+	bench.Run("4words", func(bench *testing.B) { benchIntoBig(bench, param4) })
 }
 
 func TestFormat(t *testing.T) {

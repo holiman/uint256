@@ -46,21 +46,62 @@ func (z *Int) ToBig() *big.Int {
 	if z == nil {
 		return nil
 	}
-	b := new(big.Int)
+	var b *big.Int
+	z.IntoBig(&b)
+	return b
+}
+
+// IntoBig sets a provided big.Int to the value of z.
+// Sets `nil` if z is nil (thus the double pointer).
+func (z *Int) IntoBig(b **big.Int) {
+	if z == nil {
+		*b = nil
+		return
+	}
+	if *b == nil {
+		*b = new(big.Int)
+	}
 	switch maxWords { // Compile-time check.
 	case 4: // 64-bit architectures.
-		words := [4]big.Word{big.Word(z[0]), big.Word(z[1]), big.Word(z[2]), big.Word(z[3])}
-		b.SetBits(words[:])
-	case 8: // 32-bit architectures.
-		words := [8]big.Word{
-			big.Word(z[0]), big.Word(z[0] >> 32),
-			big.Word(z[1]), big.Word(z[1] >> 32),
-			big.Word(z[2]), big.Word(z[2] >> 32),
-			big.Word(z[3]), big.Word(z[3] >> 32),
+		if words := (*b).Bits(); cap(words) >= 4 {
+			// Enough underlying space to set all the uint256 data
+			words = words[:4]
+
+			words[0] = big.Word(z[0])
+			words[1] = big.Word(z[1])
+			words[2] = big.Word(z[2])
+			words[3] = big.Word(z[3])
+
+			// Feed it back to normalize (up or down within the big.Int)
+			(*b).SetBits(words)
+		} else {
+			// Not enough space to set all the words, have to allocate
+			words := [4]big.Word{big.Word(z[0]), big.Word(z[1]), big.Word(z[2]), big.Word(z[3])}
+			(*b).SetBits(words[:])
 		}
-		b.SetBits(words[:])
+	case 8: // 32-bit architectures.
+		if words := (*b).Bits(); cap(words) >= 8 {
+			// Enough underlying space to set all the uint256 data
+			words = words[:8]
+
+			words[0], words[1] = big.Word(z[0]), big.Word(z[0]>>32)
+			words[2], words[3] = big.Word(z[1]), big.Word(z[1]>>32)
+			words[4], words[5] = big.Word(z[2]), big.Word(z[2]>>32)
+			words[6], words[7] = big.Word(z[3]), big.Word(z[3]>>32)
+
+			// Feed it back to normalize (up or down within the big.Int)
+			(*b).SetBits(words)
+		} else {
+			// Not enough space to set all the words, have to allocate
+			words := [8]big.Word{
+				big.Word(z[0]), big.Word(z[0] >> 32),
+				big.Word(z[1]), big.Word(z[1] >> 32),
+				big.Word(z[2]), big.Word(z[2] >> 32),
+				big.Word(z[3]), big.Word(z[3] >> 32),
+			}
+			(*b).SetBits(words[:])
+		}
 	}
-	return b
 }
 
 // FromBig is a convenience-constructor from big.Int.

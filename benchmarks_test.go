@@ -968,7 +968,6 @@ func BenchmarkHashTreeRoot(b *testing.B) {
 }
 
 func BenchmarkSet(bench *testing.B) {
-
 	benchmarkUint256 := func(bench *testing.B) {
 		a := new(Int).SetBytes(hex2Bytes("f123456789abcdeffedcba9876543210f2f3f4f5f6f7f8f9fff3f4f5f6f7f8f9"))
 
