@@ -737,9 +737,6 @@ func (z *Int) Hex() string {
 
 	// Calculate the number of nibbles (4-bit groups) needed
 	nibbles := (z.BitLen() + 3) / 4
-	if nibbles == 0 {
-		nibbles = 1
-	}
 
 	// Allocate a buffer of the exact size needed
 	// +2 for "0x" prefix
