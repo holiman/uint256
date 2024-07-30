@@ -1622,3 +1622,22 @@ func BenchmarkFloat64(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkHex(b *testing.B) {
+	var u256Ints []*Int
+
+	for i := uint(0); i < 255; i++ {
+		a := NewInt(1)
+		a.Lsh(a, i)
+		u256Ints = append(u256Ints, a)
+	}
+
+	b.Run("Hex/uint256", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			for _, z := range u256Ints {
+				_ = z.Hex()
+			}
+		}
+	})
+}
