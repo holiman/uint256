@@ -706,6 +706,12 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + z.Dec() + `"`), nil
 }
 
+// MarshalJSONHex marshals using the hexadecimal representation.
+// The output is a JSON string starting with "0x" followed by the hexadecimal encoding of z.
+func (z *Int) MarshalJSONHex() ([]byte, error) {
+	return []byte(`"` + z.Hex() + `"`), nil
+}
+
 // UnmarshalJSON implements json.Unmarshaler. UnmarshalJSON accepts either
 // - Quoted string: either hexadecimal OR decimal
 // - Not quoted string: only decimal
