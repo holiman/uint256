@@ -706,6 +706,12 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + z.Dec() + `"`), nil
 }
 
+// MarshalJSONHex marshals using the hexadecimal representation.
+// The output is a JSON string starting with "0x" followed by the hexadecimal encoding of z.
+func (z *Int) MarshalJSONHex() ([]byte, error) {
+	return []byte(`"` + z.Hex() + `"`), nil
+}
+
 // UnmarshalJSON implements json.Unmarshaler. UnmarshalJSON accepts either
 // - Quoted string: either hexadecimal OR decimal
 // - Not quoted string: only decimal
@@ -730,38 +736,31 @@ const (
 
 // Hex encodes z in 0x-prefixed hexadecimal form.
 func (z *Int) Hex() string {
-	// This implementation is not optimal, it allocates a full
-	// 66-byte output buffer which it fills. It could instead allocate a smaller
-	// buffer, and omit the final crop-stage.
-	output := make([]byte, 66)
-	nibbles := (z.BitLen() + 3) / 4 // nibbles [0,64]
-	if nibbles == 0 {
-		nibbles = 1
+	// Short circuit for the zero case.
+	if z.IsZero() {
+		return "0x0"
 	}
-	// Start with the most significant
-	zWord := (nibbles - 1) / 16
-	for i := zWord; i >= 0; i-- {
-		off := (3 - i) * 16
-		output[off+2] = hextable[byte(z[i]>>60)&0xf]
-		output[off+3] = hextable[byte(z[i]>>56)&0xf]
-		output[off+4] = hextable[byte(z[i]>>52)&0xf]
-		output[off+5] = hextable[byte(z[i]>>48)&0xf]
-		output[off+6] = hextable[byte(z[i]>>44)&0xf]
-		output[off+7] = hextable[byte(z[i]>>40)&0xf]
-		output[off+8] = hextable[byte(z[i]>>36)&0xf]
-		output[off+9] = hextable[byte(z[i]>>32)&0xf]
-		output[off+10] = hextable[byte(z[i]>>28)&0xf]
-		output[off+11] = hextable[byte(z[i]>>24)&0xf]
-		output[off+12] = hextable[byte(z[i]>>20)&0xf]
-		output[off+13] = hextable[byte(z[i]>>16)&0xf]
-		output[off+14] = hextable[byte(z[i]>>12)&0xf]
-		output[off+15] = hextable[byte(z[i]>>8)&0xf]
-		output[off+16] = hextable[byte(z[i]>>4)&0xf]
-		output[off+17] = hextable[byte(z[i]&0xF)&0xf]
+
+	// Calculate the number of nibbles (4-bit groups) needed
+	nibbles := (z.BitLen() + 3) / 4
+
+	// Allocate a buffer of the exact size needed
+	// +2 for "0x" prefix
+	output := make([]byte, nibbles+2)
+
+	// Add "0x" prefix
+	output[0], output[1] = '0', 'x'
+
+	// Fill the buffer from right to left
+	for i, idx := nibbles-1, 2; i >= 0; i-- {
+		wordIdx := i / 16
+		bitShift := uint((i % 16) * 4)
+		nibble := byte(z[wordIdx]>>bitShift) & 0xf
+		output[idx] = hextable[nibble]
+		idx++
 	}
-	output[64-nibbles] = '0'
-	output[65-nibbles] = 'x'
-	return string(output[64-nibbles:])
+
+	return string(output)
 }
 
 // Scan implements the database/sql Scanner interface.
