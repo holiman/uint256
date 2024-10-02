@@ -236,7 +236,7 @@ func (z *Int) UnmarshalText(input []byte) error {
 	if len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X') {
 		return z.fromHex(string(input))
 	}
-	return z.fromDecimal(string(input))
+	return z.SetFromDecimal(string(input))
 }
 
 // SetFromBig converts a big.Int to Int and sets the value to z.
@@ -712,7 +712,7 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 func (z *Int) UnmarshalJSON(input []byte) error {
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
 		// if not quoted, it must be decimal
-		return z.fromDecimal(string(input))
+		return z.SetFromDecimal(string(input))
 	}
 	return z.UnmarshalText(input[1 : len(input)-1])
 }

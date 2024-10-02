@@ -1405,6 +1405,34 @@ func TestEnDecode(t *testing.T) {
 	}
 }
 
+func TestMarshallingErrors(t *testing.T) {
+	var check = func(repr string) string {
+		a := new(Int)
+		if err := json.Unmarshal([]byte(repr), a); err != nil {
+			return fmt.Sprintf("error: %v", err.Error())
+		}
+		return a.String()
+	}
+
+	for i, tc := range []string{
+		`0x1000000000000000000000000000000000000000000000000000000000000000`,
+		`0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff`,
+		`0x10000000000000000000000000000000000000000000000000000000000000000`,
+		`0x10000000000000000000000000000000000000000000000000000000000000001`,
+		`0x111110000000000000000000000000000000000000000000000000000000000000001`,
+	} {
+		reference, ok := new(big.Int).SetString(tc, 0)
+		if !ok {
+			t.Fatalf("test %d: not ok input %q", i, tc)
+		}
+		haveHex := check(fmt.Sprintf(`"%#x"`, reference))
+		haveDec := check(fmt.Sprintf(`"%#d"`, reference))
+		if haveHex != haveDec {
+			t.Fatalf("test %d: hex unmarshal != dec unmarshal, \nhex -> %q\ndec -> %q\n", i, haveHex, haveDec)
+		}
+	}
+}
+
 func TestNil(t *testing.T) {
 	a := NewInt(1337)
 	if err := a.Scan(nil); err != nil {
