@@ -19,14 +19,14 @@ commands:
 
 jobs:
 
-  go122:
+  go123:
     docker:
-      - image: cimg/go:1.22
+      - image: cimg/go:1.23
     steps:
       - run:
           name: "Install tools"
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.58.0
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.61.0
       - checkout
       - run:
           name: "Lint"
@@ -82,6 +82,13 @@ jobs:
           name: "Test (PPC64 emulation)"
           command: qemu-ppc64-static uint256.test.ppc64 -test.v
 
+  go122:
+    docker:
+      - image: cimg/go:1.22
+    steps:
+      - checkout
+      - test
+
   go121:
     docker:
       - image: cimg/go:1.21
@@ -112,9 +119,10 @@ workflows:
       - go119
       - go120
       - go121
-      - go122:
-          requires:
-            - go121
-      - bigendian:
+      - go122
+      - go123:
           requires:
             - go122
+      - bigendian:
+          requires:
+            - go123
