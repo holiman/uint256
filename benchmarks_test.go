@@ -587,8 +587,43 @@ func benchmark_Exp_Big(bench *testing.B) {
 		base.Set(orig)
 	}
 }
+
+func benchmark_ExpEven_Big(bench *testing.B) {
+	x := "ABCDEF090807060504030201fffffffffffffffffffffffffffffffffffffffe"
+	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
+
+	orig := big.NewInt(0).SetBytes(hex2Bytes(x))
+	base := big.NewInt(0).SetBytes(hex2Bytes(x))
+	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
+
+	result := new(big.Int)
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		bigExp(result, base, exp)
+		base.Set(orig)
+	}
+}
+
 func benchmark_Exp_Bit(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
+	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
+
+	base := big.NewInt(0).SetBytes(hex2Bytes(x))
+	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
+
+	f_base, _ := FromBig(base)
+	f_orig, _ := FromBig(base)
+	f_exp, _ := FromBig(exp)
+	f_res := Int{}
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		f_res.Exp(f_base, f_exp)
+		f_base.Set(f_orig)
+	}
+}
+func benchmark_ExpEven_Bit(bench *testing.B) {
+	x := "ABCDEF090807060504030201fffffffffffffffffffffffffffffffffffffffe"
 	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 
 	base := big.NewInt(0).SetBytes(hex2Bytes(x))
@@ -620,6 +655,21 @@ func benchmark_ExpSmall_Big(bench *testing.B) {
 		base.Set(orig)
 	}
 }
+func benchmark_ExpSmallEven_Big(bench *testing.B) {
+	x := "ABCDEF090807060504030201fffffffffffffffffffffffffffffffffffffffe"
+	y := "8abcdef"
+
+	orig := big.NewInt(0).SetBytes(hex2Bytes(x))
+	base := big.NewInt(0).SetBytes(hex2Bytes(x))
+	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
+
+	result := new(big.Int)
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		bigExp(result, base, exp)
+		base.Set(orig)
+	}
+}
 func benchmark_ExpSmall_Bit(bench *testing.B) {
 	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 	y := "8abcdef"
@@ -638,11 +688,33 @@ func benchmark_ExpSmall_Bit(bench *testing.B) {
 		f_base.Set(f_orig)
 	}
 }
+func benchmark_ExpSmallEven_Bit(bench *testing.B) {
+	x := "ABCDEF090807060504030201fffffffffffffffffffffffffffffffffffffffe"
+	y := "8abcdef"
+
+	base := big.NewInt(0).SetBytes(hex2Bytes(x))
+	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
+
+	f_base, _ := FromBig(base)
+	f_orig, _ := FromBig(base)
+	f_exp, _ := FromBig(exp)
+	f_res := Int{}
+
+	bench.ResetTimer()
+	for i := 0; i < bench.N; i++ {
+		f_res.Exp(f_base, f_exp)
+		f_base.Set(f_orig)
+	}
+}
 func BenchmarkExp(bench *testing.B) {
 	bench.Run("large/big", benchmark_Exp_Big)
+	bench.Run("large/even/big", benchmark_ExpEven_Big)
 	bench.Run("large/uint256", benchmark_Exp_Bit)
+	bench.Run("large/even/uint256", benchmark_ExpEven_Bit)
 	bench.Run("small/big", benchmark_ExpSmall_Big)
+	bench.Run("small/even/big", benchmark_ExpSmallEven_Big)
 	bench.Run("small/uint256", benchmark_ExpSmall_Bit)
+	bench.Run("small/even/uint256", benchmark_ExpSmallEven_Bit)
 }
 
 func BenchmarkDiv(b *testing.B) {

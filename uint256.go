@@ -1188,6 +1188,21 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 
 	curBit := 0
 	word := exponent[0]
+
+	if base[0]&1 == 0 {
+		if expBitLen > 8 {
+			return z.Clear()
+		}
+		for ; curBit < expBitLen; curBit++ {
+			if word&1 == 1 {
+				res.Mul(&res, &multiplier)
+			}
+			multiplier.squared()
+			word >>= 1
+		}
+		return z.Set(&res)
+	}
+
 	for ; curBit < expBitLen && curBit < 64; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
