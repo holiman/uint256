@@ -1020,3 +1020,33 @@ func BenchmarkExtendSign(b *testing.B) {
 		result.ExtendSign(a, n)
 	}
 }
+
+func BenchmarkWriteToArray20(b *testing.B) { benchmarkWriteToArray(b, true) }
+func BenchmarkWriteToArray32(b *testing.B) { benchmarkWriteToArray(b, false) }
+
+func benchmarkWriteToArray(b *testing.B, isWrite20 bool) {
+	x1 := hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+	a := big.NewInt(0).SetBytes(x1)
+	fa, _ := FromBig(a)
+
+	if isWrite20 {
+		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			fa.WriteToArray20(&dest)
+		}
+		b.StopTimer()
+		// Avoid the compiler to optimize out the WriteToArray20
+		_ = (string(dest[:]))
+	} else {
+		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			fa.WriteToArray32(&dest)
+		}
+		b.StopTimer()
+		// Avoid the compiler to optimize out the WriteToArray32
+		_ = (string(dest[:]))
+	}
+}
