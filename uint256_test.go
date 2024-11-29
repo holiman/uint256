@@ -479,7 +479,7 @@ func TestUdivremQuick(t *testing.T) {
 	var (
 		u        = []uint64{1, 0, 0, 0, 0}
 		expected = new(Int)
-		rem Int
+		rem      Int
 	)
 	udivrem([]uint64{}, u, &Int{0, 1, 0, 0}, &rem)
 	copy(expected[:], u)
@@ -760,30 +760,37 @@ func TestWriteToSlice(t *testing.T) {
 	}
 
 }
+
 func TestInt_WriteToArray(t *testing.T) {
-	x1 := hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+	x1 := hex2Bytes("0102030405060708090a0b0c0d0ed1e870eec79504c60144cc7f5fc2bad1e611")
 	a := big.NewInt(0).SetBytes(x1)
 	fa, _ := FromBig(a)
 
 	{
 		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray20(&dest)
-		exp := hex2Bytes("0000d1e870eec79504c60144cc7f5fc2bad1e611")
+		exp := hex2Bytes("0d0ed1e870eec79504c60144cc7f5fc2bad1e611")
 		if !bytes.Equal(dest[:], exp) {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
-
 	}
-
 	{
 		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		fa.WriteToArray32(&dest)
-		exp := hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
+		exp := hex2Bytes("0102030405060708090a0b0c0d0ed1e870eec79504c60144cc7f5fc2bad1e611")
 		if !bytes.Equal(dest[:], exp) {
 			t.Errorf("got %x, expected %x", dest, exp)
 		}
-
+	}
+	{ // A 36-byte slice: the first 32 bytes are overwritten
+		dest := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		fa.PutUint256(dest)
+		exp := hex2Bytes("0102030405060708090a0b0c0d0ed1e870eec79504c60144cc7f5fc2bad1e611ffffffff")
+		if !bytes.Equal(dest[:], exp) {
+			t.Errorf("got %x, expected %x", dest, exp)
+		}
 	}
 }
 

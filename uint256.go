@@ -144,18 +144,35 @@ func (z *Int) WriteToSlice(dest []byte) {
 	}
 }
 
+// PutUint256 writes all 32 bytes of z to the destination slice, including zero-bytes.
+// If dest is larger than 32 bytes, z will fill the first parts, and leave
+// the end untouched.
+// Note: The dest slice must be at least 32 bytes large, otherwise this
+// method will panic. The method WriteToSlice, which is slower,  should be used
+// if the destination slice is smaller or of unknown size.
+func (z *Int) PutUint256(dest []byte) {
+	_ = dest[31]
+	binary.BigEndian.PutUint64(dest[0:8], z[3])
+	binary.BigEndian.PutUint64(dest[8:16], z[2])
+	binary.BigEndian.PutUint64(dest[16:24], z[1])
+	binary.BigEndian.PutUint64(dest[24:32], z[0])
+}
+
 // WriteToArray32 writes all 32 bytes of z to the destination array, including zero-bytes
 func (z *Int) WriteToArray32(dest *[32]byte) {
-	for i := 0; i < 32; i++ {
-		dest[31-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
+	// The PutUint64()s are inlined and we get 4x (load, bswap, store) instructions.
+	binary.BigEndian.PutUint64(dest[0:8], z[3])
+	binary.BigEndian.PutUint64(dest[8:16], z[2])
+	binary.BigEndian.PutUint64(dest[16:24], z[1])
+	binary.BigEndian.PutUint64(dest[24:32], z[0])
 }
 
 // WriteToArray20 writes the last 20 bytes of z to the destination array, including zero-bytes
 func (z *Int) WriteToArray20(dest *[20]byte) {
-	for i := 0; i < 20; i++ {
-		dest[19-i] = byte(z[i/8] >> uint64(8*(i%8)))
-	}
+	// The PutUint*()s are inlined and we get 3x (load, bswap, store) instructions.
+	binary.BigEndian.PutUint32(dest[0:4], uint32(z[2]))
+	binary.BigEndian.PutUint64(dest[4:12], z[1])
+	binary.BigEndian.PutUint64(dest[12:20], z[0])
 }
 
 // Uint64 returns the lower 64-bits of z

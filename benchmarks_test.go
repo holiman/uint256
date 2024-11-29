@@ -1020,3 +1020,38 @@ func BenchmarkExtendSign(b *testing.B) {
 		result.ExtendSign(a, n)
 	}
 }
+
+func BenchmarkWriteTo(b *testing.B) {
+	fa, err := FromHex("0x1100030405060708090a0b0c0d0ed1e870eec79504c60144cc7f5fc2bad1e611")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Run("fixed-20", func(b *testing.B) {
+		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		for i := 0; i < b.N; i++ {
+			fa.WriteToArray20(&dest)
+		}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+	b.Run("fixed-32", func(b *testing.B) {
+		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+		for i := 0; i < b.N; i++ {
+			fa.WriteToArray32(&dest)
+		}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+	b.Run("slice", func(b *testing.B) {
+		dest := make([]byte, 64)
+		for i := 0; i < b.N; i++ {
+			fa.WriteToSlice(dest)
+		}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+	b.Run("put256", func(b *testing.B) {
+		dest := make([]byte, 64)
+		for i := 0; i < b.N; i++ {
+			fa.PutUint256(dest)
+		}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+}
