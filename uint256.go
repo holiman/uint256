@@ -151,6 +151,7 @@ func (z *Int) WriteToSlice(dest []byte) {
 // method will panic. The method WriteToSlice, which is slower,  should be used
 // if the destination slice is smaller or of unknown size.
 func (z *Int) PutUint256(dest []byte) {
+	_ = dest[31]
 	binary.BigEndian.PutUint64(dest[0:8], z[3])
 	binary.BigEndian.PutUint64(dest[8:16], z[2])
 	binary.BigEndian.PutUint64(dest[16:24], z[1])

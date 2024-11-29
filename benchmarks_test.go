@@ -1021,32 +1021,37 @@ func BenchmarkExtendSign(b *testing.B) {
 	}
 }
 
-func BenchmarkWriteToArray20(b *testing.B) { benchmarkWriteToArray(b, true) }
-func BenchmarkWriteToArray32(b *testing.B) { benchmarkWriteToArray(b, false) }
-
-func benchmarkWriteToArray(b *testing.B, isWrite20 bool) {
-	x1 := hex2Bytes("0000000000000000000000000000d1e870eec79504c60144cc7f5fc2bad1e611")
-	a := big.NewInt(0).SetBytes(x1)
-	fa, _ := FromBig(a)
-
-	if isWrite20 {
+func BenchmarkWriteTo(b *testing.B) {
+	fa, err := FromHex("0x1100030405060708090a0b0c0d0ed1e870eec79504c60144cc7f5fc2bad1e611")
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.Run("fixed-20", func(b *testing.B) {
 		dest := [20]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
 			fa.WriteToArray20(&dest)
 		}
-		b.StopTimer()
-		// Avoid the compiler to optimize out the WriteToArray20
-		_ = (string(dest[:]))
-	} else {
-		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-		b.ResetTimer()
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+	b.Run("fixed-32", func(b *testing.B) {
+		dest := [32]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
 		for i := 0; i < b.N; i++ {
 			fa.WriteToArray32(&dest)
 		}
-		b.StopTimer()
-		// Avoid the compiler to optimize out the WriteToArray32
-		_ = (string(dest[:]))
-	}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+	b.Run("slice", func(b *testing.B) {
+		dest := make([]byte, 64)
+		for i := 0; i < b.N; i++ {
+			fa.WriteToSlice(dest)
+		}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
+	b.Run("put256", func(b *testing.B) {
+		dest := make([]byte, 64)
+		for i := 0; i < b.N; i++ {
+			fa.PutUint256(dest)
+		}
+		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
+	})
 }
