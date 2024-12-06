@@ -572,10 +572,7 @@ func bigExp(result, base, exponent *big.Int) *big.Int {
 	return result
 }
 
-func benchmark_Exp_Big(bench *testing.B) {
-	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
-	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
-
+func benchmark_Exp_Big(bench *testing.B, x, y string) {
 	orig := big.NewInt(0).SetBytes(hex2Bytes(x))
 	base := big.NewInt(0).SetBytes(hex2Bytes(x))
 	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
@@ -587,62 +584,55 @@ func benchmark_Exp_Big(bench *testing.B) {
 		base.Set(orig)
 	}
 }
-func benchmark_Exp_Bit(bench *testing.B) {
-	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
-	y := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 
-	base := big.NewInt(0).SetBytes(hex2Bytes(x))
-	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
+func benchmark_Exp_U256(bench *testing.B, x, y string) {
+	var (
+		base = big.NewInt(0).SetBytes(hex2Bytes(x))
+		exp  = big.NewInt(0).SetBytes(hex2Bytes(y))
 
-	f_base, _ := FromBig(base)
-	f_orig, _ := FromBig(base)
-	f_exp, _ := FromBig(exp)
-	f_res := Int{}
-
+		f_base, _ = FromBig(base)
+		f_orig, _ = FromBig(base)
+		f_exp, _  = FromBig(exp)
+		f_res     Int
+	)
 	bench.ResetTimer()
 	for i := 0; i < bench.N; i++ {
 		f_res.Exp(f_base, f_exp)
 		f_base.Set(f_orig)
 	}
 }
-func benchmark_ExpSmall_Big(bench *testing.B) {
-	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
-	y := "8abcdef"
 
-	orig := big.NewInt(0).SetBytes(hex2Bytes(x))
-	base := big.NewInt(0).SetBytes(hex2Bytes(x))
-	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
-
-	result := new(big.Int)
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		bigExp(result, base, exp)
-		base.Set(orig)
-	}
-}
-func benchmark_ExpSmall_Bit(bench *testing.B) {
-	x := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
-	y := "8abcdef"
-
-	base := big.NewInt(0).SetBytes(hex2Bytes(x))
-	exp := big.NewInt(0).SetBytes(hex2Bytes(y))
-
-	f_base, _ := FromBig(base)
-	f_orig, _ := FromBig(base)
-	f_exp, _ := FromBig(exp)
-	f_res := Int{}
-
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
-		f_res.Exp(f_base, f_exp)
-		f_base.Set(f_orig)
-	}
-}
 func BenchmarkExp(bench *testing.B) {
-	bench.Run("large/big", benchmark_Exp_Big)
-	bench.Run("large/uint256", benchmark_Exp_Bit)
-	bench.Run("small/big", benchmark_ExpSmall_Big)
-	bench.Run("small/uint256", benchmark_ExpSmall_Bit)
+	{ // Large values
+		base := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
+		exp := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
+		bench.Run("large/big", func(b *testing.B) {
+			benchmark_Exp_Big(b, base, exp)
+		})
+		bench.Run("large/uint256", func(b *testing.B) {
+			benchmark_Exp_U256(b, base, exp)
+		})
+	}
+	{ // Smaller exponent
+		base := "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
+		exp := "8abcdef"
+		bench.Run("small/big", func(b *testing.B) {
+			benchmark_Exp_Big(b, base, exp)
+		})
+		bench.Run("small/uint256", func(b *testing.B) {
+			benchmark_Exp_U256(b, base, exp)
+		})
+	}
+	{ // Even base (and very small exponent)
+		base := "ABCDEF090807060504030201fffffffffffffffffffffffffffffffffffffffe"
+		exp := "ff"
+		bench.Run("even/big", func(b *testing.B) {
+			benchmark_Exp_Big(b, base, exp)
+		})
+		bench.Run("even/uint256", func(b *testing.B) {
+			benchmark_Exp_U256(b, base, exp)
+		})
+	}
 }
 
 func BenchmarkDiv(b *testing.B) {

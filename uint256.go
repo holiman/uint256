@@ -1199,18 +1199,27 @@ func (z *Int) Byte(n *Int) *Int {
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
-	res := Int{1, 0, 0, 0}
-	multiplier := *base
-	expBitLen := exponent.BitLen()
+	var (
+		res        = Int{1, 0, 0, 0}
+		multiplier = *base
+		expBitLen  = exponent.BitLen()
+		curBit     = 0
+		word       = exponent[0]
+		even       = base[0]&1 == 0
+	)
+	if even && expBitLen > 8 {
+		return z.Clear()
+	}
 
-	curBit := 0
-	word := exponent[0]
 	for ; curBit < expBitLen && curBit < 64; curBit++ {
 		if word&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
 		multiplier.squared()
 		word >>= 1
+	}
+	if even { // If the base was even, we are finished now
+		return z.Set(&res)
 	}
 
 	word = exponent[1]
