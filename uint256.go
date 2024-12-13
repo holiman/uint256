@@ -845,41 +845,40 @@ func (z *Int) ByteLen() int {
 	return (z.BitLen() + 7) / 8
 }
 
-func (z *Int) lsh64(x *Int) *Int {
+func (z *Int) lsh64(x *Int) {
 	z[3], z[2], z[1], z[0] = x[2], x[1], x[0], 0
-	return z
 }
-func (z *Int) lsh128(x *Int) *Int {
+
+func (z *Int) lsh128(x *Int) {
 	z[3], z[2], z[1], z[0] = x[1], x[0], 0, 0
-	return z
 }
-func (z *Int) lsh192(x *Int) *Int {
+
+func (z *Int) lsh192(x *Int) {
 	z[3], z[2], z[1], z[0] = x[0], 0, 0, 0
-	return z
 }
-func (z *Int) rsh64(x *Int) *Int {
+
+func (z *Int) rsh64(x *Int) {
 	z[3], z[2], z[1], z[0] = 0, x[3], x[2], x[1]
-	return z
 }
-func (z *Int) rsh128(x *Int) *Int {
+
+func (z *Int) rsh128(x *Int) {
 	z[3], z[2], z[1], z[0] = 0, 0, x[3], x[2]
-	return z
 }
-func (z *Int) rsh192(x *Int) *Int {
+
+func (z *Int) rsh192(x *Int) {
 	z[3], z[2], z[1], z[0] = 0, 0, 0, x[3]
-	return z
 }
-func (z *Int) srsh64(x *Int) *Int {
+
+func (z *Int) srsh64(x *Int) {
 	z[3], z[2], z[1], z[0] = math.MaxUint64, x[3], x[2], x[1]
-	return z
 }
-func (z *Int) srsh128(x *Int) *Int {
+
+func (z *Int) srsh128(x *Int) {
 	z[3], z[2], z[1], z[0] = math.MaxUint64, math.MaxUint64, x[3], x[2]
-	return z
 }
-func (z *Int) srsh192(x *Int) *Int {
+
+func (z *Int) srsh192(x *Int) {
 	z[3], z[2], z[1], z[0] = math.MaxUint64, math.MaxUint64, math.MaxUint64, x[3]
-	return z
 }
 
 // Not sets z = ^x and returns z.
