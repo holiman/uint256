@@ -200,6 +200,11 @@ func (z *Int) Add(x, y *Int) *Int {
 	return z
 }
 
+// IAdd adds the value of x to z itself and returns z, modifying z in place.
+func (z *Int) IAdd(x *Int) *Int {
+	return z.Add(z, x)
+}
+
 // AddOverflow sets z to the sum x+y, and returns z and whether overflow occurred
 func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
@@ -208,6 +213,11 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 	z[2], carry = bits.Add64(x[2], y[2], carry)
 	z[3], carry = bits.Add64(x[3], y[3], carry)
 	return z, carry != 0
+}
+
+// IAddOverflow adds x to z itself, modifying z in place, and returns z along with whether overflow occurred.
+func (z *Int) IAddOverflow(x *Int) (*Int, bool) {
+	return z.AddOverflow(z, x)
 }
 
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
@@ -283,6 +293,12 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 	return z.Mod(z, m)
 }
 
+// IAddMod adds x to z itself modulo m, modifying z in place, and returns z.
+// Mathematically: z = (z + x) mod m.
+func (z *Int) IAddMod(x, m *Int) *Int {
+	return z.AddMod(z, x, m)
+}
+
 // AddUint64 sets z to x + y, where y is a uint64, and returns z
 func (z *Int) AddUint64(x *Int, y uint64) *Int {
 	var carry uint64
@@ -292,6 +308,12 @@ func (z *Int) AddUint64(x *Int, y uint64) *Int {
 	z[2], carry = bits.Add64(x[2], 0, carry)
 	z[3], _ = bits.Add64(x[3], 0, carry)
 	return z
+}
+
+// IAddUint64 adds uint64 x to z itself, modifying z in place, and returns z.
+// Mathematically: z = z + x.
+func (z *Int) IAddUint64(x uint64) *Int {
+	return z.AddUint64(z, x)
 }
 
 // PaddedBytes encodes a Int as a 0-padded byte slice. The length
@@ -316,6 +338,12 @@ func (z *Int) SubUint64(x *Int, y uint64) *Int {
 	return z
 }
 
+// ISubUint64 subtracts uint64 x from z itself, modifying z in place, and returns z.
+// Mathematically: z = z - x.
+func (z *Int) ISubUint64(x uint64) *Int {
+	return z.SubUint64(z, x)
+}
+
 // SubOverflow sets z to the difference x-y and returns z and true if the operation underflowed
 func (z *Int) SubOverflow(x, y *Int) (*Int, bool) {
 	var carry uint64
@@ -326,6 +354,12 @@ func (z *Int) SubOverflow(x, y *Int) (*Int, bool) {
 	return z, carry != 0
 }
 
+// ISubOverflow subtracts x from z itself, modifying z in place, and returns z along with whether underflow occurred.
+// Mathematically: z = z - x.
+func (z *Int) ISubOverflow(x *Int) (*Int, bool) {
+	return z.SubOverflow(z, x)
+}
+
 // Sub sets z to the difference x-y
 func (z *Int) Sub(x, y *Int) *Int {
 	var carry uint64
@@ -334,6 +368,12 @@ func (z *Int) Sub(x, y *Int) *Int {
 	z[2], carry = bits.Sub64(x[2], y[2], carry)
 	z[3], _ = bits.Sub64(x[3], y[3], carry)
 	return z
+}
+
+// ISub subtracts x from z itself, modifying z in place, and returns z.
+// Mathematically: z = z - x.
+func (z *Int) ISub(x *Int) *Int {
+	return z.Sub(z, x)
 }
 
 // umulStep computes (hi * 2^64 + lo) = z + (x * y) + carry.
@@ -404,12 +444,24 @@ func (z *Int) Mul(x, y *Int) *Int {
 	return z
 }
 
+// IMul multiplies z by x, modifying z in place, and returns z.
+// Mathematically: z = z * x.
+func (z *Int) IMul(x *Int) *Int {
+	return z.Mul(z, x)
+}
+
 // MulOverflow sets z to the product x*y, and returns z and  whether overflow occurred
 func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
 	var p [8]uint64
 	umul(x, y, &p)
 	copy(z[:], p[:4])
 	return z, (p[4] | p[5] | p[6] | p[7]) != 0
+}
+
+// IMulOverflow multiplies z by x, modifying z in place, and returns z along with whether overflow occurred.
+// Mathematically: z = z * x.
+func (z *Int) IMulOverflow(x *Int) (*Int, bool) {
+	return z.MulOverflow(z, x)
 }
 
 func (z *Int) squared() {
@@ -600,6 +652,12 @@ func (z *Int) Div(x, y *Int) *Int {
 	return z.Set(&quot)
 }
 
+// IDiv divides z by x, modifying z in place, and returns z.
+// Mathematically: z = z / x.
+func (z *Int) IDiv(x *Int) *Int {
+	return z.Div(z, x)
+}
+
 // Mod sets z to the modulus x%y for y != 0 and returns z.
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) Mod(x, y *Int) *Int {
@@ -622,6 +680,12 @@ func (z *Int) Mod(x, y *Int) *Int {
 	var quot, rem Int
 	udivrem(quot[:], x[:], y, &rem)
 	return z.Set(&rem)
+}
+
+// IMod sets z to the modulus z%x, modifying z in place, and returns z.
+// Mathematically: z = z % x.
+func (z *Int) IMod(x *Int) *Int {
+	return z.Mod(z, x)
 }
 
 // DivMod sets z to the quotient x div y and m to the modulus x mod y and returns the pair (z, m) for y != 0.
@@ -659,6 +723,12 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 	return z.Set(&quot), m.Set(&rem)
 }
 
+// IDivMod sets z to the quotient z div x and m to the modulus z mod x, modifying z in place, and returns (z, m).
+// Mathematically: z = z / x, m = z % x.
+func (z *Int) IDivMod(x, m *Int) (*Int, *Int) {
+	return z.DivMod(z, x, m)
+}
+
 // SMod interprets x and y as two's complement signed integers,
 // sets z to (sign x) * { abs(x) modulus abs(y) }
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
@@ -679,6 +749,12 @@ func (z *Int) SMod(x, y *Int) *Int {
 		z.Neg(z)
 	}
 	return z
+}
+
+// ISMod interprets z and x as two's complement signed integers, sets z to (sign z) * { abs(z) modulus abs(x) },
+// modifying z in place, and returns z. Mathematically: z = (sign z) * (|z| % |x|).
+func (z *Int) ISMod(x *Int) *Int {
+	return z.SMod(z, x)
 }
 
 // MulModWithReciprocal calculates the modulo-m multiplication of x and y
@@ -714,6 +790,13 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 	return z.Set(&rem)
 }
 
+// IMulModWithReciprocal calculates the modulo-m multiplication of z and x,
+// modifying z in place, and returns z, using the reciprocal of m provided as mu.
+// Mathematically: z = (z * x) % m.
+func (z *Int) IMulModWithReciprocal(x, m *Int, mu *[5]uint64) *Int {
+	return z.MulModWithReciprocal(z, x, m, mu)
+}
+
 // MulMod calculates the modulo-m multiplication of x and y and
 // returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
@@ -747,6 +830,12 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 	return z.Set(&rem)
 }
 
+// IMulMod calculates the modulo-m multiplication of z and x, modifying z in place,
+// and returns z. Mathematically: z = (z * x) % m.
+func (z *Int) IMulMod(x, m *Int) *Int {
+	return z.MulMod(z, x, m)
+}
+
 // MulDivOverflow calculates (x*y)/d with full precision, returns z and whether overflow occurred in multiply process (result does not fit to 256-bit).
 // computes 512-bit multiplication and 512 by 256 division.
 func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
@@ -762,6 +851,12 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	z[0], z[1], z[2], z[3] = quot[0], quot[1], quot[2], quot[3]
 
 	return z, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
+}
+
+// IMulDivOverflow calculates (z*x)/d with full precision, modifying z in place, and returns z along with whether overflow occurred in the multiplication.
+// Mathematically: z = (z * x) / d.
+func (z *Int) IMulDivOverflow(x, d *Int) (*Int, bool) {
+	return z.MulDivOverflow(z, x, d)
 }
 
 // Abs interprets x as a two's complement signed number,
@@ -807,6 +902,12 @@ func (z *Int) SDiv(n, d *Int) *Int {
 	// neg / pos
 	z.Div(new(Int).Neg(n), d)
 	return z.Neg(z)
+}
+
+// ISDiv interprets z and d as two's complement signed integers, performs signed division z by d,
+// modifying z in place, and returns z. Mathematically: z = z / d (signed).
+func (z *Int) ISDiv(d *Int) *Int {
+	return z.SDiv(z, d)
 }
 
 // Sign returns:
@@ -1070,6 +1171,11 @@ func (z *Int) Lsh(x *Int, n uint) *Int {
 	}
 }
 
+// ILsh shifts z left by n bits, modifying z in place, and returns z. Mathematically: z = z << n.
+func (z *Int) ILsh(n uint) *Int {
+	return z.Lsh(z, n)
+}
+
 // Rsh sets z = x >> n and returns z.
 func (z *Int) Rsh(x *Int, n uint) *Int {
 	switch {
@@ -1101,6 +1207,12 @@ func (z *Int) Rsh(x *Int, n uint) *Int {
 		z[3] >>= n
 		return z
 	}
+}
+
+// IRsh shifts z right by n bits, modifying z in place, and returns z.
+// Mathematically: z = z >> n.
+func (z *Int) IRsh(n uint) *Int {
+	return z.Rsh(z, n)
 }
 
 // SRsh (Signed/Arithmetic right shift)
@@ -1144,6 +1256,12 @@ func (z *Int) SRsh(x *Int, n uint) *Int {
 		z[3] = (z[3] >> n) | a
 		return z
 	}
+}
+
+// ISRsh performs a signed right shift on z by n bits, modifying z in place, and returns z.
+// Mathematically: z = z >> n (where z is treated as a signed integer).
+func (z *Int) ISRsh(n uint) *Int {
+	return z.SRsh(z, n)
 }
 
 // Set sets z to x and returns z.
@@ -1250,6 +1368,11 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	return z.Set(&res)
 }
 
+// IExp sets z = z**exponent mod 2**256, and returns z.
+func (z *Int) IExp(exponent *Int) *Int {
+	return z.Exp(z, exponent)
+}
+
 // ExtendSign extends length of two’s complement signed integer,
 // sets z to
 //   - x if byteNum > 30
@@ -1346,6 +1469,12 @@ func (z *Int) Sqrt(x *Int) *Int {
 		z2.Clear()
 		udivrem(z2[:], x[:], z1, nil)
 	}
+}
+
+// ISqrt sets z to ⌊√z⌋, the largest integer such that z² ≤ original z, modifying z in place, and returns z.
+// Mathematically: z = ⌊√z⌋.
+func (z *Int) ISqrt() *Int {
+	return z.Sqrt(z)
 }
 
 var (
