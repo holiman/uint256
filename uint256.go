@@ -215,11 +215,6 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 	return z, carry != 0
 }
 
-// IAddOverflow adds x to z itself, modifying z in place, and returns z along with whether overflow occurred.
-func (z *Int) IAddOverflow(x *Int) (*Int, bool) {
-	return z.AddOverflow(z, x)
-}
-
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
@@ -354,12 +349,6 @@ func (z *Int) SubOverflow(x, y *Int) (*Int, bool) {
 	return z, carry != 0
 }
 
-// ISubOverflow subtracts x from z itself, modifying z in place, and returns z along with whether underflow occurred.
-// Mathematically: z = z - x.
-func (z *Int) ISubOverflow(x *Int) (*Int, bool) {
-	return z.SubOverflow(z, x)
-}
-
 // Sub sets z to the difference x-y
 func (z *Int) Sub(x, y *Int) *Int {
 	var carry uint64
@@ -456,12 +445,6 @@ func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
 	umul(x, y, &p)
 	copy(z[:], p[:4])
 	return z, (p[4] | p[5] | p[6] | p[7]) != 0
-}
-
-// IMulOverflow multiplies z by x, modifying z in place, and returns z along with whether overflow occurred.
-// Mathematically: z = z * x.
-func (z *Int) IMulOverflow(x *Int) (*Int, bool) {
-	return z.MulOverflow(z, x)
 }
 
 func (z *Int) squared() {
@@ -723,12 +706,6 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 	return z.Set(&quot), m.Set(&rem)
 }
 
-// IDivMod sets z to the quotient z div x and m to the modulus z mod x, modifying z in place, and returns (z, m).
-// Mathematically: z = z / x, m = z % x.
-func (z *Int) IDivMod(x, m *Int) (*Int, *Int) {
-	return z.DivMod(z, x, m)
-}
-
 // SMod interprets x and y as two's complement signed integers,
 // sets z to (sign x) * { abs(x) modulus abs(y) }
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
@@ -851,12 +828,6 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	z[0], z[1], z[2], z[3] = quot[0], quot[1], quot[2], quot[3]
 
 	return z, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
-}
-
-// IMulDivOverflow calculates (z*x)/d with full precision, modifying z in place, and returns z along with whether overflow occurred in the multiplication.
-// Mathematically: z = (z * x) / d.
-func (z *Int) IMulDivOverflow(x, d *Int) (*Int, bool) {
-	return z.MulDivOverflow(z, x, d)
 }
 
 // Abs interprets x as a two's complement signed number,
