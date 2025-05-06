@@ -15,6 +15,7 @@ import (
 
 // Int is represented as an array of 4 uint64, in little-endian order,
 // so that Int[3] is the most significant, and Int[0] is the least significant
+// The zero value for an Int represents the value 0.
 type Int [4]uint64
 
 // NewInt returns a new initialized Int.
