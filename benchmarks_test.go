@@ -39,7 +39,7 @@ var (
 )
 
 func initSamples() bool {
-	rnd := rand.New(rand.NewSource(0))
+	rnd := rand.New(rand.NewSource(0)) // #nosec G404
 
 	// newRandInt creates new Int with so many highly likely non-zero random words.
 	newRandInt := func(numWords int) Int {
