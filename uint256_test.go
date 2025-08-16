@@ -832,11 +832,33 @@ func TestAddSubUint64(t *testing.T) {
 				t.Fail()
 			}
 		}
+		{ // ISubUint64 (in-place version)
+			want, _ := FromBig(bigU256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).Set(arg)
+			have.ISubUint64(tc.n)
+			if !have.Eq(want) {
+				t.Logf("ISubUint64 args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
+		}
 		{ // AddUint64
 			want, _ := FromBig(bigU256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
 			have := new(Int).AddUint64(arg, tc.n)
 			if !have.Eq(want) {
 				t.Logf("args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
+		}
+		{ // IAddUint64 (in-place version)
+			want, _ := FromBig(bigU256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).Set(arg)
+			have.IAddUint64(tc.n)
+			if !have.Eq(want) {
+				t.Logf("IAddUint64 args: %s, %d\n", tc.arg, tc.n)
 				t.Logf("want : %x\n", want)
 				t.Logf("have : %x\n\n", have)
 				t.Fail()
