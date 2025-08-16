@@ -943,7 +943,7 @@ func (z *Int) SetUint64(x uint64) *Int {
 
 // Eq returns true if z == x
 func (z *Int) Eq(x *Int) bool {
-	return (z[0] == x[0]) && (z[1] == x[1]) && (z[2] == x[2]) && (z[3] == x[3])
+	return ((z[0] ^ x[0]) | (z[1] ^ x[1]) | (z[2] ^ x[2]) | (z[3] ^ x[3])) == 0
 }
 
 // Cmp compares z and x and returns:
