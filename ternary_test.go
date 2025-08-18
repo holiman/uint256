@@ -123,6 +123,11 @@ func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
 	return z.MulModWithReciprocal(x, y, mod, &mu)
 }
 
+func (z *Int) iMulModWithReciprocalWrapper(x, mod *Int) *Int {
+	mu := Reciprocal(mod)
+	return z.IMulModWithReciprocal(x, mod, &mu)
+}
+
 func divModZ(z, x, y, m *Int) *Int {
 	z2, _ := z.DivMod(x, y, m)
 	return z2
