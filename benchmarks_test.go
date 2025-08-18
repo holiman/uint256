@@ -39,7 +39,7 @@ var (
 )
 
 func initSamples() bool {
-	rnd := rand.New(rand.NewSource(0))
+	rnd := rand.New(rand.NewSource(0)) // #nosec G404
 
 	// newRandInt creates new Int with so many highly likely non-zero random words.
 	newRandInt := func(numWords int) Int {
@@ -421,6 +421,36 @@ func BenchmarkLt(b *testing.B) {
 			for i := 0; i < numSamples; i++ {
 				y := samples[i]
 				flag = x.Cmp(&y) < 0
+				x = y
+			}
+		}
+		return
+	}
+
+	b.Run("large/uint256", func(b *testing.B) { benchmarkUint256(b, &int256Samples) })
+	b.Run("large/big", func(b *testing.B) { benchmarkBig(b, &big256Samples) })
+	b.Run("small/uint256", func(b *testing.B) { benchmarkUint256(b, &int64Samples) })
+	b.Run("small/big", func(b *testing.B) { benchmarkBig(b, &big64Samples) })
+}
+
+func BenchmarkEq(b *testing.B) {
+	benchmarkUint256 := func(b *testing.B, samples *[numSamples]Int) (flag bool) {
+		var x Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				y := samples[i]
+				flag = x.Eq(&y)
+				x = y
+			}
+		}
+		return
+	}
+	benchmarkBig := func(b *testing.B, samples *[numSamples]big.Int) (flag bool) {
+		var x big.Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				y := samples[i]
+				flag = x.Cmp(&y) == 0
 				x = y
 			}
 		}
