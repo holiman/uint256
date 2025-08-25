@@ -312,7 +312,7 @@ func (z *Int) SetBytes16(in []byte) *Int {
 	return z
 }
 
-// SetBytes16 is identical to SetBytes(in[:24]), but panics is input is too short
+// SetBytes24 is identical to SetBytes(in[:24]), but panics is input is too short
 func (z *Int) SetBytes24(in []byte) *Int {
 	_ = in[23] // bounds check hint to compiler; see golang.org/issue/14808
 	z[3] = 0
