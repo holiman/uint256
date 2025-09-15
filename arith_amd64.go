@@ -55,7 +55,6 @@ func (z *Int) Not(x *Int) *Int {
 	return z.notScalar(x)
 }
 
-// 标量实现作为回退
 func (z *Int) andScalar(x, y *Int) *Int {
 	z[0] = x[0] & y[0]
 	z[1] = x[1] & y[1]
