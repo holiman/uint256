@@ -23,10 +23,11 @@ TEXT ·orAVX2(SB), NOSPLIT, $0-24
     MOVQ z+0(FP), AX
     MOVQ x+8(FP), BX
     MOVQ y+16(FP), CX
-
     VMOVDQU (BX), Y0
     VMOVDQU (CX), Y1
+    
     VPOR Y0, Y1, Y2
+    
     VMOVDQU Y2, (AX)
     VZEROUPPER
     RET
