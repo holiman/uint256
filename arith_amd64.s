@@ -54,6 +54,7 @@ TEXT ·notAVX2(SB), NOSPLIT, $0-16
     MOVQ x+8(FP), BX
     // Compare Y0 with itself, each 32-bit element is equal,
     // so all bits in each element are set to 1 (0xFFFFFFFF).
+    // https://www.intel.com/content/dam/develop/external/us/en/documents/319433-024-697869.pdf
     VPCMPEQD Y0, Y0, Y0
 
     VMOVDQU (BX), Y1
