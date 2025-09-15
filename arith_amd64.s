@@ -58,28 +58,3 @@ TEXT ·notAVX2(SB), NOSPLIT, $0-16
     VZEROUPPER
     RET
 
-// func addAVX2(z, x, y *[32]byte) uint64
-TEXT ·addAVX2(SB), NOSPLIT, $0-32
-    MOVQ z+0(FP), AX
-    MOVQ x+8(FP), BX
-    MOVQ y+16(FP), CX
-
-    MOVQ 0(BX), R8      // x[0]
-    MOVQ 8(BX), R9      // x[1]
-    MOVQ 16(BX), R10    // x[2]
-    MOVQ 24(BX), R11    // x[3]
-
-    ADDQ 0(CX), R8      // x[0] + y[0]
-    ADCQ 8(CX), R9      // x[1] + y[1] + carry
-    ADCQ 16(CX), R10    // x[2] + y[2] + carry
-    ADCQ 24(CX), R11    // x[3] + y[3] + carry
-
-    MOVQ R8, 0(AX)
-    MOVQ R9, 8(AX)
-    MOVQ R10, 16(AX)
-    MOVQ R11, 24(AX)
-
-    MOVQ $0, R12
-    ADCQ $0, R12
-    MOVQ R12, ret+24(FP)
-    RET
