@@ -9,7 +9,7 @@ import (
 func testSetFromDecForFuzzing(tc string) error {
 	a := new(Int).SetAllOne()
 	err := a.SetFromDecimal(tc)
-	// If input is negative, we should eror
+	// If input is negative, we should error
 	if len(tc) > 0 && tc[0] == '-' {
 		if err == nil {
 			return fmt.Errorf("want error on negative input")

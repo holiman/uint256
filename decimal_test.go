@@ -34,7 +34,7 @@ func testSetFromDec(tc string) error {
 			}
 		}
 	}
-	// If input is negative, we should eror
+	// If input is negative, we should error
 	if len(tc) > 0 && tc[0] == '-' {
 		if err == nil {
 			return fmt.Errorf("want error on negative input")
