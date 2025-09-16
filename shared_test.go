@@ -10,7 +10,7 @@ import (
 )
 
 // This file contains some utilities which the oss-fuzz fuzzer shares with the
-// regular go-native tests. It is placed in a separate file, becaue the oss-fuzz
+// regular go-native tests. It is placed in a separate file, because the oss-fuzz
 // clang-based fuzzing infrastructure requires some instrumentation.
 // During this instrumentation, the file under test (e.g. unary_test.go) is modified,
 // and the same modification needs to be performed with any other files that
