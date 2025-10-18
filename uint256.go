@@ -139,7 +139,13 @@ func (z *Int) WriteToSlice(dest []byte) {
 	if end > 31 {
 		end = 31
 	}
-	for i := 0; i <= end; i++ {
+
+	i := 0
+	for ; i+7 <= end; i += 8 {
+		binary.BigEndian.PutUint64(dest[end-i-7:], z[i/8])
+	}
+
+	for ; i <= end; i++ {
 		dest[end-i] = byte(z[i/8] >> uint64(8*(i%8)))
 	}
 }
