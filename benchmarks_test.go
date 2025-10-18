@@ -1105,3 +1105,11 @@ func BenchmarkSlt(b *testing.B) {
 	b.Run("small/uint256", func(b *testing.B) { benchmarkSltUint256(b, &int32Samples, &int32Samples) })
 	b.Run("large/uint256", func(b *testing.B) { benchmarkSltUint256(b, &int256Samples, &int256Samples) })
 }
+
+func BenchmarkInt_PaddedBytes(b *testing.B) {
+	bytearr := hex2Bytes("0e320219838e859b2f9f18b72e3d4073ca50b37d")
+	aa := new(Int).SetBytes(bytearr)
+	for i := 0; i < b.N; i++ {
+		_ = aa.PaddedBytes(40)
+	}
+}
