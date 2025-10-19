@@ -984,17 +984,12 @@ func (z *Int) Slt(x *Int) bool {
 // Sgt interprets z and x as signed integers, and returns
 // true if z > x
 func (z *Int) Sgt(x *Int) bool {
-	zSign := z.Sign()
-	xSign := x.Sign()
-
-	switch {
-	case zSign >= 0 && xSign < 0:
-		return true
-	case zSign < 0 && xSign >= 0:
-		return false
-	default:
-		return z.Gt(x)
+	signNotEq := (z[3] ^ x[3]) >= 0x8000000000000000
+	if signNotEq {
+		return z[3] < x[3]
 	}
+
+	return z.Gt(x)
 }
 
 // Lt returns true if z < x
