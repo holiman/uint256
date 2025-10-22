@@ -1075,3 +1075,18 @@ func BenchmarkWriteTo(b *testing.B) {
 		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
 	})
 }
+
+func BenchmarkSgt(b *testing.B) {
+	benchmarkSgtUint256 := func(b *testing.B, aSamples, bSamples *[numSamples]Int) {
+		var sink bool
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink = aSamples[i].Sgt(&bSamples[i])
+			}
+		}
+		_ = sink
+	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkSgtUint256(b, &int32Samples, &int32Samples) })
+	b.Run("large/uint256", func(b *testing.B) { benchmarkSgtUint256(b, &int256Samples, &int256Samples) })
+}
