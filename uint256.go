@@ -1306,32 +1306,14 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 	if even { // If the base was even, we are finished now
 		return z.Set(&res)
 	}
-
-	word = exponent[1]
-	for ; curBit < expBitLen && curBit < 128; curBit++ {
-		if word&1 == 1 {
-			res.Mul(&res, &multiplier)
-		}
-		multiplier.squared()
-		word >>= 1
-	}
-
-	word = exponent[2]
-	for ; curBit < expBitLen && curBit < 192; curBit++ {
-		if word&1 == 1 {
-			res.Mul(&res, &multiplier)
-		}
-		multiplier.squared()
-		word >>= 1
-	}
-
-	word = exponent[3]
+	exponentTmp := *exponent
 	for ; curBit < expBitLen && curBit < 256; curBit++ {
-		if word&1 == 1 {
+		word := &exponentTmp[curBit/64]
+		if (*word)&1 == 1 {
 			res.Mul(&res, &multiplier)
 		}
 		multiplier.squared()
-		word >>= 1
+		*word >>= 1
 	}
 	return z.Set(&res)
 }
