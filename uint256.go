@@ -324,7 +324,7 @@ func (z *Int) PaddedBytes(n int) []byte {
 	b := make([]byte, n)
 
 	i := 0
-	for ; i < 32 && i+8 < n; i += 8 {
+	for ; i < 32 && i+8 <= n; i += 8 {
 		binary.BigEndian.PutUint64(b[n-i-8:], z[i/8])
 	}
 	for ; i < 32 && i < n; i++ {
