@@ -1090,3 +1090,18 @@ func BenchmarkSgt(b *testing.B) {
 	b.Run("small/uint256", func(b *testing.B) { benchmarkSgtUint256(b, &int32Samples, &int32Samples) })
 	b.Run("large/uint256", func(b *testing.B) { benchmarkSgtUint256(b, &int256Samples, &int256Samples) })
 }
+
+func BenchmarkSlt(b *testing.B) {
+	benchmarkSltUint256 := func(b *testing.B, aSamples, bSamples *[numSamples]Int) {
+		var sink bool
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink = aSamples[i].Slt(&bSamples[i])
+			}
+		}
+		_ = sink
+	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkSltUint256(b, &int32Samples, &int32Samples) })
+	b.Run("large/uint256", func(b *testing.B) { benchmarkSltUint256(b, &int256Samples, &int256Samples) })
+}
