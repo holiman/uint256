@@ -986,10 +986,11 @@ func (z *Int) Slt(x *Int) bool {
 func (z *Int) Sgt(x *Int) bool {
 	signNotEq := (z[3] ^ x[3]) >= 0x8000000000000000
 	if signNotEq {
+		// One of them has the high bit set == is negative,
+		// so the biggest one (high bit set) is the smallest
 		return z[3] < x[3]
 	}
-
-	return z.Gt(x)
+	return x.Lt(z)
 }
 
 // Lt returns true if z < x
