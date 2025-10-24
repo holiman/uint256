@@ -477,12 +477,6 @@ func (z *Int) squared() {
 	z[0], z[1], z[2], z[3] = res0, res1, res2, res3
 }
 
-// isBitSet returns true if bit n-th is set, where n = 0 is LSB.
-// The n must be <= 255.
-func (z *Int) isBitSet(n uint) bool {
-	return (z[n/64] & (1 << (n % 64))) != 0
-}
-
 // addTo computes x += y.
 // Requires len(x) >= len(y) > 0.
 func addTo(x, y []uint64) uint64 {
@@ -720,19 +714,19 @@ func (z *Int) DivMod(x, y, m *Int) (*Int, *Int) {
 // sets z to (sign x) * { abs(x) modulus abs(y) }
 // If y == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) SMod(x, y *Int) *Int {
-	ys := y.Sign()
-	xs := x.Sign()
+	yIsNeg := y.isNeg()
+	xIsNeg := x.isNeg()
 
 	// abs x
-	if xs == -1 {
+	if xIsNeg {
 		x = new(Int).Neg(x)
 	}
 	// abs y
-	if ys == -1 {
+	if yIsNeg {
 		y = new(Int).Neg(y)
 	}
 	z.Mod(x, y)
-	if xs == -1 {
+	if xIsNeg {
 		z.Neg(z)
 	}
 	return z
@@ -863,8 +857,11 @@ func (z *Int) Neg(x *Int) *Int {
 // does a signed division on the two operands and sets z to the result.
 // If d == 0, z is set to 0
 func (z *Int) SDiv(n, d *Int) *Int {
-	if n.Sign() > 0 {
-		if d.Sign() > 0 {
+	if n.IsZero() || d.IsZero() {
+		return z.Clear()
+	}
+	if !n.isNeg() {
+		if !d.isNeg() {
 			// pos / pos
 			z.Div(n, d)
 			return z
@@ -875,7 +872,7 @@ func (z *Int) SDiv(n, d *Int) *Int {
 		}
 	}
 
-	if d.Sign() < 0 {
+	if d.isNeg() {
 		// neg / neg
 		z.Div(new(Int).Neg(n), new(Int).Neg(d))
 		return z
@@ -906,6 +903,11 @@ func (z *Int) Sign() int {
 		return 1
 	}
 	return -1
+}
+
+// isNeg returns true if z is negative when interpreted as a two's complement signed number
+func (z *Int) isNeg() bool {
+	return z[3] >= 0x8000000000000000
 }
 
 // BitLen returns the number of bits required to represent z
@@ -1192,7 +1194,7 @@ func (z *Int) IRsh(n uint) *Int {
 // and sets z = x >> n and returns z.
 func (z *Int) SRsh(x *Int, n uint) *Int {
 	// If the MSB is 0, SRsh is same as Rsh.
-	if !x.isBitSet(255) {
+	if !x.isNeg() {
 		return z.Rsh(x, n)
 	}
 	var a uint64 = math.MaxUint64 << (64 - n%64)

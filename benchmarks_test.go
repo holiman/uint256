@@ -1113,3 +1113,28 @@ func BenchmarkInt_PaddedBytes(b *testing.B) {
 		_ = aa.PaddedBytes(40)
 	}
 }
+
+func BenchmarkSMod(b *testing.B) {
+	benchmarkSmodUint256 := func(b *testing.B, xSamples, modSamples *[numSamples]Int) {
+		var sink Int
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				sink.SMod(&xSamples[i], &modSamples[i])
+			}
+		}
+	}
+
+	b.Run("small/uint256", func(b *testing.B) { benchmarkSmodUint256(b, &int32Samples, &int32SamplesLt) })
+	b.Run("mod64/uint256", func(b *testing.B) { benchmarkSmodUint256(b, &int256Samples, &int64Samples) })
+	b.Run("mod128/uint256", func(b *testing.B) { benchmarkSmodUint256(b, &int256Samples, &int128Samples) })
+	b.Run("mod192/uint256", func(b *testing.B) { benchmarkSmodUint256(b, &int256Samples, &int192Samples) })
+	b.Run("mod256/uint256", func(b *testing.B) { benchmarkSmodUint256(b, &int256Samples, &int256SamplesLt) })
+}
+
+func BenchmarkSRsh(b *testing.B) {
+	f2 := NewInt(1)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = f2.SRsh(f2, 10)
+	}
+}
