@@ -1287,56 +1287,52 @@ func (z *Int) Byte(n *Int) *Int {
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
-	var (
-		res        = Int{1, 0, 0, 0}
-		multiplier = *base
-		expBitLen  = exponent.BitLen()
-		curBit     = 0
-		word       = exponent[0]
-		even       = base[0]&1 == 0
-	)
-	if even && expBitLen > 8 {
-		return z.Clear()
-	}
+    var (
+        res        = Int{1, 0, 0, 0}
+        multiplier = *base
+        expBitLen  = exponent.BitLen()
+        even       = base[0]&1 == 0
+    )
 
-	for ; curBit < expBitLen && curBit < 64; curBit++ {
-		if word&1 == 1 {
-			res.Mul(&res, &multiplier)
-		}
-		multiplier.squared()
-		word >>= 1
-	}
-	if even { // If the base was even, we are finished now
-		return z.Set(&res)
-	}
+    // Preserve original even‑base semantics.
+    if even && expBitLen > 8 {
+        return z.Clear()
+    }
 
-	word = exponent[1]
-	for ; curBit < expBitLen && curBit < 128; curBit++ {
-		if word&1 == 1 {
-			res.Mul(&res, &multiplier)
-		}
-		multiplier.squared()
-		word >>= 1
-	}
+    // Zero exponent: result is 1 mod 2**256.
+    if expBitLen == 0 {
+        return z.Set(&res)
+    }
 
-	word = exponent[2]
-	for ; curBit < expBitLen && curBit < 192; curBit++ {
-		if word&1 == 1 {
-			res.Mul(&res, &multiplier)
-		}
-		multiplier.squared()
-		word >>= 1
-	}
+    // Same right‑to‑left binary exponentiation as original, but unified.
+    // At most 4 words (256 bits).
+    curBit := 0
+    for wordIdx := 0; wordIdx < 4 && curBit < expBitLen; wordIdx++ {
+        word := exponent[wordIdx]
 
-	word = exponent[3]
-	for ; curBit < expBitLen && curBit < 256; curBit++ {
-		if word&1 == 1 {
-			res.Mul(&res, &multiplier)
-		}
-		multiplier.squared()
-		word >>= 1
-	}
-	return z.Set(&res)
+        // Per‑word limit: either remaining bits in this word or remaining bits in exponent.
+        // This reproduces the original `curBit < 64/128/192/256 && curBit < expBitLen`
+        // behavior without changing the algorithm.
+        wordLimit := curBit + 64
+        if wordLimit > expBitLen {
+            wordLimit = expBitLen
+        }
+
+        for ; curBit < wordLimit; curBit++ {
+            if word&1 == 1 {
+                res.Mul(&res, &multiplier)
+            }
+            multiplier.squared()
+            word >>= 1
+        }
+
+        // Original code stopped after 64 bits if base was even.
+        if even {
+            break
+        }
+    }
+
+    return z.Set(&res)
 }
 
 // IExp sets z = z**exponent mod 2**256, and returns z.
