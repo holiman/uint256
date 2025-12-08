@@ -1286,7 +1286,6 @@ func (z *Int) Byte(n *Int) *Int {
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
-// Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	var (
 		res        = Int{1, 0, 0, 0}
