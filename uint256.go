@@ -1287,73 +1287,73 @@ func (z *Int) Byte(n *Int) *Int {
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
-    var (
-        res        = Int{1, 0, 0, 0}
-        multiplier = *base
-        expBitLen  = exponent.BitLen()
-        even       = base[0]&1 == 0
-    )
+	var (
+		res        = Int{1, 0, 0, 0}
+		multiplier = *base
+		expBitLen  = exponent.BitLen()
+		even       = base[0]&1 == 0
+	)
 
-    if even && expBitLen > 8 {
-        return z.Clear()
-    }
+	if even && expBitLen > 8 {
+		return z.Clear()
+	}
 
-    if expBitLen == 0 {
-        return z.Set(&res)
-    }
+	if expBitLen == 0 {
+		return z.Set(&res)
+	}
 
-    word0 := exponent[0]
-    if expBitLen <= 64 {
-        wordLimit := expBitLen
+	word0 := exponent[0]
+	if expBitLen <= 64 {
+		wordLimit := expBitLen
 
-        for i := 0; i < wordLimit; i++ {
-            if word0&1 == 1 {
-                res.Mul(&res, &multiplier)
-            }
-            multiplier.squared()
-            word0 >>= 1
-        }
-        return z.Set(&res)
-    }
+		for i := 0; i < wordLimit; i++ {
+			if word0&1 == 1 {
+				res.Mul(&res, &multiplier)
+			}
+			multiplier.squared()
+			word0 >>= 1
+		}
+		return z.Set(&res)
+	}
 
-    word := word0
-    for i := 0; i < 64; i++ {
-        if word&1 == 1 {
-            res.Mul(&res, &multiplier)
-        }
-        multiplier.squared()
-        word >>= 1
-    }
+	word := word0
+	for i := 0; i < 64; i++ {
+		if word&1 == 1 {
+			res.Mul(&res, &multiplier)
+		}
+		multiplier.squared()
+		word >>= 1
+	}
 
-    if even {
-        return z.Set(&res)
-    }
+	if even {
+		return z.Set(&res)
+	}
 
-    for wordIdx := 1; wordIdx < 4; wordIdx++ {
-        
-        bitsLeft := expBitLen - (wordIdx * 64) 
-        
-        if bitsLeft <= 0 {
-            break
-        }
+	for wordIdx := 1; wordIdx < 4; wordIdx++ {
 
-        word = exponent[wordIdx]
+		bitsLeft := expBitLen - (wordIdx * 64)
 
-        bitsInWord := 64
-        if bitsLeft < 64 {
-            bitsInWord = bitsLeft
-        }
+		if bitsLeft <= 0 {
+			break
+		}
 
-        for i := 0; i < bitsInWord; i++ {
-            if word&1 == 1 {
-                res.Mul(&res, &multiplier)
-            }
-            multiplier.squared()
-            word >>= 1
-        }
-    }
+		word = exponent[wordIdx]
 
-    return z.Set(&res)
+		bitsInWord := 64
+		if bitsLeft < 64 {
+			bitsInWord = bitsLeft
+		}
+
+		for i := 0; i < bitsInWord; i++ {
+			if word&1 == 1 {
+				res.Mul(&res, &multiplier)
+			}
+			multiplier.squared()
+			word >>= 1
+		}
+	}
+
+	return z.Set(&res)
 }
 
 // IExp sets z = z**exponent mod 2**256, and returns z.
