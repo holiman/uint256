@@ -1286,6 +1286,7 @@ func (z *Int) Byte(n *Int) *Int {
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
+// Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	var (
 		res        = Int{1, 0, 0, 0}
@@ -1294,34 +1295,55 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 		even       = base[0]&1 == 0
 	)
 
-	// If base is even and exponent is large (>8 bits),
-	// the result is zero modulo 2**256 based on original logic.
-	// So return cleared result
 	if even && expBitLen > 8 {
 		return z.Clear()
 	}
 
-	// If exponent is zero, by definition result is 1 mod 2**256,
-	// return 1.
 	if expBitLen == 0 {
 		return z.Set(&res)
 	}
 
-	// Process exponent bits from least significant to most significant
-	// in chunks of 64 bits (words), up to max 256 bits in total.
-	curBit := 0
-	for wordIdx := 0; wordIdx < 4 && curBit < expBitLen; wordIdx++ {
-		word := exponent[wordIdx] // Get the 64-bit word of exponent
-		wordLimit := curBit + 64  // Calculate bit limit for this word
-		// Adjust limit if exceeding total exponent
-		if wordLimit > expBitLen {
-			wordLimit = expBitLen
+	word0 := exponent[0]
+
+	if expBitLen <= 64 {
+		wordLimit := expBitLen
+
+		for i := 0; i < wordLimit; i++ {
+			if word0&1 == 1 {
+				res.Mul(&res, &multiplier)
+			}
+			multiplier.squared()
+			word0 >>= 1
 		}
 
-		// For each bit in the current word:
-		// - If bit is 1, multiply result by current multiplier
-		// - Square multiplier regardless of bit value (prepare for next bit)
-		for ; curBit < wordLimit; curBit++ {
+		// Exponent fully processed. Return result.
+		return z.Set(&res)
+	}
+
+	word := word0
+	for i := 0; i < 64; i++ {
+		if word&1 == 1 {
+			res.Mul(&res, &multiplier)
+		}
+		multiplier.squared()
+		word >>= 1
+	}
+
+	// If the base was even, we are finished now
+	if even {
+		return z.Set(&res)
+	}
+
+	curBit := 64
+	for wordIdx := 1; wordIdx < 4 && curBit < expBitLen; wordIdx++ {
+		word = exponent[wordIdx]
+
+		bitsInWord := 64
+		if curBit+64 > expBitLen {
+			bitsInWord = expBitLen - curBit
+		}
+
+		for i := 0; i < bitsInWord; i++ {
 			if word&1 == 1 {
 				res.Mul(&res, &multiplier)
 			}
@@ -1329,11 +1351,7 @@ func (z *Int) Exp(base, exponent *Int) *Int {
 			word >>= 1
 		}
 
-		// If base was even, we only process first 64 bits of exponent,
-		// so stop early here.
-		if even {
-			break
-		}
+		curBit += bitsInWord
 	}
 
 	return z.Set(&res)
