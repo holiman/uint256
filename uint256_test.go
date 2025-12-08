@@ -386,6 +386,35 @@ func TestRandomMulDivOverflow(t *testing.T) {
 	}
 }
 
+func TestRandomMulDivOverflowRem(t *testing.T) {
+	for i := 0; i < 10000; i++ {
+		b1, f1 := randNums()
+		b2, f2 := randNums()
+		b3, f3 := randNums()
+
+		f1a, f2a, f3a := f1.Clone(), f2.Clone(), f3.Clone()
+
+		rem := new(Int)
+		_, _, overflow := f1.MulDivOverflowRem(f1, f2, f3, rem)
+		if b3.BitLen() == 0 {
+			b1.SetInt64(0)
+		} else {
+			b1.Div(b1.Mul(b1, b2), b3)
+		}
+
+		if err := checkOverflow(b1, f1, overflow); err != nil {
+			t.Fatal(err)
+		}
+		if eq := checkEq(b1, f1); !eq {
+			t.Fatalf("Expected equality:\nf1= %x\nf2= %x\nf3= %x\n[ - ]==\nf= %x\nb= %x\n", f1a, f2a, f3a, f1, b1)
+		}
+		expRem := new(Int).MulMod(f1a, f2a, f3a)
+		if !rem.Eq(expRem) {
+			t.Fatalf("Expected remainder: %x, got %x", expRem, rem)
+		}
+	}
+}
+
 func TestRandomAbs(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1 := randHighNums()
