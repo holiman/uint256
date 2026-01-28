@@ -1511,3 +1511,10 @@ func (z *Int) Log10() uint {
 	}
 	return uint(t)
 }
+
+// ReverseBytes sets z to the value of x with its bytes in reversed order.
+func (z *Int) ReverseBytes(x *Int) *Int {
+	z[0], z[3] = bits.ReverseBytes64(x[3]), bits.ReverseBytes64(x[0])
+	z[1], z[2] = bits.ReverseBytes64(x[2]), bits.ReverseBytes64(x[1])
+	return z
+}
