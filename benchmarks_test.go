@@ -1060,22 +1060,8 @@ func BenchmarkWriteTo(b *testing.B) {
 		}
 		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
 	})
-	b.Run("slice-64", func(b *testing.B) {
+	b.Run("slice", func(b *testing.B) {
 		dest := make([]byte, 64)
-		for i := 0; i < b.N; i++ {
-			fa.WriteToSlice(dest)
-		}
-		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
-	})
-	b.Run("slice-20", func(b *testing.B) {
-		dest := make([]byte, 20)
-		for i := 0; i < b.N; i++ {
-			fa.WriteToSlice(dest)
-		}
-		_ = (string(dest[:])) // Prevent the compiler from optimizing away the op
-	})
-	b.Run("slice-17", func(b *testing.B) {
-		dest := make([]byte, 17)
 		for i := 0; i < b.N; i++ {
 			fa.WriteToSlice(dest)
 		}
