@@ -656,9 +656,11 @@ func (z *Int) UnmarshalSSZ(buf []byte) error {
 
 // HashTreeRoot implements the fastssz.HashRoot interface's non-dependent part.
 func (z *Int) HashTreeRoot() ([32]byte, error) {
-	b, _ := z.MarshalSSZAppend(make([]byte, 0, 32)) // ignore error, cannot fail
 	var hash [32]byte
-	copy(hash[:], b)
+	binary.LittleEndian.PutUint64(hash[0:8], z[0])
+	binary.LittleEndian.PutUint64(hash[8:16], z[1])
+	binary.LittleEndian.PutUint64(hash[16:24], z[2])
+	binary.LittleEndian.PutUint64(hash[24:32], z[3])
 	return hash, nil
 }
 

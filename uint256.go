@@ -133,20 +133,33 @@ func (z *Int) Bytes() []byte {
 // OBS! If dest is smaller than 32 bytes, only the end parts of z will be used
 // for filling the array, making it useful for filling an Address object
 func (z *Int) WriteToSlice(dest []byte) {
-	// ensure 32 bytes
-	// A too large buffer. Fill last 32 bytes
-	end := len(dest) - 1
-	if end > 31 {
-		end = 31
+	n := len(dest)
+	if n >= 32 {
+		// The PutUint64()s are inlined and we get 4x (load, bswap, store) instructions.
+		binary.BigEndian.PutUint64(dest[0:8], z[3])
+		binary.BigEndian.PutUint64(dest[8:16], z[2])
+		binary.BigEndian.PutUint64(dest[16:24], z[1])
+		binary.BigEndian.PutUint64(dest[24:32], z[0])
+		return
 	}
-
-	i := 0
-	for ; i+7 <= end; i += 8 {
-		binary.BigEndian.PutUint64(dest[end-i-7:], z[i/8])
+	// Unrolled uint64 writes from low limb to high, then remaining bytes
+	off := n
+	if off >= 8 {
+		binary.BigEndian.PutUint64(dest[off-8:off], z[0])
+		off -= 8
 	}
-
-	for ; i <= end; i++ {
-		dest[end-i] = byte(z[i/8] >> uint64(8*(i%8)))
+	if off >= 8 {
+		binary.BigEndian.PutUint64(dest[off-8:off], z[1])
+		off -= 8
+	}
+	if off >= 8 {
+		binary.BigEndian.PutUint64(dest[off-8:off], z[2])
+		off -= 8
+	}
+	// Handle remaining 0-7 bytes at the most-significant end
+	w := z[(n-off)/8]
+	for i := 0; i < off; i++ {
+		dest[off-1-i] = byte(w >> uint64(8*i))
 	}
 }
 
