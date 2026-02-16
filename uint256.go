@@ -142,24 +142,30 @@ func (z *Int) WriteToSlice(dest []byte) {
 		binary.BigEndian.PutUint64(dest[24:32], z[0])
 		return
 	}
-	// Unrolled uint64 writes from low limb to high, then remaining bytes
+
+	// Unrolled uint64 writes from low limb to high then remaining bytes, in the form of a Duff device to avoid branches
 	off := n
-	if off >= 8 {
-		binary.BigEndian.PutUint64(dest[off-8:off], z[0])
+	index := 0
+	switch off >> 3 {
+	case 3:
+		binary.BigEndian.PutUint64(dest[off-8:off], z[index])
+		index++
 		off -= 8
-	}
-	if off >= 8 {
-		binary.BigEndian.PutUint64(dest[off-8:off], z[1])
+		fallthrough
+	case 2:
+		binary.BigEndian.PutUint64(dest[off-8:off], z[index])
+		index++
 		off -= 8
-	}
-	if off >= 8 {
-		binary.BigEndian.PutUint64(dest[off-8:off], z[2])
+		fallthrough
+	case 1:
+		binary.BigEndian.PutUint64(dest[off-8:off], z[index])
 		off -= 8
-	}
-	// Handle remaining 0-7 bytes at the most-significant end
-	w := z[(n-off)/8]
-	for i := 0; i < off; i++ {
-		dest[off-1-i] = byte(w >> uint64(8*i))
+		fallthrough
+	default:
+		w := z[(n-off)/8]
+		for i := 0; i < off; i++ {
+			dest[off-1-i] = byte(w >> uint64(8*i))
+		}
 	}
 }
 
