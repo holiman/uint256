@@ -1512,12 +1512,12 @@ func (z *Int) Log10() uint {
 	return uint(t)
 }
 
-// ReverseBytes32 sets z to the value of x with its 32-byte representation reversed.
+// ReverseBytes32 sets z to the value of x with x's 32-byte representation reversed.
 // In other words, the following two are equivalent:
 // OPTION A:
-// z.ReverseBytes32(z)
+// z.ReverseBytes32(x)
 // OPTION B:
-// b32 := z.Bytes32()
+// b32 := x.Bytes32()
 // slices.Reverse(b32[:])
 // z.SetBytes32(b32[:])
 //
