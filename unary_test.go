@@ -77,14 +77,14 @@ func TestReverseBytes(t *testing.T) {
 	input := new(Int).SetBytes(hex2Bytes("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"))
 	want := new(Int).SetBytes(hex2Bytes("1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"))
 	arg := input.Clone()
-	have := new(Int).ReverseBytes(arg)
+	have := new(Int).ReverseBytes32(arg)
 	if !have.Eq(want) {
 		t.Fatalf("ReverseBytes\nwant : %#x\nhave : %#x\n", want, have)
 	}
 	if !arg.Eq(input) {
 		t.Fatalf("ReverseBytes\nargument had been modified: %x", arg)
 	}
-	have = arg.ReverseBytes(arg)
+	have = arg.ReverseBytes32(arg)
 	if have != arg {
 		t.Fatalf("ReverseBytes\nunexpected pointer returned: %p, expected: %p\n", have, arg)
 	}

@@ -1512,8 +1512,17 @@ func (z *Int) Log10() uint {
 	return uint(t)
 }
 
-// ReverseBytes sets z to the value of x with its bytes in reversed order.
-func (z *Int) ReverseBytes(x *Int) *Int {
+// ReverseBytes32 sets z to the value of x with its 32-byte representation reversed.
+// In other words, the following two are equivalent:
+// OPTION A:
+// z.ReverseBytes32(z)
+// OPTION B:
+// b32 := z.Bytes32()
+// slices.Reverse(b32[:])
+// z.SetBytes32(b32[:])
+//
+// ReverseBytes32 is helpful when converting between big- and little-endian serialization.
+func (z *Int) ReverseBytes32(x *Int) *Int {
 	z[0], z[3] = bits.ReverseBytes64(x[3]), bits.ReverseBytes64(x[0])
 	z[1], z[2] = bits.ReverseBytes64(x[2]), bits.ReverseBytes64(x[1])
 	return z
