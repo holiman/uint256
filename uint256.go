@@ -173,6 +173,14 @@ func (z *Int) WriteToArray32(dest *[32]byte) {
 	binary.BigEndian.PutUint64(dest[24:32], z[0])
 }
 
+// WriteLEToArray32 writes all 32 bytes of z to the destination array in little-endian order
+func (z *Int) WriteLEToArray32(dest *[32]byte) {
+	binary.LittleEndian.PutUint64(dest[0:8], z[0])
+	binary.LittleEndian.PutUint64(dest[8:16], z[1])
+	binary.LittleEndian.PutUint64(dest[16:24], z[2])
+	binary.LittleEndian.PutUint64(dest[24:32], z[3])
+}
+
 // WriteToArray20 writes the last 20 bytes of z to the destination array, including zero-bytes
 func (z *Int) WriteToArray20(dest *[20]byte) {
 	// The PutUint*()s are inlined and we get 3x (load, bswap, store) instructions.
@@ -1512,18 +1520,3 @@ func (z *Int) Log10() uint {
 	return uint(t)
 }
 
-// ReverseBytes32 sets z to the value of x with x's 32-byte representation reversed.
-// In other words, the following two are equivalent:
-// OPTION A:
-// z.ReverseBytes32(x)
-// OPTION B:
-// b32 := x.Bytes32()
-// slices.Reverse(b32[:])
-// z.SetBytes32(b32[:])
-//
-// ReverseBytes32 is helpful when converting between big- and little-endian serialization.
-func (z *Int) ReverseBytes32(x *Int) *Int {
-	z[0], z[3] = bits.ReverseBytes64(x[3]), bits.ReverseBytes64(x[0])
-	z[1], z[2] = bits.ReverseBytes64(x[2]), bits.ReverseBytes64(x[1])
-	return z
-}
