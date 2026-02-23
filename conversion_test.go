@@ -411,21 +411,6 @@ func TestSetBytes(t *testing.T) {
 	}
 }
 
-func TestSetLEBytes32(t *testing.T) {
-	buf := hex2Bytes("aaaa12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031bbbb")
-	// SetLEBytes32 interprets the first 32 bytes as little-endian
-	z := new(Int).SetLEBytes32(buf[0:32])
-	// The same value can be constructed by big-endian SetBytes with reversed input
-	rev := make([]byte, 32)
-	for i := 0; i < 32; i++ {
-		rev[i] = buf[31-i]
-	}
-	exp := new(Int).SetBytes(rev)
-	if !z.Eq(exp) {
-		t.Errorf("SetLEBytes32: exp %x, got %x", exp, z)
-	}
-}
-
 func BenchmarkSetBytes(b *testing.B) {
 	val := new(Int)
 	bytearr := hex2Bytes("12131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f3031")

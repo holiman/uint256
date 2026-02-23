@@ -331,16 +331,6 @@ func (z *Int) SetBytes32(in []byte) *Int {
 	return z
 }
 
-// SetLEBytes32 interprets a 32-byte slice as a little-endian unsigned integer and sets z to that value.
-func (z *Int) SetLEBytes32(in []byte) *Int {
-	_ = in[31] // bounds check hint to compiler; see golang.org/issue/14808
-	z[0] = binary.LittleEndian.Uint64(in[0:8])
-	z[1] = binary.LittleEndian.Uint64(in[8:16])
-	z[2] = binary.LittleEndian.Uint64(in[16:24])
-	z[3] = binary.LittleEndian.Uint64(in[24:32])
-	return z
-}
-
 func (z *Int) SetBytes1(in []byte) *Int {
 	z[3], z[2], z[1] = 0, 0, 0
 	z[0] = uint64(in[0])
