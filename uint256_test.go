@@ -737,8 +737,8 @@ func TestWriteToSlice(t *testing.T) {
 	}
 	// Test an empty slice, no panics please
 	{
-		dest := []byte{}
-		exp := []byte{}
+		var dest []byte
+		var exp []byte
 		fa, _ := FromBig(a)
 		fa.WriteToSlice(dest)
 		if !bytes.Equal(dest, exp) {
