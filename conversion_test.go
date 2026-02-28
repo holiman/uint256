@@ -1074,7 +1074,7 @@ func TestRLPEncode(t *testing.T) {
 		if err := z.EncodeRLP(w); err != nil {
 			t.Fatal(err)
 		}
-		w.Flush()
+		_ = w.Flush()
 		if got, exp := b.Bytes(), hex2Bytes(tt.exp); !bytes.Equal(got, exp) {
 			t.Fatalf("testcase %d got:\n%x\nexp:%x\n", i, got, exp)
 		}
@@ -1087,7 +1087,7 @@ func TestRLPEncode(t *testing.T) {
 		if err := z.EncodeRLP(w); err != nil {
 			t.Fatal(err)
 		}
-		w.Flush()
+		_ = w.Flush()
 		if got, exp := b.Bytes(), hex2Bytes("80"); !bytes.Equal(got, exp) {
 			t.Fatalf("nil-test got:\n%x\nexp:%x\n", got, exp)
 		}
