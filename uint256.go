@@ -1440,7 +1440,7 @@ func (z *Int) Sqrt(x *Int) *Int {
 	// This implementation of Sqrt is based on big.Int (see math/big/nat.go).
 	if x.IsUint64() {
 		var (
-			x0 uint64 = x.Uint64()
+			x0        = x.Uint64()
 			z1 uint64 = 1 << ((bits.Len64(x0) + 1) / 2)
 			z2 uint64
 		)

@@ -19,14 +19,14 @@ commands:
 
 jobs:
 
-  go124:
+  go126:
     docker:
-      - image: cimg/go:1.24
+      - image: cimg/go:1.26
     steps:
       - run:
           name: "Install tools"
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.64.5
+            curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.10.1
       - checkout
       - run:
           name: "Lint"
@@ -44,6 +44,7 @@ jobs:
       - run:
           name: "Fuzzing"
           command: |
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzUnaryOperations -fuzztime 20s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBinaryOperations -fuzztime 20s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzCompareOperations -fuzztime 20s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzTernaryOperations -fuzztime 20s
@@ -82,34 +83,42 @@ jobs:
           name: "Test (PPC64 emulation)"
           command: qemu-ppc64-static uint256.test.ppc64 -test.v
 
+  go125:
+    docker:
+      - image: cimg/go:1.25
+    steps:
+      - checkout
+      - test
+  go124:
+    docker:
+      - image: cimg/go:1.24
+    steps:
+      - checkout
+      - test
   go123:
     docker:
       - image: cimg/go:1.23
     steps:
       - checkout
       - test
-
   go122:
     docker:
       - image: cimg/go:1.22
     steps:
       - checkout
       - test
-
   go121:
     docker:
       - image: cimg/go:1.21
     steps:
       - checkout
       - test
-
   go120:
     docker:
       - image: cimg/go:1.20
     steps:
       - checkout
       - test
-
   go119:
     docker:
       - image: cimg/go:1.19
@@ -128,9 +137,11 @@ workflows:
       - go121
       - go122
       - go123
-      - go124:
+      - go124
+      - go125
+      - go126:
           requires:
-            - go123
+            - go125
       - bigendian:
           requires:
-            - go124
+            - go126

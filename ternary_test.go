@@ -19,8 +19,18 @@ var ternaryOpFuncs = []struct {
 	bigFn  bigThreeArgFunc
 }{
 	{"AddMod", (*Int).AddMod, bigAddMod},
+	{"IAddMod", func(z *Int, x *Int, y *Int, m *Int) *Int {
+		return z.Set(x.Clone().IAddMod(y, m))
+	}, bigAddMod},
 	{"MulMod", (*Int).MulMod, bigMulMod},
+	{"IMulMod", func(z *Int, x *Int, y *Int, m *Int) *Int {
+		return z.Set(x.Clone().IMulMod(y, m))
+	}, bigMulMod},
 	{"MulModWithReciprocal", (*Int).mulModWithReciprocalWrapper, bigMulMod},
+	{"IMulModWithReciprocal", func(z *Int, x *Int, y *Int, mod *Int) *Int {
+		mu := Reciprocal(mod)
+		return z.Set(x.Clone().IMulModWithReciprocal(y, mod, &mu))
+	}, bigMulMod},
 	{"DivModZ", divModZ, bigDivModZ},
 	{"DivModM", divModM, bigDivModM},
 }
