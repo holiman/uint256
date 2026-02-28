@@ -7,7 +7,6 @@ package uint256
 import (
 	"fmt"
 	"math/big"
-	"slices"
 	"testing"
 )
 
@@ -36,7 +35,10 @@ var unaryOpFuncs = []struct {
 		} else {
 			copy(dest, data)
 		}
-		slices.Reverse[[]byte](dest)
+		// slices.Reverse does not exist until og 1.21
+		for i, j := 0, len(dest)-1; i < j; i, j = i+1, j-1 {
+			dest[i], dest[j] = dest[j], dest[i]
+		}
 		return b1.SetBytes(dest)
 	}},
 }
