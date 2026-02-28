@@ -7,6 +7,7 @@ package uint256
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"testing"
 )
 
@@ -27,6 +28,17 @@ var unaryOpFuncs = []struct {
 		return x.Set(res)
 	}, func(b1, b2 *big.Int) *big.Int { return b1.Mul(b2, b2) }},
 	{"Abs", (*Int).Abs, func(b1, b2 *big.Int) *big.Int { return b1.Abs(bigS256(b2)) }},
+	{"ReverseBytes", (*Int).ReverseBytes, func(b1, b2 *big.Int) *big.Int {
+		dest := make([]byte, 32)
+		data := b2.Bytes()
+		if len(data) < 32 {
+			copy(dest[32-len(data):], data)
+		} else {
+			copy(dest, data)
+		}
+		slices.Reverse[[]byte](dest)
+		return b1.SetBytes(dest)
+	}},
 }
 
 func checkUnaryOperation(t *testing.T, opName string, op opUnaryArgFunc, bigOp bigUnaryArgFunc, x Int) {
@@ -73,18 +85,20 @@ func FuzzUnaryOperations(f *testing.F) {
 	})
 }
 
-func TestReverseBytes32(t *testing.T) {
-	input := new(Int).SetBytes(hex2Bytes("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"))
-	want := new(Int).SetBytes(hex2Bytes("1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"))
-	arg := input.Clone()
-	have := new(Int).ReverseBytes32(arg)
+func TestReverseBytes(t *testing.T) {
+	var (
+		input = new(Int).SetBytes(hex2Bytes("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"))
+		want  = new(Int).SetBytes(hex2Bytes("1f1e1d1c1b1a191817161514131211100f0e0d0c0b0a09080706050403020100"))
+		arg   = input.Clone()
+		have  = new(Int).ReverseBytes(arg)
+	)
 	if !have.Eq(want) {
 		t.Fatalf("ReverseBytes\nwant : %#x\nhave : %#x\n", want, have)
 	}
 	if !arg.Eq(input) {
 		t.Fatalf("ReverseBytes\nargument had been modified: %x", arg)
 	}
-	have = arg.ReverseBytes32(arg)
+	have = arg.ReverseBytes(arg)
 	if have != arg {
 		t.Fatalf("ReverseBytes\nunexpected pointer returned: %p, expected: %p\n", have, arg)
 	}
