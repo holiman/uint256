@@ -768,7 +768,7 @@ func (z *Int) Hex() string {
 
 // Scan implements the database/sql Scanner interface.
 // It decodes a string, because that is what postgres uses for its numeric type
-func (dst *Int) Scan(src interface{}) error {
+func (dst *Int) Scan(src any) error {
 	if src == nil {
 		dst.Clear()
 		return nil
