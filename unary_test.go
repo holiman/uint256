@@ -21,6 +21,8 @@ var unaryOpFuncs = []struct {
 	{"Not", (*Int).Not, (*big.Int).Not},
 	{"Neg", (*Int).Neg, (*big.Int).Neg},
 	{"Sqrt", (*Int).Sqrt, (*big.Int).Sqrt},
+	{"ISqrt",
+		func(z *Int, x *Int) *Int { return z.Set(x.Clone().ISqrt()) }, (*big.Int).Sqrt},
 	{"square", func(x *Int, y *Int) *Int {
 		res := y.Clone()
 		res.squared()
@@ -85,6 +87,27 @@ func FuzzUnaryOperations(f *testing.F) {
 			checkUnaryOperation(t, tc.name, tc.u256Fn, tc.bigFn, x)
 		}
 	})
+}
+
+func TestOtherOperations(t *testing.T) {
+	for _, arg := range unTestCases {
+		x := MustFromHex(arg)
+		y := MustFromHex("0x8000000000000000000000000000000000000000000000000000000000000000")
+
+		have := x.Sign()
+		want := 0
+		if x.IsZero() {
+			want = 0
+		} else if x.Cmp(y) >= 0 {
+			// x is "negative"
+			want = -1
+		} else {
+			want = 1
+		}
+		if have != want {
+			t.Fatalf("Sign( %v )\nwant : %#x\nhave : %#x\n", arg, want, have)
+		}
+	}
 }
 
 func TestReverseBytes(t *testing.T) {

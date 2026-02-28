@@ -33,19 +33,53 @@ func lookupBinary(name string) binaryOpEntry {
 
 var binaryOpFuncs = []binaryOpEntry{
 	{"Add", (*Int).Add, (*big.Int).Add},
+	{"IAdd", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().IAdd(y))
+	}, (*big.Int).Add},
 	{"Sub", (*Int).Sub, (*big.Int).Sub},
+	{"ISub", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().ISub(y))
+	}, (*big.Int).Sub},
 	{"Mul", (*Int).Mul, (*big.Int).Mul},
+	{"IMul", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().IMul(y))
+	}, (*big.Int).Mul},
 	{"Div", (*Int).Div, bigDiv},
+	{"IDiv", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().IDiv(y))
+	}, bigDiv},
 	{"Mod", (*Int).Mod, bigMod},
+	{"IMod", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().IMod(y))
+	}, bigMod},
 	{"SDiv", (*Int).SDiv, bigSDiv},
+	{"IDiv", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().ISDiv(y))
+	}, bigSDiv},
 	{"SMod", (*Int).SMod, bigSMod},
+	{"IMod", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().ISMod(y))
+	}, bigSMod},
 	{"And", (*Int).And, (*big.Int).And},
 	{"Or", (*Int).Or, (*big.Int).Or},
 	{"Xor", (*Int).Xor, (*big.Int).Xor},
 	{"Exp", (*Int).Exp, func(b1, b2, b3 *big.Int) *big.Int { return b1.Exp(b2, b3, bigtt256) }},
+	{"IExp",
+		func(z *Int, x *Int, y *Int) *Int { return z.Set(x.Clone().IExp(y)) },
+		func(b1, b2, b3 *big.Int) *big.Int { return b1.Exp(b2, b3, bigtt256) },
+	},
 	{"Lsh", u256Lsh, bigLsh},
+	{"ILsh", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().ILsh(uint(y.Uint64() & 0x1FF)))
+	}, bigLsh},
 	{"Rsh", u256Rsh, bigRsh},
+	{"IRsh", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().IRsh(uint(y.Uint64() & 0x1FF)))
+	}, bigRsh},
 	{"SRsh", u256SRsh, bigSRsh},
+	{"ISRsh", func(z *Int, x *Int, y *Int) *Int {
+		return z.Set(x.Clone().ISRsh(uint(y.Uint64() & 0x1FF)))
+	}, bigSRsh},
 	{"DivModDiv", divModDiv, bigDiv},
 	{"DivModMod", divModMod, bigMod},
 	{"udivremDiv", udivremDiv, bigDiv},

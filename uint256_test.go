@@ -589,6 +589,17 @@ func TestAddSubUint64(t *testing.T) {
 				t.Fail()
 			}
 		}
+		{ // ISub (in-place version)
+			want, _ := FromBig(bigU256(new(big.Int).Sub(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).Set(arg)
+			have.ISub(NewInt(tc.n))
+			if !have.Eq(want) {
+				t.Logf("ISub args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
+		}
 		{ // AddUint64
 			want, _ := FromBig(bigU256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
 			have := new(Int).AddUint64(arg, tc.n)
@@ -605,6 +616,17 @@ func TestAddSubUint64(t *testing.T) {
 			have.IAddUint64(tc.n)
 			if !have.Eq(want) {
 				t.Logf("IAddUint64 args: %s, %d\n", tc.arg, tc.n)
+				t.Logf("want : %x\n", want)
+				t.Logf("have : %x\n\n", have)
+				t.Fail()
+			}
+		}
+		{ // IAdd (in-place version)
+			want, _ := FromBig(bigU256(new(big.Int).Add(bigArg, new(big.Int).SetUint64(tc.n))))
+			have := new(Int).Set(arg)
+			have.IAdd(NewInt(tc.n))
+			if !have.Eq(want) {
+				t.Logf("Iadd args: %s, %d\n", tc.arg, tc.n)
 				t.Logf("want : %x\n", want)
 				t.Logf("have : %x\n\n", have)
 				t.Fail()
@@ -691,50 +713,38 @@ func TestPaddingRepresentation(t *testing.T) {
 
 func TestWriteToSlice(t *testing.T) {
 	x1 := hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611")
-
 	a := big.NewInt(0).SetBytes(x1)
-	fa, _ := FromBig(a)
 
-	dest := make([]byte, 32)
-	fa.WriteToSlice(dest)
-	if !bytes.Equal(dest, x1) {
-		t.Errorf("got %x, expected %x", dest, x1)
+	// Test filling slices that are smaller and smaller
+	for length := 32; length > 0; length-- {
+		fa, _ := FromBig(a)
+		dest := make([]byte, length)
+		fa.WriteToSlice(dest)
+		if !bytes.Equal(dest, x1[32-length:]) {
+			t.Errorf("got %x, expected %x", dest, x1)
+		}
 	}
-
-	fb := new(Int)
-	exp := make([]byte, 32)
-	fb.WriteToSlice(dest)
-	if !bytes.Equal(dest, exp) {
-		t.Errorf("got %x, expected %x", dest, exp)
-	}
-	// a too small buffer
-	// Should fill the lower parts, masking upper bytes
-	exp = hex2Bytes("683fd1e870eec79504c60144cc7f5fc2bad1e611")
-	dest = make([]byte, 20)
-	fa.WriteToSlice(dest)
-	if !bytes.Equal(dest, exp) {
-		t.Errorf("got %x, expected %x", dest, exp)
-	}
-
-	// a too large buffer, already filled with stuff
+	// Test filling a too-large buffer already filled with data
 	// Should fill the leftmost 32 bytes, not touch the other things
-	dest = hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
-	exp = hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
-
-	fa.WriteToSlice(dest)
-	if !bytes.Equal(dest, exp) {
-		t.Errorf("got %x, expected %x", dest, x1)
+	{
+		dest := hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
+		exp := hex2Bytes("fe7fb0d1f59dfe9492ffbf73683fd1e870eec79504c60144cc7f5fc2bad1e611ffffffffffffffff")
+		fa, _ := FromBig(a)
+		fa.WriteToSlice(dest)
+		if !bytes.Equal(dest, exp) {
+			t.Errorf("got %x, expected %x", dest, x1)
+		}
 	}
-
-	// an empty slice, no panics please
-	dest = []byte{}
-	exp = []byte{}
-
-	fa.WriteToSlice(dest)
-	if !bytes.Equal(dest, exp) {
-		t.Errorf("got %x, expected %x", dest, x1)
+	// Test an empty slice, no panics please
+	{
+		dest := []byte{}
+		exp := []byte{}
+		fa, _ := FromBig(a)
+		fa.WriteToSlice(dest)
+		if !bytes.Equal(dest, exp) {
+			t.Errorf("got %x, expected %x", dest, x1)
+		}
 	}
-
 }
 
 func TestInt_WriteToArray(t *testing.T) {
