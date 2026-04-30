@@ -683,9 +683,9 @@ func (z *Int) Mod(x, y *Int) *Int {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
 
-	var quot, rem Int
-	udivrem(quot[:], x[:], y, &rem)
-	return z.Set(&rem)
+	var quot Int
+	udivrem(quot[:], x[:], y, z)
+	return z
 }
 
 // IMod sets z to the modulus z%x, modifying z in place, and returns z.
