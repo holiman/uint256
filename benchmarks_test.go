@@ -5,6 +5,8 @@
 package uint256
 
 import (
+	"fmt"
+	"io"
 	"math/big"
 	"math/rand"
 	"testing"
@@ -1137,4 +1139,22 @@ func BenchmarkSRsh(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = f2.SRsh(f2, 10)
 	}
+}
+
+func BenchmarkFormat(b *testing.B) {
+	benchmarkFormat := func(b *testing.B, format string, samples *[numSamples]Int) {
+		b.ReportAllocs()
+		for j := 0; j < b.N; j += numSamples {
+			for i := 0; i < numSamples; i++ {
+				fmt.Fprintf(io.Discard, format, &samples[i])
+			}
+		}
+	}
+	b.Run("%d/small", func(b *testing.B) { benchmarkFormat(b, "%d", &int64Samples) })
+	b.Run("%d/large", func(b *testing.B) { benchmarkFormat(b, "%d", &int256Samples) })
+	b.Run("%x/small", func(b *testing.B) { benchmarkFormat(b, "%x", &int64Samples) })
+	b.Run("%x/large", func(b *testing.B) { benchmarkFormat(b, "%x", &int256Samples) })
+	b.Run("%v/large", func(b *testing.B) { benchmarkFormat(b, "%v", &int256Samples) })
+	b.Run("%#x/large", func(b *testing.B) { benchmarkFormat(b, "%#x", &int256Samples) })
+	b.Run("%10d/large", func(b *testing.B) { benchmarkFormat(b, "%10d", &int256Samples) })
 }

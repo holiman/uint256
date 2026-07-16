@@ -292,6 +292,26 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 // width, space or zero padding, and '-' for left or right
 // justification.
 func (z *Int) Format(s fmt.State, ch rune) {
+	if z == nil {
+		z.ToBig().Format(s, ch) // preserve "<nil>" behavior
+		return
+	}
+	// Fast path for common verbs without width/precision/flags:
+	// avoid allocating a big.Int via ToBig().
+	if _, hasWidth := s.Width(); !hasWidth {
+		if _, hasPrec := s.Precision(); !hasPrec {
+			if !s.Flag('+') && !s.Flag(' ') && !s.Flag('-') && !s.Flag('0') && !s.Flag('#') {
+				switch ch {
+				case 'd', 'v', 's':
+					s.Write([]byte(z.Dec()))
+					return
+				case 'x':
+					s.Write([]byte(z.Hex()[2:])) // Hex() always has "0x" prefix
+					return
+				}
+			}
+		}
+	}
 	z.ToBig().Format(s, ch)
 }
 

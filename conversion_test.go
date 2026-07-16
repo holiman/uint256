@@ -389,6 +389,33 @@ func TestFormat(t *testing.T) {
 			t.Errorf("Invalid format conversion to hex: %s, expected %s", s, expected)
 		}
 	}
+
+	formats := []string{
+		"%d", "%v", "%s", "%x", "%X", "%b", "%o", "%O",
+		"%#x", "%#X", "%#o", "%+d", "% d", "%10d", "%.5d", "%010x", "%-10d",
+	}
+	values := []*big.Int{
+		big.NewInt(0),
+		big.NewInt(1),
+		big.NewInt(255),
+		new(big.Int).SetBytes(hex2Bytes("ffeeddccbbaa99887766554433221100ffeeddccbbaa99887766554433221100")),
+	}
+	for _, bg := range values {
+		u, overflow := FromBig(bg)
+		if overflow {
+			t.Fatalf("overflow on %x", bg)
+		}
+		for _, format := range formats {
+			want := fmt.Sprintf(format, bg)
+			have := fmt.Sprintf(format, u)
+			if have != want {
+				t.Errorf("format %q value %x: have %q, want %q", format, bg, have, want)
+			}
+		}
+	}
+	if have, want := fmt.Sprintf("%v", (*Int)(nil)), "<nil>"; have != want {
+		t.Errorf("nil format: have %q, want %q", have, want)
+	}
 }
 
 // TestSetBytes tests all setbyte-methods from 0 to overlong,
