@@ -1146,7 +1146,7 @@ func BenchmarkFormat(b *testing.B) {
 		b.ReportAllocs()
 		for j := 0; j < b.N; j += numSamples {
 			for i := 0; i < numSamples; i++ {
-				fmt.Fprintf(io.Discard, format, &samples[i])
+				_, _ = fmt.Fprintf(io.Discard, format, &samples[i])
 			}
 		}
 	}

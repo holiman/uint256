@@ -303,10 +303,10 @@ func (z *Int) Format(s fmt.State, ch rune) {
 			if !s.Flag('+') && !s.Flag(' ') && !s.Flag('-') && !s.Flag('0') && !s.Flag('#') {
 				switch ch {
 				case 'd', 'v', 's':
-					s.Write([]byte(z.Dec()))
+					_, _ = s.Write([]byte(z.Dec()))
 					return
 				case 'x':
-					s.Write([]byte(z.Hex()[2:])) // Hex() always has "0x" prefix
+					_, _ = s.Write([]byte(z.Hex()[2:])) // Hex() always has "0x" prefix
 					return
 				}
 			}
