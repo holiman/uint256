@@ -293,7 +293,7 @@ func (z *Int) SetFromBig(b *big.Int) bool {
 // justification.
 func (z *Int) Format(s fmt.State, ch rune) {
 	if z == nil {
-		z.ToBig().Format(s, ch) // preserve "<nil>" behavior
+		_, _ = fmt.Fprint(s, "<nil>")
 		return
 	}
 	// Fast path for common verbs without width/precision/flags:

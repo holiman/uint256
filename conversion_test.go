@@ -395,6 +395,7 @@ func TestFormat(t *testing.T) {
 		"%#x", "%#X", "%#o", "%+d", "% d", "%10d", "%.5d", "%010x", "%-10d",
 	}
 	values := []*big.Int{
+		nil,
 		big.NewInt(0),
 		big.NewInt(1),
 		big.NewInt(255),
