@@ -17,11 +17,26 @@ import (
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
+// MulDivPlan stores a divisor and its reciprocal for repeated
+// MulDivOverflowRemWithPlan calls.
+type MulDivPlan struct {
+	divisor    Int
+	reciprocal [5]uint64
+}
+
 // NewInt returns a new initialized Int.
 func NewInt(val uint64) *Int {
 	z := &Int{}
 	z.SetUint64(val)
 	return z
+}
+
+// NewMulDivPlan constructs a reusable multiplication/division plan for d.
+// The plan copies d, so later changes to d do not affect it.
+func NewMulDivPlan(d *Int) *MulDivPlan {
+	plan := &MulDivPlan{divisor: *d}
+	plan.reciprocal = Reciprocal(&plan.divisor)
+	return plan
 }
 
 // SetBytes interprets buf as the bytes of a big-endian unsigned
@@ -873,6 +888,12 @@ func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
 	z[0], z[1], z[2], z[3] = quot[0], quot[1], quot[2], quot[3]
 
 	return z, m, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
+}
+
+// MulDivOverflowRemWithPlan calculates (x*y)/d using plan, returns z,
+// sets m to x*y modulo d, and reports whether the quotient overflows 256 bits.
+func (z *Int) MulDivOverflowRemWithPlan(x, y *Int, plan *MulDivPlan, m *Int) (*Int, *Int, bool) {
+	return z.MulDivOverflowRem(x, y, &plan.divisor, m)
 }
 
 // Abs interprets x as a two's complement signed number,
