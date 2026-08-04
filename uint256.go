@@ -17,8 +17,8 @@ import (
 // so that Int[3] is the most significant, and Int[0] is the least significant
 type Int [4]uint64
 
-// MulDivPlan stores a divisor and its reciprocal for repeated
-// MulDivOverflowRemWithPlan calls.
+// MulDivPlan stores an immutable divisor and reciprocal for repeated
+// MulDivOverflowRemWithPlan calls. A plan can be used concurrently.
 type MulDivPlan struct {
 	divisor    Int
 	reciprocal [5]uint64
@@ -881,6 +881,12 @@ func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
 	var p [8]uint64
 	umul(x, y, &p)
 
+	// The generic path is cheaper when the product fits in four words.
+	if d[3] != 0 && (p[4]|p[5]|p[6]|p[7]) != 0 {
+		mu := Reciprocal(d)
+		return z.mulDivOverflowRemWithReciprocal(&p, d, &mu, m)
+	}
+
 	var quot [8]uint64
 	m.Clear()
 	udivrem(quot[:], p[:], d, m)
@@ -890,10 +896,45 @@ func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
 	return z, m, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
 }
 
+func mulDivProductBelowDivisor(p *[8]uint64, d *Int) bool {
+	if (p[4] | p[5] | p[6] | p[7]) != 0 {
+		return false
+	}
+	product := Int{p[0], p[1], p[2], p[3]}
+	return product.Lt(d)
+}
+
+func (z *Int) mulDivOverflowRemWithReciprocal(p *[8]uint64, d *Int, mu *[5]uint64, m *Int) (*Int, *Int, bool) {
+	var quotient [5]uint64
+	m.reduce4WithQuotient(p, d, mu, &quotient)
+	z[0], z[1], z[2], z[3] = quotient[0], quotient[1], quotient[2], quotient[3]
+	return z, m, quotient[4] != 0
+}
+
 // MulDivOverflowRemWithPlan calculates (x*y)/d using plan, returns z,
 // sets m to x*y modulo d, and reports whether the quotient overflows 256 bits.
+//
+// For four-word divisors, it uses the reciprocal saved in plan. Narrow divisors
+// use the generic division path.
 func (z *Int) MulDivOverflowRemWithPlan(x, y *Int, plan *MulDivPlan, m *Int) (*Int, *Int, bool) {
-	return z.MulDivOverflowRem(x, y, &plan.divisor, m)
+	if x.IsZero() || y.IsZero() || plan.divisor.IsZero() {
+		m.Clear()
+		return z.Clear(), m, false
+	}
+
+	if plan.divisor[3] == 0 {
+		return z.MulDivOverflowRem(x, y, &plan.divisor, m)
+	}
+
+	var p [8]uint64
+	umul(x, y, &p)
+
+	if mulDivProductBelowDivisor(&p, &plan.divisor) {
+		m[0], m[1], m[2], m[3] = p[0], p[1], p[2], p[3]
+		return z.Clear(), m, false
+	}
+
+	return z.mulDivOverflowRemWithReciprocal(&p, &plan.divisor, &plan.reciprocal, m)
 }
 
 // Abs interprets x as a two's complement signed number,
