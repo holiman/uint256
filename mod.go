@@ -228,65 +228,10 @@ func Reciprocal(m *Int) (mu [5]uint64) {
 	r4i, b	:= bits.Sub64(r3m, x5, b)
 	r4h, _	:= bits.Sub64(r3h, x6, b)
 
-	// Multiply candidate for 1/4y by y, with full precision
-
-	x0 = r4l
-	x1 = r4k
-	x2 = r4j
-	x3 = r4i
-	x4 = r4h
-
-	q1, q0	 = bits.Mul64(x0, y[0])
-	q3, q2	 = bits.Mul64(x2, y[0])
-	q5, q4	:= bits.Mul64(x4, y[0])
-
-	t1, t0	 = bits.Mul64(x1, y[0]); q1, c = bits.Add64(q1, t0, 0); q2, c = bits.Add64(q2, t1, c)
-	t1, t0	 = bits.Mul64(x3, y[0]); q3, c = bits.Add64(q3, t0, c); q4, c = bits.Add64(q4, t1, c); q5, _ = bits.Add64(q5, 0, c)
-
-	t1, t0	 = bits.Mul64(x0, y[1]); q1, c = bits.Add64(q1, t0, 0); q2, c = bits.Add64(q2, t1, c)
-	t1, t0	 = bits.Mul64(x2, y[1]); q3, c = bits.Add64(q3, t0, c); q4, c = bits.Add64(q4, t1, c)
-	q6, t0	:= bits.Mul64(x4, y[1]); q5, c = bits.Add64(q5, t0, c); q6, _ = bits.Add64(q6,  0, c)
-
-	t1, t0	 = bits.Mul64(x1, y[1]); q2, c = bits.Add64(q2, t0, 0); q3, c = bits.Add64(q3, t1, c)
-	t1, t0	 = bits.Mul64(x3, y[1]); q4, c = bits.Add64(q4, t0, c); q5, c = bits.Add64(q5, t1, c); q6, _ = bits.Add64(q6, 0, c)
-
-	t1, t0	 = bits.Mul64(x0, y[2]); q2, c = bits.Add64(q2, t0, 0); q3, c = bits.Add64(q3, t1, c)
-	t1, t0	 = bits.Mul64(x2, y[2]); q4, c = bits.Add64(q4, t0, c); q5, c = bits.Add64(q5, t1, c)
-	q7, t0	:= bits.Mul64(x4, y[2]); q6, c = bits.Add64(q6, t0, c); q7, _ = bits.Add64(q7,  0, c)
-
-	t1, t0	 = bits.Mul64(x1, y[2]); q3, c = bits.Add64(q3, t0, 0); q4, c = bits.Add64(q4, t1, c)
-	t1, t0	 = bits.Mul64(x3, y[2]); q5, c = bits.Add64(q5, t0, c); q6, c = bits.Add64(q6, t1, c); q7, _ = bits.Add64(q7, 0, c)
-
-	t1, t0	 = bits.Mul64(x0, y[3]); q3, c = bits.Add64(q3, t0, 0); q4, c = bits.Add64(q4, t1, c)
-	t1, t0	 = bits.Mul64(x2, y[3]); q5, c = bits.Add64(q5, t0, c); q6, c = bits.Add64(q6, t1, c)
-	q8, t0	:= bits.Mul64(x4, y[3]); q7, c = bits.Add64(q7, t0, c); q8, _ = bits.Add64(q8,  0, c)
-
-	t1, t0	 = bits.Mul64(x1, y[3]); q4, c = bits.Add64(q4, t0, 0); q5, c = bits.Add64(q5, t1, c)
-	t1, t0	 = bits.Mul64(x3, y[3]); q6, c = bits.Add64(q6, t0, c); q7, c = bits.Add64(q7, t1, c); q8, _ = bits.Add64(q8, 0, c)
-
-	// Final adjustment
-
-	// subtract q from 1/4
-	_, b = bits.Sub64(0, q0, 0)
-	_, b = bits.Sub64(0, q1, b)
-	_, b = bits.Sub64(0, q2, b)
-	_, b = bits.Sub64(0, q3, b)
-	_, b = bits.Sub64(0, q4, b)
-	_, b = bits.Sub64(0, q5, b)
-	_, b = bits.Sub64(0, q6, b)
-	_, b = bits.Sub64(0, q7, b)
-	_, b = bits.Sub64(uint64(1) << 62, q8, b)
-
-	// decrement the result
-	x0, t := bits.Sub64(r4l, 1, 0)
-	x1, t  = bits.Sub64(r4k, 0, t)
-	x2, t  = bits.Sub64(r4j, 0, t)
-	x3, t  = bits.Sub64(r4i, 0, t)
-	x4, _  = bits.Sub64(r4h, 0, t)
-
-	// commit the decrement if the subtraction underflowed (reciprocal was too large)
-	if b != 0 {
-		r4h, r4i, r4j, r4k, r4l = x4, x3, x2, x1, x0
+	// The r0 saturation at the exact 1/2 boundary is the only Newton path
+	// that can overestimate, so retain its full product correction.
+	if yh == 0x80000000 {
+		r4l, r4k, r4j, r4i, r4h = correctReciprocal(r4l, r4k, r4j, r4i, r4h, &y)
 	}
 
 	// Shift to correct bit alignment, truncating excess bits
