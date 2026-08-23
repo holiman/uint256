@@ -7,17 +7,11 @@ package uint256
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"math/big"
 	"testing"
 )
-
-func hex2Bytes(str string) []byte {
-	h, _ := hex.DecodeString(str)
-	return h
-}
 
 func checkOverflow(b *big.Int, f *Int, overflow bool) error {
 	max := big.NewInt(0).SetBytes(hex2Bytes("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"))
