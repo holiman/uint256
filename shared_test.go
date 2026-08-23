@@ -6,6 +6,7 @@ package uint256
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"math/big"
 )
 
@@ -15,6 +16,11 @@ import (
 // During this instrumentation, the file under test (e.g. unary_test.go) is modified,
 // and the same modification needs to be performed with any other files that
 // it requires (this file).
+
+func hex2Bytes(str string) []byte {
+	h, _ := hex.DecodeString(str)
+	return h
+}
 
 var (
 	bigtt256   = new(big.Int).Lsh(big.NewInt(1), 256)
