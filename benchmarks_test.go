@@ -796,6 +796,20 @@ func BenchmarkAddMod(b *testing.B) {
 	b.Run("mod256/big", func(b *testing.B) { benchmarkAddModBig(b, &big256SamplesLt, &big256Samples) })
 }
 
+var benchmarkReciprocalResult [5]uint64
+
+func BenchmarkReciprocal(b *testing.B) {
+	var mu [5]uint64
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		mu = Reciprocal(&int256Samples[i%numSamples])
+	}
+	b.StopTimer()
+
+	benchmarkReciprocalResult = mu
+}
+
 func BenchmarkMulMod(b *testing.B) {
 	benchmarkMulModUint256R := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
 		iter := (b.N + numSamples - 1) / numSamples
