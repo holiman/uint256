@@ -822,11 +822,11 @@ func (dst *Int) scanScientificFromString(src string) error {
 		return err
 	}
 	if exp.GtUint64(77) { // 10**78 is larger than 2**256
-		return ErrBig256Range
+		return ErrDecimalRange
 	}
 	exp.Exp(NewInt(10), exp)
 	if _, overflow := dst.MulOverflow(dst, exp); overflow {
-		return ErrBig256Range
+		return ErrDecimalRange
 	}
 	return nil
 }
@@ -847,6 +847,7 @@ var (
 	ErrEmptyNumber      = errors.New("hex string \"0x\"")
 	ErrLeadingZero      = errors.New("hex number with leading zero digits")
 	ErrBig256Range      = errors.New("hex number > 256 bits")
+	ErrDecimalRange     = errors.New("decimal number > 256 bits")
 	ErrBadBufferLength  = errors.New("bad ssz buffer length")
 	ErrBadEncodedLength = errors.New("bad ssz encoded length")
 )

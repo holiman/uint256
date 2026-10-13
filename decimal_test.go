@@ -119,6 +119,16 @@ func TestStringScan(t *testing.T) {
 	}
 }
 
+func TestDecimalRangeError(t *testing.T) {
+	tooLarge := twoPow256Sub1 + "0"
+	if err := new(Int).SetFromDecimal(tooLarge); !errors.Is(err, ErrDecimalRange) {
+		t.Fatalf("SetFromDecimal error = %v, want %v", err, ErrDecimalRange)
+	}
+	if _, err := FromDecimal(tooLarge); !errors.Is(err, ErrDecimalRange) {
+		t.Fatalf("FromDecimal error = %v, want %v", err, ErrDecimalRange)
+	}
+}
+
 func FuzzBase10StringCompare(f *testing.F) {
 	for _, tc := range cases {
 		f.Add(tc)

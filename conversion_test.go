@@ -144,7 +144,7 @@ func TestScanScientific(t *testing.T) {
 		},
 		{ // 0x8a2dbf142dfcc8000000000000000000000000000000000000000000000000000
 			in:  "1e78",
-			err: ErrBig256Range.Error(),
+			err: ErrDecimalRange.Error(),
 		},
 		{
 			in:  "1455522523e31",
@@ -156,15 +156,15 @@ func TestScanScientific(t *testing.T) {
 		},
 		{
 			in:  "1e25352",
-			err: ErrBig256Range.Error(),
+			err: ErrDecimalRange.Error(),
 		},
 		{
 			in:  "1213128763127863781263781263781263781263781263871263871268371268371263781627836128736128736127836127836127863781e0",
-			err: ErrBig256Range.Error(),
+			err: ErrDecimalRange.Error(),
 		},
 		{
 			in:  twoPow256Sub1 + "e1",
-			err: ErrBig256Range.Error(),
+			err: ErrDecimalRange.Error(),
 		},
 		{
 			in:  "1e253e52",
@@ -1455,6 +1455,15 @@ func TestMarshallingErrors(t *testing.T) {
 		}
 		haveHex := check(fmt.Sprintf(`"%#x"`, reference))
 		haveDec := check(fmt.Sprintf(`"%#d"`, reference))
+		if reference.BitLen() > 256 {
+			if want := "error: " + ErrBig256Range.Error(); haveHex != want {
+				t.Fatalf("test %d: hex error = %q, want %q", i, haveHex, want)
+			}
+			if want := "error: " + ErrDecimalRange.Error(); haveDec != want {
+				t.Fatalf("test %d: decimal error = %q, want %q", i, haveDec, want)
+			}
+			continue
+		}
 		if haveHex != haveDec {
 			t.Fatalf("test %d: hex unmarshal != dec unmarshal, \nhex -> %q\ndec -> %q\n", i, haveHex, haveDec)
 		}

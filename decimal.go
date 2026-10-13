@@ -158,11 +158,11 @@ func (z *Int) SetFromDecimal(s string) (err error) {
 	}
 	if len(s) == len(twoPow256Sub1) {
 		if s > twoPow256Sub1 {
-			return ErrBig256Range
+			return ErrDecimalRange
 		}
 		return z.fromDecimal(s)
 	}
-	return ErrBig256Range
+	return ErrDecimalRange
 }
 
 // multipliers holds the values that are needed for fromDecimal
