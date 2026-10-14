@@ -807,7 +807,7 @@ func (dst *Int) scanScientificFromString(src string) error {
 		dst.Clear()
 		return nil
 	}
-	idx := strings.IndexByte(src, 'e')
+	idx := strings.IndexAny(src, "eE")
 	if idx == -1 {
 		return dst.SetFromDecimal(src)
 	}
