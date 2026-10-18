@@ -243,11 +243,28 @@ func (z *Int) AddOverflow(x, y *Int) (*Int, bool) {
 // AddMod sets z to the sum ( x+y ) mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
 func (z *Int) AddMod(x, y, m *Int) *Int {
-
-	// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
-	// This is always the case when x and y are already reduced modulo such m.
-
-	if (m[3] != 0) && (x[3] <= m[3]) && (y[3] <= m[3]) {
+	if m[3] == 0 {
+		switch {
+		case m[2] != 0:
+			if addModSmallOperands(x[2], y[2], m[2], x[3]|y[3]) {
+				if addModReducedOperands(x[2], y[2], m[2]) {
+					return z.addModReducedSmall(x, y, m)
+				}
+				return z.addModNearReducedSmall(x, y, m)
+			}
+		case m[1] != 0:
+			if addModSmallOperands(x[1], y[1], m[1], x[2]|x[3]|y[2]|y[3]) {
+				if addModReducedOperands(x[1], y[1], m[1]) {
+					return z.addModReducedSmall(x, y, m)
+				}
+				return z.addModNearReducedSmall(x, y, m)
+			}
+		case m[0] == 0:
+			return z.Clear()
+		}
+	} else if addModNearOperands(x, y, m) {
+		// Fast path for m >= 2^192, with x and y at most slightly bigger than m.
+		// This is always the case when x and y are already reduced modulo such m.
 		var (
 			gteC1 uint64
 			gteC2 uint64
@@ -297,9 +314,6 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		return z.Set(&tmp)
 	}
 
-	if m.IsZero() {
-		return z.Clear()
-	}
 	if z == m { // z is an alias for m and will be overwritten by AddOverflow before m is read
 		m = m.Clone()
 	}
@@ -310,7 +324,84 @@ func (z *Int) AddMod(x, y, m *Int) *Int {
 		udivrem(quot[:], sum[:], m, &rem)
 		return z.Set(&rem)
 	}
+	if addModUseSum(z, m) {
+		if z[1] == 0 {
+			if z[0] >= m[0] {
+				z[0] %= m[0]
+			}
+			return z
+		}
+		if z[1] < m[0] {
+			_, z[0] = bits.Div64(z[1], z[0], m[0])
+			z[1] = 0
+			return z
+		}
+	}
 	return z.Mod(z, m)
+}
+
+// addModSmallOperands reports whether two operands are below twice a small
+// modulus based on its highest nonzero word and all higher operand words.
+func addModSmallOperands(xTop, yTop, mTop, upper uint64) bool {
+	return upper == 0 && xTop <= mTop && yTop <= mTop
+}
+
+func addModReducedOperands(xTop, yTop, mTop uint64) bool {
+	return xTop < mTop && yTop < mTop
+}
+
+func addModNearOperands(x, y, m *Int) bool {
+	return x[3] <= m[3] && y[3] <= m[3]
+}
+
+func addModUseSum(z, m *Int) bool {
+	return (m[1]|m[2]|m[3]) == 0 && (z[2]|z[3]) == 0
+}
+
+// addModNearReducedSmall adds operands known to be below twice m, where m < 2^192.
+func (z *Int) addModNearReducedSmall(x, y, m *Int) *Int {
+	var (
+		borrow             uint64
+		reducedX, reducedY Int
+	)
+	reducedX[0], borrow = bits.Sub64(x[0], m[0], borrow)
+	reducedX[1], borrow = bits.Sub64(x[1], m[1], borrow)
+	reducedX[2], borrow = bits.Sub64(x[2], m[2], borrow)
+	reducedX[3], borrow = bits.Sub64(x[3], m[3], borrow)
+	if borrow != 0 {
+		reducedX = *x
+	}
+
+	borrow = 0
+	reducedY[0], borrow = bits.Sub64(y[0], m[0], borrow)
+	reducedY[1], borrow = bits.Sub64(y[1], m[1], borrow)
+	reducedY[2], borrow = bits.Sub64(y[2], m[2], borrow)
+	reducedY[3], borrow = bits.Sub64(y[3], m[3], borrow)
+	if borrow != 0 {
+		reducedY = *y
+	}
+	return z.addModReducedSmall(&reducedX, &reducedY, m)
+}
+
+// addModReducedSmall adds operands known to be strictly below m, where m < 2^192.
+func (z *Int) addModReducedSmall(x, y, m *Int) *Int {
+	if z == m { // z is an alias for m and will be overwritten by Add before m is read
+		m = m.Clone()
+	}
+	z.Add(x, y)
+
+	var (
+		borrow uint64
+		tmp    Int
+	)
+	tmp[0], borrow = bits.Sub64(z[0], m[0], borrow)
+	tmp[1], borrow = bits.Sub64(z[1], m[1], borrow)
+	tmp[2], borrow = bits.Sub64(z[2], m[2], borrow)
+	tmp[3], borrow = bits.Sub64(z[3], m[3], borrow)
+	if borrow != 0 {
+		return z
+	}
+	return z.Set(&tmp)
 }
 
 // IAddMod adds x to z itself modulo m, modifying z in place, and returns z.

@@ -796,6 +796,100 @@ func BenchmarkAddMod(b *testing.B) {
 	b.Run("mod256/big", func(b *testing.B) { benchmarkAddModBig(b, &big256SamplesLt, &big256Samples) })
 }
 
+func BenchmarkAddModFallback(b *testing.B) {
+	b.Run("unreduced/uint64/uint256", func(b *testing.B) {
+		m := Int{0xfffffffffffffff1}
+		x := m
+		y := Int{1}
+		var z Int
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			z.AddMod(&x, &y, &m)
+		}
+	})
+
+	atModulus := func(b *testing.B, m Int) {
+		x, y := m, m
+		y[0]++
+		var z Int
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			z.AddMod(&x, &y, &m)
+		}
+	}
+	b.Run("at-modulus/mod64/uint256", func(b *testing.B) {
+		atModulus(b, Int{0xfffffffffffffff1})
+	})
+	b.Run("at-modulus/mod128/uint256", func(b *testing.B) {
+		atModulus(b, Int{0xfffffffffffffff1, 0xffffffffffffffff})
+	})
+	b.Run("at-modulus/mod192/uint256", func(b *testing.B) {
+		atModulus(b, Int{0xfffffffffffffff1, 0xffffffffffffffff, 0xffffffffffffffff})
+	})
+
+	division := func(b *testing.B, m Int) {
+		x := Int{0, 0, 0, 1 << 63}
+		y := Int{1}
+		var z Int
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			z.AddMod(&x, &y, &m)
+		}
+	}
+	b.Run("division/mod64/uint256", func(b *testing.B) {
+		division(b, Int{0xfffffffffffffff1})
+	})
+	b.Run("division/mod64-low-wide/uint256", func(b *testing.B) {
+		m := Int{1, 1}
+		x := Int{0, 1 << 63}
+		var z Int
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			z.AddMod(&x, &x, &m)
+		}
+	})
+	b.Run("division/mod128/uint256", func(b *testing.B) {
+		division(b, Int{0xffffffffffffffff, 0xfffffffffffffff1})
+	})
+	b.Run("division/mod192/uint256", func(b *testing.B) {
+		division(b, Int{0xffffffffffffffff, 0xffffffffffffffff, 0xfffffffffffffff1})
+	})
+
+	nearDouble := func(b *testing.B, m Int) {
+		var x, y, z Int
+		x.Add(&m, &m)
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			z.AddMod(&x, &y, &m)
+		}
+	}
+	b.Run("near-double/mod64/uint256", func(b *testing.B) {
+		nearDouble(b, Int{0xffffffffffffffff})
+	})
+	b.Run("near-double/mod128/uint256", func(b *testing.B) {
+		nearDouble(b, Int{0xffffffffffffffff, 0xffffffffffffffff})
+	})
+	b.Run("near-double/mod192/uint256", func(b *testing.B) {
+		nearDouble(b, Int{0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff})
+	})
+
+	b.Run("zero/uint256", func(b *testing.B) {
+		x := Int{0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff, 0xffffffffffffffff}
+		y := Int{1}
+		var z, m Int
+		b.ReportAllocs()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			z.AddMod(&x, &y, &m)
+		}
+	})
+}
+
 func BenchmarkMulMod(b *testing.B) {
 	benchmarkMulModUint256R := func(b *testing.B, factorsSamples, modSamples *[numSamples]Int) {
 		iter := (b.N + numSamples - 1) / numSamples
