@@ -1643,19 +1643,15 @@ func TestFloat64(t *testing.T) {
 		z := NewInt(1)
 		testFloat64(t, z.Lsh(z, i))
 	}
-	// 2^100 + 2^47 + 1 is just above a midpoint. Dropping the bits under
-	// the 52-bit field returns the lower float.
-	above := new(big.Int).Lsh(big.NewInt(1), 100)
-	above.Add(above, new(big.Int).Lsh(big.NewInt(1), 47))
-	above.Add(above, big.NewInt(1))
-	// 2^100 + 2^48 + 2^47 is an exact tie whose mantissa is odd.
-	tie := new(big.Int).Lsh(big.NewInt(1), 100)
-	tie.Add(tie, new(big.Int).Lsh(big.NewInt(1), 48))
-	tie.Add(tie, new(big.Int).Lsh(big.NewInt(1), 47))
-	for _, n := range []*big.Int{above, tie} {
-		z, overflow := FromBig(n)
-		if overflow {
-			t.Fatal("overflow")
+	for _, tc := range []string{
+		// 2^100 + 2^47 + 1 is just above a midpoint. Dropping the bits under
+		// the 52-bit field returns the lower float.
+		"0x10000000000000800000000001",
+		// 2^100 + 2^48 + 2^47 is an exact tie whose mantissa is odd.
+		"0x10000000000001800000000000"} {
+		z, err := FromHex(tc)
+		if err != nil {
+			t.Fatal(err)
 		}
 		testFloat64(t, z)
 	}

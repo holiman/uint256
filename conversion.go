@@ -167,10 +167,12 @@ func (z *Int) Float64() float64 {
 	// y[3] holds the top 64 bits of the significand with the leading 1
 	// already shifted out. The top 52 are the fraction. The next bit is
 	// the round bit, and anything below it is sticky.
-	frac := fraction >> 12
-	rest := fraction & 0xfff
-	round := rest&0x800 != 0
-	sticky := rest&0x7ff != 0 || y[2]|y[1]|y[0] != 0
+	var (
+		frac   = fraction >> 12
+		rest   = fraction & 0xfff
+		round  = rest&0x800 != 0
+		sticky = rest&0x7ff != 0 || y[2]|y[1]|y[0] != 0
+	)
 	if round && (sticky || frac&1 == 1) {
 		frac++
 	}
@@ -178,7 +180,6 @@ func (z *Int) Float64() float64 {
 		frac = 0
 		biased_exp++
 	}
-
 	return math.Float64frombits(biased_exp<<52 | frac)
 }
 
