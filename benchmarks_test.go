@@ -972,6 +972,93 @@ func BenchmarkMulDivOverflow(b *testing.B) {
 
 }
 
+type mulDivOverflowRemBenchmarkSample struct {
+	x, y      Int
+	quotient  Int
+	remainder Int
+	overflow  bool
+}
+
+func newMulDivOverflowRemBenchmarkSamples(d *Int) [numSamples]mulDivOverflowRemBenchmarkSample {
+	var samples [numSamples]mulDivOverflowRemBenchmarkSample
+	dBig := d.ToBig()
+	for i := range samples {
+		sample := &samples[i]
+		sample.x = int256Samples[i]
+		sample.y = int256Samples[(i*313+19)%numSamples]
+
+		product := new(big.Int).Mul(sample.x.ToBig(), sample.y.ToBig())
+		quotient, remainder := new(big.Int), new(big.Int)
+		quotient.QuoRem(product, dBig, remainder)
+		sample.overflow = sample.quotient.SetFromBig(quotient)
+		sample.remainder.SetFromBig(remainder)
+	}
+	return samples
+}
+
+func checkMulDivOverflowRemBenchmarkResult(b *testing.B, gotQuotient, gotRemainder *Int, gotOverflow bool, sample *mulDivOverflowRemBenchmarkSample) {
+	b.Helper()
+	if gotOverflow != sample.overflow || !gotQuotient.Eq(&sample.quotient) || !gotRemainder.Eq(&sample.remainder) {
+		b.Fatalf("got quotient=%x remainder=%x overflow=%v; want quotient=%x remainder=%x overflow=%v", gotQuotient, gotRemainder, gotOverflow, &sample.quotient, &sample.remainder, sample.overflow)
+	}
+}
+
+func benchmarkMulDivOverflowRemRaw(b *testing.B, d *Int, samples *[numSamples]mulDivOverflowRemBenchmarkSample) {
+	var quotient, remainder Int
+	for i := range samples {
+		sample := &samples[i]
+		_, _, overflow := quotient.MulDivOverflowRem(&sample.x, &sample.y, d, &remainder)
+		checkMulDivOverflowRemBenchmarkResult(b, &quotient, &remainder, overflow, sample)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	var overflow bool
+	for i := 0; i < b.N; i++ {
+		sample := &samples[i%len(samples)]
+		_, _, overflow = quotient.MulDivOverflowRem(&sample.x, &sample.y, d, &remainder)
+	}
+	b.StopTimer()
+	checkMulDivOverflowRemBenchmarkResult(b, &quotient, &remainder, overflow, &samples[(b.N-1)%len(samples)])
+}
+
+func benchmarkMulDivOverflowRemPlan(b *testing.B, plan *MulDivPlan, samples *[numSamples]mulDivOverflowRemBenchmarkSample) {
+	var quotient, remainder Int
+	for i := range samples {
+		sample := &samples[i]
+		_, _, overflow := quotient.MulDivOverflowRemWithPlan(&sample.x, &sample.y, plan, &remainder)
+		checkMulDivOverflowRemBenchmarkResult(b, &quotient, &remainder, overflow, sample)
+	}
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	var overflow bool
+	for i := 0; i < b.N; i++ {
+		sample := &samples[i%len(samples)]
+		_, _, overflow = quotient.MulDivOverflowRemWithPlan(&sample.x, &sample.y, plan, &remainder)
+	}
+	b.StopTimer()
+	checkMulDivOverflowRemBenchmarkResult(b, &quotient, &remainder, overflow, &samples[(b.N-1)%len(samples)])
+}
+
+func BenchmarkMulDivOverflowRemWithPlan(b *testing.B) {
+	d := MustFromHex("0xd6c5b4a3928170ffeeddccbbaa99887766554433221100ffeeddccbbaa998877")
+	plan := NewMulDivPlan(d)
+	samples := newMulDivOverflowRemBenchmarkSamples(d)
+
+	b.Run("raw", func(b *testing.B) { benchmarkMulDivOverflowRemRaw(b, d, &samples) })
+	b.Run("plan", func(b *testing.B) { benchmarkMulDivOverflowRemPlan(b, plan, &samples) })
+}
+
+// BenchmarkMulDivOverflowRemFourWord uses a four-word divisor just above 2^192.
+// This makes full-width products exercise multiword quotient and overflow cases.
+func BenchmarkMulDivOverflowRemFourWord(b *testing.B) {
+	d := MustFromHex("0x1000000000000000ffffffffffffffffffffffffffffffffffffffffffffffff")
+	samples := newMulDivOverflowRemBenchmarkSamples(d)
+
+	benchmarkMulDivOverflowRemRaw(b, d, &samples)
+}
+
 func BenchmarkHashTreeRoot(b *testing.B) {
 	var (
 		z   = &Int{1, 2, 3, 4}
