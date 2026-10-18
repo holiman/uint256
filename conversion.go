@@ -164,7 +164,23 @@ func (z *Int) Float64() float64 {
 	// --------
 	// 64 bits
 
-	return math.Float64frombits(biased_exp<<52 | fraction>>12)
+	// y[3] holds the top 64 bits of the significand with the leading 1
+	// already shifted out. The top 52 are the fraction. The next bit is
+	// the round bit, and anything below it is sticky.
+	var (
+		frac   = fraction >> 12
+		rest   = fraction & 0xfff
+		round  = rest&0x800 != 0
+		sticky = rest&0x7ff != 0 || y[2]|y[1]|y[0] != 0
+	)
+	if round && (sticky || frac&1 == 1) {
+		frac++
+	}
+	if frac>>52 != 0 {
+		frac = 0
+		biased_exp++
+	}
+	return math.Float64frombits(biased_exp<<52 | frac)
 }
 
 // SetFromHex sets z from the given string, interpreted as a hexadecimal number.

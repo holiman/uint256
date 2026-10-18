@@ -91,21 +91,28 @@ func FuzzUnaryOperations(f *testing.F) {
 
 func TestOtherOperations(t *testing.T) {
 	for _, arg := range unTestCases {
-		x := MustFromHex(arg)
-		y := MustFromHex("0x8000000000000000000000000000000000000000000000000000000000000000")
+		{ // Testing Sign
+			x := MustFromHex(arg)
+			y := MustFromHex("0x8000000000000000000000000000000000000000000000000000000000000000")
 
-		have := x.Sign()
-		want := 0
-		if x.IsZero() {
-			want = 0
-		} else if x.Cmp(y) >= 0 {
-			// x is "negative"
-			want = -1
-		} else {
-			want = 1
+			have := x.Sign()
+			want := 0
+			if x.IsZero() {
+				want = 0
+			} else if x.Cmp(y) >= 0 {
+				// x is "negative"
+				want = -1
+			} else {
+				want = 1
+			}
+			if have != want {
+				t.Fatalf("Sign( %v )\nwant : %#x\nhave : %#x\n", arg, want, have)
+			}
 		}
-		if have != want {
-			t.Fatalf("Sign( %v )\nwant : %#x\nhave : %#x\n", arg, want, have)
+		{ // Testing Float64
+			if z, err := FromHex(arg); err == nil {
+				testFloat64(t, z)
+			}
 		}
 	}
 }
