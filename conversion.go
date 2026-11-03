@@ -106,6 +106,9 @@ func (z *Int) IntoBig(b **big.Int) {
 
 // FromBig is a convenience-constructor from big.Int.
 // Returns a new Int and whether overflow occurred.
+// The conversion is the same as SetFromBig: a negative b is converted to its
+// two's complement modulo 2^256 (e.g. -1 becomes 2^256-1), and overflow is
+// reported only when |b| does not fit in 256 bits.
 // OBS: If b is `nil`, this method returns `nil, false`
 func FromBig(b *big.Int) (*Int, bool) {
 	if b == nil {
@@ -117,7 +120,9 @@ func FromBig(b *big.Int) (*Int, bool) {
 }
 
 // MustFromBig is a convenience-constructor from big.Int.
-// Returns a new Int and panics if overflow occurred.
+// Returns a new Int and panics if overflow occurred, i.e. if |b| does not fit
+// in 256 bits. A negative b that fits does not panic: it is converted to its
+// two's complement modulo 2^256, as in SetFromBig.
 // OBS: If b is `nil`, this method does _not_ panic, but
 // instead returns `nil`
 func MustFromBig(b *big.Int) *Int {
@@ -256,7 +261,10 @@ func (z *Int) UnmarshalText(input []byte) error {
 }
 
 // SetFromBig converts a big.Int to Int and sets the value to z.
-// TODO: Ensure we have sufficient testing, esp for negative bigints.
+// It returns whether overflow occurred, which is the case iff |b| >= 2^256.
+// The result is b modulo 2^256: the low 256 bits of |b|, negated (two's
+// complement) when b is negative. So -1 becomes 2^256-1 without overflow, and
+// a negative b with |b| >= 2^256 reports overflow and keeps -(|b| mod 2^256).
 func (z *Int) SetFromBig(b *big.Int) bool {
 	z.Clear()
 	words := b.Bits()
