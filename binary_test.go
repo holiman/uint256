@@ -193,6 +193,10 @@ func Test10KRandomBinaryOperations(t *testing.T) {
 }
 
 func FuzzBinaryOperations(f *testing.F) {
+	for _, tc := range binTestCases {
+		x, y := MustFromHex(tc[0]), MustFromHex(tc[1])
+		f.Add(x[0], x[1], x[2], x[3], y[0], y[1], y[2], y[3])
+	}
 	f.Fuzz(func(t *testing.T, x0, x1, x2, x3, y0, y1, y2, y3 uint64) {
 		x := Int{x0, x1, x2, x3}
 		y := Int{y0, y1, y2, y3}
