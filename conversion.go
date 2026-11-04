@@ -734,7 +734,10 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 // - Not quoted string: only decimal
 func (z *Int) UnmarshalJSON(input []byte) error {
 	if bytes.Equal(input, []byte("null")) {
-		z.Clear()
+	// Ignore null, like in the main JSON package and big.Int reference code 
+	if string(text) == "null" {
+		return nil
+	}
 		return nil
 	}
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
