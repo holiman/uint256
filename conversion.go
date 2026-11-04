@@ -5,7 +5,6 @@
 package uint256
 
 import (
-	"bytes"
 	"database/sql"
 	"database/sql/driver"
 	"encoding"
@@ -733,11 +732,8 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 // - Quoted string: either hexadecimal OR decimal
 // - Not quoted string: only decimal
 func (z *Int) UnmarshalJSON(input []byte) error {
-	if bytes.Equal(input, []byte("null")) {
-	// Ignore null, like in the main JSON package and big.Int reference code 
-	if string(text) == "null" {
-		return nil
-	}
+	// Ignore null, like in the main JSON package and big.Int reference code
+	if string(input) == "null" {
 		return nil
 	}
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {

@@ -1290,11 +1290,12 @@ func TestDecode(t *testing.T) {
 		t.Fatal("Expected 1")
 	}
 
+	// Ignore null without modifying the receiver, matching big.Int.
 	jsonValue := NewInt(1)
 	if err := json.Unmarshal([]byte(`null`), jsonValue); err != nil {
 		t.Fatalf("Expected no error, got %v", err)
-	} else if !jsonValue.IsZero() {
-		t.Fatalf("Expected zero, got %v", jsonValue)
+	} else if jsonValue.Uint64() != 1 {
+		t.Fatalf("Expected unchanged value 1, got %v", jsonValue)
 	}
 }
 
