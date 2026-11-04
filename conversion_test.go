@@ -138,8 +138,16 @@ func TestScanScientific(t *testing.T) {
 			in:  "14e30",
 			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
 		},
+		{
+			in:  "14E30",
+			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
+		},
 		{ // 0xdd15fe86affad800000000000000000000000000000000000000000000000000
 			in:  "1e77",
+			exp: new(Int).Mul(NewInt(1), new(Int).Exp(NewInt(10), NewInt(77))),
+		},
+		{ // 0xdd15fe86affad800000000000000000000000000000000000000000000000000
+			in:  "1E77",
 			exp: new(Int).Mul(NewInt(1), new(Int).Exp(NewInt(10), NewInt(77))),
 		},
 		{ // 0x8a2dbf142dfcc8000000000000000000000000000000000000000000000000000
