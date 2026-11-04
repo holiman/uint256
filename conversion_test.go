@@ -222,6 +222,45 @@ func TestFromBigOverflow(t *testing.T) {
 	MustFromBig(b)
 }
 
+func TestFromBigNegative(t *testing.T) {
+	two256 := new(big.Int).Lsh(big.NewInt(1), 256)
+	for _, tc := range []struct {
+		in       string // decimal
+		overflow bool
+	}{
+		{"-1", false},
+		{"-2", false},
+		{"-57896044618658097711785492504343953926634992332820282019728792003956564819968", false},  // -2^255
+		{"-115792089237316195423570985008687907853269984665640564039457584007913129639935", false}, // -(2^256-1)
+		{"-115792089237316195423570985008687907853269984665640564039457584007913129639936", true},  // -2^256
+		{"-115792089237316195423570985008687907853269984665640564039457584007913129639937", true},  // -(2^256+1)
+	} {
+		b, ok := new(big.Int).SetString(tc.in, 10)
+		if !ok {
+			t.Fatalf("bad test input %s", tc.in)
+		}
+		// The documented result: b modulo 2^256 (two's complement for negatives).
+		want := new(big.Int).Mod(b, two256)
+		z, overflow := FromBig(b)
+		if overflow != tc.overflow {
+			t.Errorf("FromBig(%s): overflow %v, want %v", tc.in, overflow, tc.overflow)
+		}
+		if have := z.ToBig(); have.Cmp(want) != 0 {
+			t.Errorf("FromBig(%s): have %x, want %x", tc.in, have, want)
+		}
+		var z2 Int
+		if overflow := z2.SetFromBig(b); overflow != tc.overflow {
+			t.Errorf("SetFromBig(%s): overflow %v, want %v", tc.in, overflow, tc.overflow)
+		}
+		if !z2.Eq(z) {
+			t.Errorf("SetFromBig(%s) = %x, FromBig = %x", tc.in, &z2, z)
+		}
+		if panicked := causesPanic(func() { MustFromBig(b) }); panicked != tc.overflow {
+			t.Errorf("MustFromBig(%s): panicked %v, want %v", tc.in, panicked, tc.overflow)
+		}
+	}
+}
+
 func TestToBig(t *testing.T) {
 	var uint256Nil *Int
 	if bigNil := uint256Nil.ToBig(); bigNil != nil {
