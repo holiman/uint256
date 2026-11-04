@@ -154,6 +154,34 @@ func TestBinaryOperations(t *testing.T) {
 	}
 }
 
+func TestDivPowerOfTwo(t *testing.T) {
+	div := lookupBinary("Div")
+	xs := []*Int{
+		NewInt(0), NewInt(7),
+		MustFromHex("0x10000000000000000"),
+		MustFromHex("0x12cbafcee8f60f9f3fa308c90fde8d298772ffea667aa6bc109d5c661e7929a5"),
+		new(Int).SetAllOne(),
+		// x/(2^n+r) differs from x>>n only when x has few low bits set
+		MustFromHex("0x8000000000000000000000000000000000000000000000000000000000000000"),
+	}
+	one := NewInt(1)
+	two64 := new(Int).Lsh(one, 64)
+	two128 := new(Int).Lsh(one, 128)
+	for n := uint(0); n < 256; n++ {
+		p := new(Int).Lsh(one, n)
+		// 2^n, and neighbours that are not powers of two but pass the low-word check
+		ys := []*Int{
+			p, new(Int).AddUint64(p, 1), new(Int).Sub(p, one),
+			new(Int).Add(p, two64), new(Int).Add(p, two128), new(Int).Add(p, new(Int).Rsh(p, 1)),
+		}
+		for _, y := range ys {
+			for _, x := range xs {
+				checkBinaryOperation(t, div.name, div.u256Fn, div.bigFn, *x, *y)
+			}
+		}
+	}
+}
+
 func Test10KRandomBinaryOperations(t *testing.T) {
 	for _, tc := range binaryOpFuncs {
 		for i := 0; i < 10000; i++ {

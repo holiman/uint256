@@ -649,6 +649,26 @@ func (z *Int) Div(x, y *Int) *Int {
 	if x.IsUint64() {
 		return z.SetUint64(x.Uint64() / y.Uint64())
 	}
+	// Division by 2^n is x >> n. The low-word check is false for most other
+	// divisors, so they pay one AND and one branch.
+	if y[0]&(y[0]-1) == 0 {
+		switch {
+		case y[3] != 0:
+			if y[0]|y[1]|y[2]|y[3]&(y[3]-1) == 0 {
+				return z.Rsh(x, 192+uint(bits.TrailingZeros64(y[3])))
+			}
+		case y[2] != 0:
+			if y[0]|y[1]|y[2]&(y[2]-1) == 0 {
+				return z.Rsh(x, 128+uint(bits.TrailingZeros64(y[2])))
+			}
+		case y[1] != 0:
+			if y[0]|y[1]&(y[1]-1) == 0 {
+				return z.Rsh(x, 64+uint(bits.TrailingZeros64(y[1])))
+			}
+		default:
+			return z.Rsh(x, uint(bits.TrailingZeros64(y[0])))
+		}
+	}
 
 	// At this point, we know
 	// x/y ; x > y > 0

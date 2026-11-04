@@ -684,17 +684,26 @@ func BenchmarkDiv(b *testing.B) {
 			}
 		}
 	}
+	var pow2Samples [numSamples]Int
+	var bigPow2Samples [numSamples]big.Int
+	for i := range pow2Samples {
+		// 2^n <= x, with n spread over all four words
+		pow2Samples[i].Lsh(NewInt(1), uint(i)%uint(int256Samples[i].BitLen()))
+		bigPow2Samples[i] = *pow2Samples[i].ToBig()
+	}
 
 	b.Run("small/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int32Samples, &int32SamplesLt) })
 	b.Run("mod64/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int64Samples) })
 	b.Run("mod128/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int128Samples) })
 	b.Run("mod192/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int192Samples) })
 	b.Run("mod256/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &int256SamplesLt) })
+	b.Run("pow2/uint256", func(b *testing.B) { benchmarkDivUint256(b, &int256Samples, &pow2Samples) })
 	b.Run("small/big", func(b *testing.B) { benchmarkDivBig(b, &big32Samples, &big32SamplesLt) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big64Samples) })
 	b.Run("mod128/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big128Samples) })
 	b.Run("mod192/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big192Samples) })
 	b.Run("mod256/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &big256SamplesLt) })
+	b.Run("pow2/big", func(b *testing.B) { benchmarkDivBig(b, &big256Samples, &bigPow2Samples) })
 }
 
 func BenchmarkMod(b *testing.B) {
