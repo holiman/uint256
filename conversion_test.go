@@ -1648,7 +1648,15 @@ func TestFloat64(t *testing.T) {
 		// the 52-bit field returns the lower float.
 		"0x10000000000000800000000001",
 		// 2^100 + 2^48 + 2^47 is an exact tie whose mantissa is odd.
-		"0x10000000000001800000000000"} {
+		"0x10000000000001800000000000",
+		// 2^64 + 2049 and 2^64 + 4095 are just above the 2^64 boundary, where
+		// the uint64 fast path stops; both round up to 2^64 + 2^12.
+		"0x10000000000000801",
+		"0x10000000000000fff",
+		// 2^100 - 1 and 2^256 - 1 have an all-ones fraction: rounding up
+		// carries into the exponent (2^100 and 2^256).
+		"0xfffffffffffffffffffffffff",
+		"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"} {
 		z, err := FromHex(tc)
 		if err != nil {
 			t.Fatal(err)
