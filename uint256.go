@@ -879,6 +879,10 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 // - and whether overflow occurred in multiply process (result does not fit to 256-bit).
 // computes 512-bit multiplication and 512 by 256 division.
 func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
+	if z == m {
+		// Both are returned, so un-alias them as DivMod does.
+		m = new(Int)
+	}
 	if x.IsZero() || y.IsZero() || d.IsZero() {
 		m.Clear()
 		return z.Clear(), m, false
@@ -886,11 +890,14 @@ func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
 	var p [8]uint64
 	umul(x, y, &p)
 
-	var quot [8]uint64
-	m.Clear()
-	udivrem(quot[:], p[:], d, m)
+	var (
+		quot [8]uint64
+		rem  Int
+	)
+	udivrem(quot[:], p[:], d, &rem)
 
 	z[0], z[1], z[2], z[3] = quot[0], quot[1], quot[2], quot[3]
+	m.Set(&rem)
 
 	return z, m, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
 }

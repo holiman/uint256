@@ -409,6 +409,38 @@ func TestRandomMulDivOverflowRem(t *testing.T) {
 	}
 }
 
+func TestMulDivOverflowRemAliasing(t *testing.T) {
+	cases := append([][3]string{
+		// A two-word d leaves the upper words of the remainder unwritten by udivrem.
+		{"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x2", "0x10000000000000001"},
+	}, ternTestCases...)
+	for _, inputs := range cases {
+		x, y, d := MustFromHex(inputs[0]), MustFromHex(inputs[1]), MustFromHex(inputs[2])
+		wantQ, wantOverflow := new(Int).MulDivOverflow(x, y, d)
+		wantR := new(Int).MulMod(x, y, d)
+		for i, alias := range []func(x, y, d *Int) (z, m *Int){
+			func(x, _, _ *Int) (*Int, *Int) { return x, new(Int) },
+			func(_, y, _ *Int) (*Int, *Int) { return y, new(Int) },
+			func(_, _, d *Int) (*Int, *Int) { return d, new(Int) },
+			func(x, _, _ *Int) (*Int, *Int) { return new(Int), x },
+			func(_, y, _ *Int) (*Int, *Int) { return new(Int), y },
+			func(_, _, d *Int) (*Int, *Int) { return new(Int), d },
+			func(_, _, _ *Int) (*Int, *Int) { z := new(Int); return z, z },
+		} {
+			x, y, d := x.Clone(), y.Clone(), d.Clone()
+			z, m := alias(x, y, d)
+			q, r, overflow := z.MulDivOverflowRem(x, y, d, m)
+			if q != z || (z != m && r != m) {
+				t.Fatalf("case %d: unexpected pointers returned", i)
+			}
+			if !q.Eq(wantQ) || !r.Eq(wantR) || overflow != wantOverflow {
+				t.Fatalf("case %d: MulDivOverflowRem(%v)\nwant q=%#x r=%#x overflow=%v\nhave q=%#x r=%#x overflow=%v",
+					i, inputs, wantQ, wantR, wantOverflow, q, r, overflow)
+			}
+		}
+	}
+}
+
 func TestRandomAbs(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1 := randHighNums()
