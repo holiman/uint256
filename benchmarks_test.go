@@ -1167,3 +1167,39 @@ func BenchmarkFormat(b *testing.B) {
 	b.Run("%#x/large", func(b *testing.B) { benchmarkFormat(b, "%#x", &int256Samples) })
 	b.Run("%10d/large", func(b *testing.B) { benchmarkFormat(b, "%10d", &int256Samples) })
 }
+
+// expModBinary is the plain left-to-right binary loop that ExpMod is measured against.
+func expModBinary(z, base, exponent, m *Int) *Int {
+	mu := Reciprocal(m)
+	var b, res Int
+	b.Mod(base, m)
+	res.SetOne()
+	for i := exponent.BitLen() - 1; i >= 0; i-- {
+		res.MulModWithReciprocal(&res, &res, m, &mu)
+		if (exponent[i/64]>>uint(i%64))&1 == 1 {
+			res.MulModWithReciprocal(&res, &b, m, &mu)
+		}
+	}
+	return z.Set(&res)
+}
+
+func BenchmarkExpMod(b *testing.B) {
+	m := MustFromHex("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f")
+	base := MustFromHex("0x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+	full := MustFromHex("0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2d")
+	for _, bitLen := range []int{8, 32, 64, 128, 256} {
+		exponent := new(Int).Rsh(full, uint(256-bitLen))
+		b.Run(fmt.Sprintf("bits=%d/ExpMod", bitLen), func(b *testing.B) {
+			var z Int
+			for i := 0; i < b.N; i++ {
+				z.ExpMod(base, exponent, m)
+			}
+		})
+		b.Run(fmt.Sprintf("bits=%d/binary", bitLen), func(b *testing.B) {
+			var z Int
+			for i := 0; i < b.N; i++ {
+				expModBinary(&z, base, exponent, m)
+			}
+		})
+	}
+}
