@@ -1356,6 +1356,89 @@ func (z *Int) Byte(n *Int) *Int {
 	return z
 }
 
+// ExpMod sets z = base**exponent mod m, and returns z.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
+func (z *Int) ExpMod(base, exponent, m *Int) *Int {
+	if m.IsZero() || (m.IsUint64() && m[0] == 1) {
+		return z.Clear()
+	}
+	n := exponent.BitLen()
+	if n == 0 {
+		return z.SetOne()
+	}
+	var (
+		mod = *m
+		e   = *exponent
+		mu  = Reciprocal(&mod)
+		b   Int
+	)
+	b.Mod(base, &mod)
+	if b.IsZero() {
+		return z.Clear()
+	}
+	if n <= 32 {
+		res := b
+		for i := n - 2; i >= 0; i-- {
+			res.MulModWithReciprocal(&res, &res, &mod, &mu)
+			if (e[0]>>uint(i))&1 == 1 {
+				res.MulModWithReciprocal(&res, &b, &mod, &mu)
+			}
+		}
+		return z.Set(&res)
+	}
+	res := expModWindow(&b, &e, &mod, &mu, n)
+	return z.Set(&res)
+}
+
+// expModWindow computes b**e mod m for an exponent of n > 32 bits with a left-to-right sliding window: each
+// window of up to w bits that ends in a set bit costs one multiplication by a precomputed odd power of b.
+func expModWindow(b, e, m *Int, mu *[5]uint64, n int) Int {
+	w := 3
+	if n > 80 {
+		w = 4
+	}
+	var (
+		odd [8]Int // odd[k] = b**(2k+1)
+		b2  Int
+	)
+	odd[0] = *b
+	b2.MulModWithReciprocal(b, b, m, mu)
+	for k := 1; k < 1<<(w-1); k++ {
+		odd[k].MulModWithReciprocal(&odd[k-1], &b2, m, mu)
+	}
+	bit := func(i int) uint64 { return (e[i/64] >> uint(i%64)) & 1 }
+	var res Int
+	started := false
+	for i := n - 1; i >= 0; {
+		if bit(i) == 0 {
+			res.MulModWithReciprocal(&res, &res, m, mu) // the top bit is set, so res is started here
+			i--
+			continue
+		}
+		j := i - w + 1
+		if j < 0 {
+			j = 0
+		}
+		for bit(j) == 0 {
+			j++
+		}
+		v := 0
+		for k := i; k >= j; k-- {
+			v = v<<1 | int(bit(k))
+			if started {
+				res.MulModWithReciprocal(&res, &res, m, mu)
+			}
+		}
+		if started {
+			res.MulModWithReciprocal(&res, &odd[v>>1], m, mu)
+		} else {
+			res, started = odd[v>>1], true
+		}
+		i = j - 1
+	}
+	return res
+}
+
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	var (

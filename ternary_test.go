@@ -31,6 +31,7 @@ var ternaryOpFuncs = []struct {
 		mu := Reciprocal(mod)
 		return z.Set(x.Clone().IMulModWithReciprocal(y, mod, &mu))
 	}, bigMulMod},
+	{"ExpMod", (*Int).ExpMod, bigExpMod},
 	{"DivModZ", divModZ, bigDivModZ},
 	{"DivModM", divModM, bigDivModM},
 }
@@ -126,6 +127,13 @@ func bigMulMod(result, x, y, mod *big.Int) *big.Int {
 		return result.SetUint64(0)
 	}
 	return result.Mod(result.Mul(x, y), mod)
+}
+
+func bigExpMod(result, base, exponent, mod *big.Int) *big.Int {
+	if mod.Sign() == 0 {
+		return result.SetUint64(0)
+	}
+	return result.Mod(result.Exp(base, exponent, mod), mod)
 }
 
 func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
