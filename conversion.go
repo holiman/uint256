@@ -756,6 +756,10 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 // - Quoted string: either hexadecimal OR decimal
 // - Not quoted string: only decimal
 func (z *Int) UnmarshalJSON(input []byte) error {
+	// Ignore null, like in the main JSON package and big.Int reference code
+	if string(input) == "null" {
+		return nil
+	}
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
 		// if not quoted, it must be decimal
 		return z.SetFromDecimal(string(input))
