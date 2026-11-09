@@ -133,7 +133,7 @@ func bigExpMod(result, base, exponent, mod *big.Int) *big.Int {
 	if mod.Sign() == 0 {
 		return result.SetUint64(0)
 	}
-	return result.Mod(result.Exp(base, exponent, mod), mod)
+	return result.Exp(base, exponent, mod)
 }
 
 func (z *Int) mulModWithReciprocalWrapper(x, y, mod *Int) *Int {
