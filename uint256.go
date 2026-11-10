@@ -537,34 +537,32 @@ func udivremBy1(quot, u []uint64, d uint64) (rem uint64) {
 // The quotient is stored in provided quot - len(u)-len(d) words.
 // Updates u to contain the remainder - len(d) words.
 func udivremKnuth(quot, u, d []uint64) {
-	dh := d[len(d)-1]
-	dl := d[len(d)-2]
-	reciprocal := reciprocal2by1(dh)
+	n := len(d)
+	dh := d[n-1]
+	dl := d[n-2]
+	reciprocal := reciprocal3by2(dh, dl)
 
-	for j := len(u) - len(d) - 1; j >= 0; j-- {
-		u2 := u[j+len(d)]
-		u1 := u[j+len(d)-1]
-		u0 := u[j+len(d)-2]
+	for j := len(u) - n - 1; j >= 0; j-- {
+		u2 := u[j+n]
+		u1 := u[j+n-1]
+		u0 := u[j+n-2]
 
-		var qhat, rhat uint64
-		if u2 >= dh { // Division overflows.
+		var qhat uint64
+		if u2 == dh && u1 == dl { // Division overflows.
 			qhat = ^uint64(0)
-			// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+			subMulTo(u[j:], d, qhat)
 		} else {
-			qhat, rhat = udivrem2by1(u2, u1, dh, reciprocal)
-			ph, pl := bits.Mul64(qhat, dl)
-			if ph > rhat || (ph == rhat && pl > u0) {
-				qhat--
-				// TODO: Add "qhat one to big" adjustment (not needed for correctness, but helps avoiding "add back" case).
+			var r1, r0, borrow uint64
+			qhat, r1, r0 = udivrem3by2(u2, u1, u0, dh, dl, reciprocal)
+			if n > 2 {
+				borrow = subMulTo(u[j:], d[:n-2], qhat)
 			}
-		}
-
-		// Multiply and subtract.
-		borrow := subMulTo(u[j:], d, qhat)
-		u[j+len(d)] = u2 - borrow
-		if u2 < borrow { // Too much subtracted, add back.
-			qhat--
-			u[j+len(d)] += addTo(u[j:], d)
+			u[j+n-2], borrow = bits.Sub64(r0, borrow, 0)
+			u[j+n-1], borrow = bits.Sub64(r1, 0, borrow)
+			if borrow != 0 { // Too much subtracted, add back.
+				qhat--
+				addTo(u[j:], d)
+			}
 		}
 
 		quot[j] = qhat // Store quotient digit.
