@@ -1400,14 +1400,16 @@ func (z *Int) ExpMod(base, exponent, m *Int) *Int {
 	if n == 0 {
 		return z.SetOne()
 	}
-	// Short moduli and exponents do not repay the reciprocal and the final Mod of the shifted modulus below.
-	if bl := m.BitLen(); m[3] == 0 && (bl <= 32 || n < 5 || (bl <= 64 && n <= 17)) {
-		var b, res Int
+	bit := func(i int) uint64 { return (exponent[i/64] >> uint(i%64)) & 1 }
+	// Short moduli and short exponents do not repay the reciprocal and the final Mod of the shifted
+	// modulus below, and a small base starts with cheap multiplications that the shift would lose.
+	if bl := m.BitLen(); m[3] == 0 && (bl <= 32 || n < 5 || (n <= 17 && (bl <= 64 || 2*base.BitLen() <= bl))) {
+		var b Int
 		b.Mod(base, m)
-		res = b
+		res := b
 		for i := n - 2; i >= 0; i-- {
 			res.MulMod(&res, &res, m)
-			if (exponent[i/64]>>uint(i%64))&1 == 1 {
+			if bit(i) == 1 {
 				res.MulMod(&res, &b, m)
 			}
 		}
@@ -1443,7 +1445,6 @@ func (z *Int) ExpMod(base, exponent, m *Int) *Int {
 	}
 	// Left-to-right sliding window: each window of up to w bits ends in a set bit
 	// and costs one multiplication by a precomputed odd power of base.
-	bit := func(i int) uint64 { return (exponent[i/64] >> uint(i%64)) & 1 }
 	started := false
 	for i := n - 1; i >= 0; {
 		if bit(i) == 0 {
