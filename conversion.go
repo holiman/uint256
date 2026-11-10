@@ -849,6 +849,9 @@ func (dst *Int) scanScientificFromString(src string) error {
 	if err := exp.SetFromDecimal(src[(idx + 1):]); err != nil {
 		return err
 	}
+	if dst.IsZero() { // zero times any power of ten is zero
+		return nil
+	}
 	if exp.GtUint64(77) { // 10**78 is larger than 2**256
 		return ErrBig256Range
 	}

@@ -155,6 +155,30 @@ func TestScanScientific(t *testing.T) {
 			err: ErrBig256Range.Error(),
 		},
 		{
+			in:  "0e77",
+			exp: new(Int),
+		},
+		{
+			in:  "0e78",
+			exp: new(Int),
+		},
+		{
+			in:  "0E100",
+			exp: new(Int),
+		},
+		{
+			in:  "00e25352",
+			exp: new(Int),
+		},
+		{
+			in:  "0ex",
+			err: `strconv.ParseUint: parsing "x": invalid syntax`,
+		},
+		{
+			in:  "0e",
+			err: "EOF",
+		},
+		{
 			in:  "1455522523e31",
 			exp: new(Int).Mul(NewInt(1455522523), new(Int).Exp(NewInt(10), NewInt(31))),
 		},
