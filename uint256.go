@@ -1358,6 +1358,7 @@ func (z *Int) Byte(n *Int) *Int {
 
 // ExpMod sets z = base**exponent mod m, and returns z.
 // If m == 0, z is set to 0 (OBS: differs from the big.Int)
+// It is not a cryptographically constant-time operation.
 func (z *Int) ExpMod(base, exponent, m *Int) *Int {
 	if m.LtUint64(2) {
 		return z.Clear()
@@ -1366,7 +1367,7 @@ func (z *Int) ExpMod(base, exponent, m *Int) *Int {
 	if n == 0 {
 		return z.SetOne()
 	}
-	// Exponents up to 65537 stay on the binary loop; the 8-entry table pays off above 80 bits.
+	// Exponents up to 17 bits, which includes 65537, stay on the binary loop; the 8-entry table pays off above 80 bits.
 	w := 1
 	if n > 80 {
 		w = 4

@@ -121,6 +121,7 @@ var (
 		{"0x1", "0x1", "0x8000000000000000000000000000000043030303000000000"},
 		{"0x1", "0x1", "0x8000000000000000000000000000000003030303030303030"},
 		{"0x2", "0x0", "0x3"},
+		{"0x2", "0x0", "0x1"},
 		{"0x2", "0x1", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
 		{"0x2", "0x3", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
 		{"0x123456789abcdef", "0x10001", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
