@@ -150,6 +150,8 @@ func TestReciprocal3by2(t *testing.T) {
 			check(d1|1<<63, d0)
 		}
 	}
+	check(0x80000001e18a683d, 0x9392ccfd43912ab4)
+	check(0x80000c697f483929, 0xbaf2bb0a60500fc6)
 	for i := 0; i < 10000; i++ {
 		_, f := randNums()
 		check(f[1]|1<<63, f[0])

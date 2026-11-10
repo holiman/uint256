@@ -19,14 +19,9 @@ func reciprocal3by2(d1, d0 uint64) uint64 {
 	ph, pl := bits.Mul64(v, d0)
 	if r < ph {
 		v--
-	}
-	var carry uint64
-	if d0 != 0 {
-		carry = 1
-	}
-	s, c := bits.Add64(r, d1, carry)
-	if c == 0 && (s < ph || (s == ph && d0-1 < pl)) {
-		v--
+		if s, c := bits.Add64(r, d1, 1); c == 0 && (s < ph || (s == ph && d0-1 < pl)) {
+			v--
+		}
 	}
 	return v
 }
