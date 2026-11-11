@@ -1358,6 +1358,71 @@ func (z *Int) Byte(n *Int) *Int {
 	return z
 }
 
+// ExpMod sets z = base**exponent mod m, and returns z.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
+// It is not a cryptographically constant-time operation.
+func (z *Int) ExpMod(base, exponent, m *Int) *Int {
+	if m.LtUint64(2) {
+		return z.Clear()
+	}
+	n := exponent.BitLen()
+	if n == 0 {
+		return z.SetOne()
+	}
+	// Exponents up to 17 bits, which includes 65537, stay on the binary loop; the 8-entry table pays off above 80 bits.
+	w := 1
+	if n > 80 {
+		w = 4
+	} else if n > 17 {
+		w = 3
+	}
+	var (
+		mu  = Reciprocal(m)
+		odd [8]Int // odd[k] = base**(2k+1)
+		res Int
+	)
+	odd[0].Mod(base, m)
+	if w > 1 {
+		var b2 Int
+		b2.MulModWithReciprocal(&odd[0], &odd[0], m, &mu)
+		for k := 1; k < 1<<(w-1); k++ {
+			odd[k].MulModWithReciprocal(&odd[k-1], &b2, m, &mu)
+		}
+	}
+	// Left-to-right sliding window: each window of up to w bits ends in a set bit
+	// and costs one multiplication by a precomputed odd power of base.
+	bit := func(i int) uint64 { return (exponent[i/64] >> uint(i%64)) & 1 }
+	started := false
+	for i := n - 1; i >= 0; {
+		if bit(i) == 0 {
+			res.MulModWithReciprocal(&res, &res, m, &mu) // the top bit is set, so res is started here
+			i--
+			continue
+		}
+		j := i - w + 1
+		if j < 0 {
+			j = 0
+		}
+		for bit(j) == 0 {
+			j++
+		}
+		v := 0
+		for k := i; k >= j; k-- {
+			v = v<<1 | int(bit(k))
+			if started {
+				res.MulModWithReciprocal(&res, &res, m, &mu)
+			}
+		}
+		if started {
+			res.MulModWithReciprocal(&res, &odd[v>>1], m, &mu)
+		} else {
+			res, started = odd[v>>1], true
+		}
+		i = j - 1
+	}
+	return z.Set(&res)
+}
+
 // Exp sets z = base**exponent mod 2**256, and returns z.
 func (z *Int) Exp(base, exponent *Int) *Int {
 	var (
