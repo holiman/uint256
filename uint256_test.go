@@ -441,6 +441,36 @@ func TestMulDivOverflowRemAliasing(t *testing.T) {
 	}
 }
 
+func TestMulDivOverflowSemantics(t *testing.T) {
+	two255 := new(Int).Lsh(NewInt(1), 255)
+	for i, tc := range []struct {
+		x, y, d     *Int
+		q, r        *Int
+		overflow    bool
+		description string
+	}{
+		{two255, NewInt(2), NewInt(2), two255, new(Int), false, "product 2^256 overflows, quotient fits"},
+		{two255, NewInt(3), NewInt(2), new(Int).Add(two255, new(Int).Rsh(two255, 1)), new(Int), false, "product > 2^256, quotient fits"},
+		{two255, NewInt(2), NewInt(1), new(Int), new(Int), true, "quotient 2^256 is reported and wrapped"},
+		{two255, NewInt(5), NewInt(2), new(Int).Rsh(two255, 1), new(Int), true, "quotient 5*2^254 wraps to 2^254"},
+		{NewInt(10), NewInt(7), NewInt(4), NewInt(17), NewInt(2), false, "small values"},
+		{NewInt(10), NewInt(7), NewInt(0), new(Int), new(Int), false, "zero divisor"},
+		{new(Int).SetAllOne(), new(Int).SetAllOne(), NewInt(0), new(Int), new(Int), false, "zero divisor, large product"},
+	} {
+		q, overflow := new(Int).MulDivOverflow(tc.x, tc.y, tc.d)
+		if !q.Eq(tc.q) || overflow != tc.overflow {
+			t.Errorf("case %d (%s): MulDivOverflow: have q=%#x overflow=%v, want q=%#x overflow=%v",
+				i, tc.description, q, overflow, tc.q, tc.overflow)
+		}
+		m := NewInt(42)
+		q, r, overflow := NewInt(42).MulDivOverflowRem(tc.x, tc.y, tc.d, m)
+		if !q.Eq(tc.q) || !r.Eq(tc.r) || overflow != tc.overflow {
+			t.Errorf("case %d (%s): MulDivOverflowRem: have q=%#x r=%#x overflow=%v, want q=%#x r=%#x overflow=%v",
+				i, tc.description, q, r, overflow, tc.q, tc.r, tc.overflow)
+		}
+	}
+}
+
 func TestRandomAbs(t *testing.T) {
 	for i := 0; i < 10000; i++ {
 		b, f1 := randHighNums()
