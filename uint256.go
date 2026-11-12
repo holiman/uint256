@@ -476,6 +476,39 @@ func (z *Int) MulOverflow(x, y *Int) (*Int, bool) {
 	return z, (p[4] | p[5] | p[6] | p[7]) != 0
 }
 
+// usquare computes the 512-bit square of x with 10 word multiplications instead of the 16 of umul.
+func usquare(x *Int, res *[8]uint64) {
+	var c, r1, r2, r3, r4, r5, r6 uint64
+	c, r1 = bits.Mul64(x[0], x[1])
+	c, r2 = umulHop(c, x[0], x[2])
+	r4, r3 = umulHop(c, x[0], x[3])
+	c, r3 = umulHop(r3, x[1], x[2])
+	r5, r4 = umulStep(r4, x[1], x[3], c)
+	r6, r5 = umulHop(r5, x[2], x[3])
+
+	r7 := r6 >> 63
+	r6 = r6<<1 | r5>>63
+	r5 = r5<<1 | r4>>63
+	r4 = r4<<1 | r3>>63
+	r3 = r3<<1 | r2>>63
+	r2 = r2<<1 | r1>>63
+	r1 <<= 1
+
+	h, l := bits.Mul64(x[0], x[0])
+	res[0] = l
+	var carry uint64
+	res[1], carry = bits.Add64(r1, h, 0)
+	h, l = bits.Mul64(x[1], x[1])
+	res[2], carry = bits.Add64(r2, l, carry)
+	res[3], carry = bits.Add64(r3, h, carry)
+	h, l = bits.Mul64(x[2], x[2])
+	res[4], carry = bits.Add64(r4, l, carry)
+	res[5], carry = bits.Add64(r5, h, carry)
+	h, l = bits.Mul64(x[3], x[3])
+	res[6], carry = bits.Add64(r6, l, carry)
+	res[7], _ = bits.Add64(r7, h, carry)
+}
+
 func (z *Int) squared() {
 	var (
 		carry0, carry1, carry2 uint64
@@ -1356,6 +1389,96 @@ func (z *Int) Byte(n *Int) *Int {
 	z[0] = (number >> (56 - offset)) & 0xff
 	z[3], z[2], z[1] = 0, 0, 0
 	return z
+}
+
+// ExpMod sets z = base**exponent mod m, and returns z.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
+// It is not a cryptographically constant-time operation.
+func (z *Int) ExpMod(base, exponent, m *Int) *Int {
+	if m.LtUint64(2) {
+		return z.Clear()
+	}
+	n := exponent.BitLen()
+	if n == 0 {
+		return z.SetOne()
+	}
+	bit := func(i int) uint64 { return (exponent[i/64] >> uint(i%64)) & 1 }
+	// Short moduli and short exponents do not repay the reciprocal and the final Mod of the shifted
+	// modulus below, and a small base starts with cheap multiplications that the shift would lose.
+	if bl := m.BitLen(); m[3] == 0 && (bl <= 32 || n < 5 || (n <= 17 && (bl <= 64 || 2*base.BitLen() <= bl))) {
+		var b Int
+		b.Mod(base, m)
+		res := b
+		for i := n - 2; i >= 0; i-- {
+			res.MulMod(&res, &res, m)
+			if bit(i) == 1 {
+				res.MulMod(&res, &b, m)
+			}
+		}
+		return z.Set(&res)
+	}
+	// Exponents up to 17 bits, which includes 65537, stay on the binary loop; the 8-entry table pays off above 80 bits.
+	w := 1
+	if n > 80 {
+		w = 4
+	} else if n > 17 {
+		w = 3
+	}
+	// Residues mod c are congruent mod m, and a 4-word c lets reduce4 serve every multiplication.
+	c := *m
+	if m[3] == 0 {
+		c.Lsh(m, uint(256-m.BitLen()))
+	}
+	var (
+		mu  = Reciprocal(&c)
+		odd [8]Int // odd[k] = base**(2k+1)
+		res Int
+		p   [8]uint64
+	)
+	odd[0].Mod(base, &c)
+	if w > 1 {
+		var b2 Int
+		usquare(&odd[0], &p)
+		b2.reduce4(&p, &c, &mu)
+		for k := 1; k < 1<<(w-1); k++ {
+			umul(&odd[k-1], &b2, &p)
+			odd[k].reduce4(&p, &c, &mu)
+		}
+	}
+	// Left-to-right sliding window: each window of up to w bits ends in a set bit
+	// and costs one multiplication by a precomputed odd power of base.
+	started := false
+	for i := n - 1; i >= 0; {
+		if bit(i) == 0 {
+			usquare(&res, &p) // the top bit is set, so res is started here
+			res.reduce4(&p, &c, &mu)
+			i--
+			continue
+		}
+		j := i - w + 1
+		if j < 0 {
+			j = 0
+		}
+		for bit(j) == 0 {
+			j++
+		}
+		v := 0
+		for k := i; k >= j; k-- {
+			v = v<<1 | int(bit(k))
+			if started {
+				usquare(&res, &p)
+				res.reduce4(&p, &c, &mu)
+			}
+		}
+		if started {
+			umul(&res, &odd[v>>1], &p)
+			res.reduce4(&p, &c, &mu)
+		} else {
+			res, started = odd[v>>1], true
+		}
+		i = j - 1
+	}
+	return z.Mod(&res, m)
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
