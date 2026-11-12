@@ -50,6 +50,11 @@ var (
 	// A collection of interesting input values for binary operators (especially for division).
 	// No expected results as big.Int can be used as the source of truth.
 	binTestCases = [][2]string{
+		{"0x51a273632086cb3af4893e518a1fda392d74401160323139", "0x80000a064b9b0df5000000000000241d"},
+		{"0x8000000000000000fffffffffffffffe80000000000000000000000000000000", "0x8000000000000000fffffffffffffffeffffffffffffffff"},
+		{"0xcca627d1b5ffb7f70000000000000000cca627d1b5ffb7f60000000000000001", "0x100000000000000000000000000000001"},
+		{"0x8000000000000000ffffffffffffffff7ffffffffffffffdfffffffffffffffc", "0xfffffffffffffffffffffffffffffffefffffffffffffffe"},
+		{"0x1b24f551326b8c8a7936c2abb3651cdd526d855766ca39baa", "0x1ffffffffffffffff7fffffffffffffff"},
 		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"},
 		{"0x8000000000000000000000000000000000000000000000000000000000000000", "0x8000000000000000000000000000000000000000000000000000000000000000"},
 		{"0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", "0x8000000000000000000000000000000000000000000000000000000000000000"},

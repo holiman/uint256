@@ -12,6 +12,52 @@ func reciprocal2by1(d uint64) uint64 {
 	return reciprocal
 }
 
+// reciprocal3by2 computes (2^192 - 1) / <d1, d0> - 2^64 for a normalized d1.
+// The 2-by-1 division of <^d1, ^d0> by d1 is at most 2 too big.
+func reciprocal3by2(d1, d0 uint64) uint64 {
+	v, r := bits.Div64(^d1, ^d0, d1)
+	ph, pl := bits.Mul64(v, d0)
+	if r < ph {
+		v--
+		if s, c := bits.Add64(r, d1, 1); c == 0 && (s < ph || (s == ph && d0-1 < pl)) {
+			v--
+		}
+	}
+	return v
+}
+
+// udivrem3by2 divides <u2, u1, u0> / <d1, d0> for a normalized d1 and <u2, u1> < <d1, d0>.
+// It uses the provided reciprocal3by2 of d.
+// Implementation ported from https://github.com/chfast/intx and is based on
+// "Improved division by invariant integers", Algorithm 5.
+func udivrem3by2(u2, u1, u0, d1, d0, reciprocal uint64) (quot, r1, r0 uint64) {
+	qh, ql := bits.Mul64(reciprocal, u2)
+	ql, carry := bits.Add64(ql, u1, 0)
+	qh, _ = bits.Add64(qh, u2, carry)
+
+	r1 = u1 - qh*d1
+	th, tl := bits.Mul64(d0, qh)
+	r0, borrow := bits.Sub64(u0, tl, 0)
+	r1, _ = bits.Sub64(r1, th, borrow)
+	r0, borrow = bits.Sub64(r0, d0, 0)
+	r1, _ = bits.Sub64(r1, d1, borrow)
+	qh++
+
+	if r1 >= ql {
+		qh--
+		r0, carry = bits.Add64(r0, d0, 0)
+		r1, _ = bits.Add64(r1, d1, carry)
+	}
+
+	if r1 > d1 || (r1 == d1 && r0 >= d0) {
+		qh++
+		r0, borrow = bits.Sub64(r0, d0, 0)
+		r1, _ = bits.Sub64(r1, d1, borrow)
+	}
+
+	return qh, r1, r0
+}
+
 // udivrem2by1 divides <uh, ul> / d and produces both quotient and remainder.
 // It uses the provided d's reciprocal.
 // Implementation ported from https://github.com/chfast/intx and is based on

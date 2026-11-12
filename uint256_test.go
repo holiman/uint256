@@ -135,6 +135,29 @@ func runMulModCase(
 	}
 }
 
+func TestReciprocal3by2(t *testing.T) {
+	check := func(d1, d0 uint64) {
+		d := (&Int{d0, d1}).ToBig()
+		numerator := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 192), big.NewInt(1))
+		want := new(big.Int).Sub(numerator.Quo(numerator, d), new(big.Int).Lsh(big.NewInt(1), 64))
+		if have := reciprocal3by2(d1, d0); have != want.Uint64() {
+			t.Fatalf("reciprocal3by2(%x, %x) = %x, want %x", d1, d0, have, want)
+		}
+	}
+	words := []uint64{0, 1, 1 << 63, 1<<63 + 1, ^uint64(0) - 1, ^uint64(0)}
+	for _, d1 := range words {
+		for _, d0 := range words {
+			check(d1|1<<63, d0)
+		}
+	}
+	check(0x80000001e18a683d, 0x9392ccfd43912ab4)
+	check(0x80000c697f483929, 0xbaf2bb0a60500fc6)
+	for i := 0; i < 10000; i++ {
+		_, f := randNums()
+		check(f[1]|1<<63, f[0])
+	}
+}
+
 func TestRandomMulMod(t *testing.T) {
 	// Random tests (10,000 iterations) for both MulMod and IMulMod
 	for i := 0; i < 10000; i++ {
