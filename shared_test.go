@@ -144,6 +144,19 @@ var (
 		{"0x1", "0x1", "0x4000000000000000130303030303030303030303030303030303030303030"},
 		{"0x1", "0x1", "0x8000000000000000000000000000000043030303000000000"},
 		{"0x1", "0x1", "0x8000000000000000000000000000000003030303030303030"},
+		{"0x2", "0x0", "0x3"},
+		{"0x2", "0x0", "0x1"},
+		{"0x2", "0x1", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x2", "0x3", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x123456789abcdef", "0x10001", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x123456789abcdef", "0x1ffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x123456789abcdef", "0x20000", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x123456789abcdef", "0xffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x123456789abcdef", "0x1ffffffffffffffffffff", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0x123456789abcdef", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2d", "0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f"},
+		{"0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f", "0xfffffffffffffffffffffffffffff", "0xfffffffffffff1"},
+		{"0x123456789abcdef", "0xfffffffffffffffffffffffffffff", "0x1000000000000000000000000000000000000000000000000000000000000000"},
+		{"0x123456789abcdef", "0xfffffffffffffffffffffffffffff", "0x1"},
 	}
 )
 
