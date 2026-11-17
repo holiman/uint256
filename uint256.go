@@ -673,9 +673,7 @@ func (z *Int) Div(x, y *Int) *Int {
 	// At this point, we know
 	// x/y ; x > y > 0
 
-	var quot Int
-	udivrem(quot[:], x[:], y, nil)
-	return z.Set(&quot)
+	return udiv(z, x, y)
 }
 
 // IDiv divides z by x, modifying z in place, and returns z.
