@@ -540,7 +540,10 @@ func udivremKnuth(quot, u, d []uint64) {
 	n := len(d)
 	dh := d[n-1]
 	dl := d[n-2]
-	reciprocal := reciprocal3by2(dh, dl)
+	var reciprocal uint64
+	if len(u) > n+1 { // a single quotient digit does not repay the reciprocal
+		reciprocal = reciprocal3by2(dh, dl)
+	}
 
 	for j := len(u) - n - 1; j >= 0; j-- {
 		u2 := u[j+n]
@@ -553,7 +556,11 @@ func udivremKnuth(quot, u, d []uint64) {
 			subMulTo(u[j:], d, qhat)
 		} else {
 			var r1, r0, borrow uint64
-			qhat, r1, r0 = udivrem3by2(u2, u1, u0, dh, dl, reciprocal)
+			if len(u) > n+1 {
+				qhat, r1, r0 = udivrem3by2(u2, u1, u0, dh, dl, reciprocal)
+			} else {
+				r1, r0, qhat = rem3by2(u2, u1, u0, dh, dl)
+			}
 			if n > 2 {
 				borrow = subMulTo(u[j:], d[:n-2], qhat)
 			}
