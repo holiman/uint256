@@ -671,9 +671,7 @@ func (z *Int) Div(x, y *Int) *Int {
 	// At this point, we know
 	// x/y ; x > y > 0
 
-	var quot Int
-	udivrem(quot[:], x[:], y, nil)
-	return z.Set(&quot)
+	return udiv(z, x, y)
 }
 
 // IDiv divides z by x, modifying z in place, and returns z.
@@ -851,8 +849,11 @@ func (z *Int) IMulMod(x, m *Int) *Int {
 	return z.MulMod(z, x, m)
 }
 
-// MulDivOverflow calculates (x*y)/d with full precision, returns z and whether overflow occurred in multiply process (result does not fit to 256-bit).
-// computes 512-bit multiplication and 512 by 256 division.
+// MulDivOverflow computes the quotient q = floor(x*y / d) using the full
+// 512-bit product x*y, sets z to q mod 2^256 and returns whether q >= 2^256.
+// The intermediate product may exceed 256 bits without overflow being
+// reported; only a quotient that does not fit in 256 bits is an overflow.
+// If d == 0, z is set to 0 and overflow is false.
 func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	if x.IsZero() || y.IsZero() || d.IsZero() {
 		return z.Clear(), false
@@ -868,11 +869,13 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	return z, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
 }
 
-// MulDivOverflowRem calculates (x*y)/d with full precision, returns:
-// - `z`,
-// - sets `m` as `mulmod(x, y, d)` (modulo-d multiplication of x and y)
-// - and whether overflow occurred in multiply process (result does not fit to 256-bit).
-// computes 512-bit multiplication and 512 by 256 division.
+// MulDivOverflowRem computes the quotient q = floor(x*y / d) and the
+// remainder r = (x*y) mod d using the full 512-bit product x*y. It sets z to
+// q mod 2^256, sets m to r, and returns whether q >= 2^256. The intermediate
+// product may exceed 256 bits without overflow being reported; only a
+// quotient that does not fit in 256 bits is an overflow. The remainder is
+// exact regardless of overflow.
+// If d == 0, both z and m are set to 0 and overflow is false.
 func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
 	if z == m {
 		// Both are returned, so un-alias them as DivMod does.
@@ -1349,6 +1352,71 @@ func (z *Int) Byte(n *Int) *Int {
 	z[0] = (number >> (56 - offset)) & 0xff
 	z[3], z[2], z[1] = 0, 0, 0
 	return z
+}
+
+// ExpMod sets z = base**exponent mod m, and returns z.
+// If m == 0, z is set to 0 (OBS: differs from the big.Int)
+// It is not a cryptographically constant-time operation.
+func (z *Int) ExpMod(base, exponent, m *Int) *Int {
+	if m.LtUint64(2) {
+		return z.Clear()
+	}
+	n := exponent.BitLen()
+	if n == 0 {
+		return z.SetOne()
+	}
+	// Exponents up to 17 bits, which includes 65537, stay on the binary loop; the 8-entry table pays off above 80 bits.
+	w := 1
+	if n > 80 {
+		w = 4
+	} else if n > 17 {
+		w = 3
+	}
+	var (
+		mu  = Reciprocal(m)
+		odd [8]Int // odd[k] = base**(2k+1)
+		res Int
+	)
+	odd[0].Mod(base, m)
+	if w > 1 {
+		var b2 Int
+		b2.MulModWithReciprocal(&odd[0], &odd[0], m, &mu)
+		for k := 1; k < 1<<(w-1); k++ {
+			odd[k].MulModWithReciprocal(&odd[k-1], &b2, m, &mu)
+		}
+	}
+	// Left-to-right sliding window: each window of up to w bits ends in a set bit
+	// and costs one multiplication by a precomputed odd power of base.
+	bit := func(i int) uint64 { return (exponent[i/64] >> uint(i%64)) & 1 }
+	started := false
+	for i := n - 1; i >= 0; {
+		if bit(i) == 0 {
+			res.MulModWithReciprocal(&res, &res, m, &mu) // the top bit is set, so res is started here
+			i--
+			continue
+		}
+		j := i - w + 1
+		if j < 0 {
+			j = 0
+		}
+		for bit(j) == 0 {
+			j++
+		}
+		v := 0
+		for k := i; k >= j; k-- {
+			v = v<<1 | int(bit(k))
+			if started {
+				res.MulModWithReciprocal(&res, &res, m, &mu)
+			}
+		}
+		if started {
+			res.MulModWithReciprocal(&res, &odd[v>>1], m, &mu)
+		} else {
+			res, started = odd[v>>1], true
+		}
+		i = j - 1
+	}
+	return z.Set(&res)
 }
 
 // Exp sets z = base**exponent mod 2**256, and returns z.
