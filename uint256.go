@@ -799,10 +799,7 @@ func (z *Int) MulModWithReciprocal(x, y, m *Int, mu *[5]uint64) *Int {
 		return z.Mod(&pl, m)
 	}
 
-	var quot [8]uint64
-	var rem Int
-	udivrem(quot[:], p[:], m, &rem)
-	return z.Set(&rem)
+	return umod512(z, &p, m)
 }
 
 // IMulModWithReciprocal calculates the modulo-m multiplication of z and x,
@@ -839,10 +836,7 @@ func (z *Int) MulMod(x, y, m *Int) *Int {
 		return z.Mod(&pl, m)
 	}
 
-	var quot [8]uint64
-	var rem Int
-	udivrem(quot[:], p[:], m, &rem)
-	return z.Set(&rem)
+	return umod512(z, &p, m)
 }
 
 // IMulMod calculates the modulo-m multiplication of z and x, modifying z in place,
