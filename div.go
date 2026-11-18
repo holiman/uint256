@@ -155,7 +155,7 @@ func udiv(z, x, y *Int) *Int {
 }
 
 // umod512 sets z = p % m for m < 2^192, m != 0, in registers like umod.
-// The divisor reciprocal replaces a hardware division in each of the many Knuth steps.
+// The divisor reciprocal replaces the 128-by-64 division in each of the 6 to 8 Knuth steps.
 func umod512(z *Int, p *[8]uint64, m *Int) *Int {
 	switch {
 	case m[2] != 0:
