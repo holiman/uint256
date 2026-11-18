@@ -135,6 +135,90 @@ func runMulModCase(
 	}
 }
 
+func TestReciprocal3by2(t *testing.T) {
+	check := func(d1, d0 uint64) {
+		d := (&Int{d0, d1}).ToBig()
+		numerator := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 192), big.NewInt(1))
+		want := new(big.Int).Sub(numerator.Quo(numerator, d), new(big.Int).Lsh(big.NewInt(1), 64))
+		if have := reciprocal3by2(d1, d0); have != want.Uint64() {
+			t.Fatalf("reciprocal3by2(%x, %x) = %x, want %x", d1, d0, have, want)
+		}
+	}
+	words := []uint64{0, 1, 1 << 63, 1<<63 + 1, ^uint64(0) - 1, ^uint64(0)}
+	for _, d1 := range words {
+		for _, d0 := range words {
+			check(d1|1<<63, d0)
+		}
+	}
+	check(0x80000001e18a683d, 0x9392ccfd43912ab4)
+	check(0x80000c697f483929, 0xbaf2bb0a60500fc6)
+	for i := 0; i < 10000; i++ {
+		_, f := randNums()
+		check(f[1]|1<<63, f[0])
+	}
+}
+
+func TestRem4by3r(t *testing.T) {
+	check := func(u3, u2, u1, u0, v2, v1, v0 uint64) {
+		if (&Int{u1, u2, u3}).Cmp(&Int{v0, v1, v2}) >= 0 {
+			return
+		}
+		w2, w1, w0 := rem4by3(u3, u2, u1, u0, v2, v1, v0)
+		r2, r1, r0 := rem4by3r(u3, u2, u1, u0, v2, v1, v0, reciprocal3by2(v2, v1))
+		if r2 != w2 || r1 != w1 || r0 != w0 {
+			t.Fatalf("rem4by3r(%x %x %x %x / %x %x %x) = %x %x %x, want %x %x %x", u3, u2, u1, u0, v2, v1, v0, r2, r1, r0, w2, w1, w0)
+		}
+	}
+	// Edge words reach the 2^64 - 1 digit and the add-back.
+	words := []uint64{0, 1, 1 << 62, 1 << 63, ^uint64(0) - 1, ^uint64(0)}
+	for _, u3 := range words {
+		for _, u2 := range words {
+			for _, u1 := range words {
+				for _, u0 := range words {
+					for _, v2 := range words {
+						for _, v1 := range words {
+							for _, v0 := range words {
+								check(u3, u2, u1, u0, v2|1<<63, v1, v0)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	for i := 0; i < 10000; i++ {
+		_, u := randNums()
+		_, v := randNums()
+		check(u[3]&^(1<<63), u[2], u[1], u[0], v[2]|1<<63, v[1], v[0])
+	}
+}
+
+func TestUmod512(t *testing.T) {
+	check := func(p *[8]uint64, m *Int) {
+		x := new(big.Int).Lsh((&Int{p[4], p[5], p[6], p[7]}).ToBig(), 256)
+		x.Add(x, (&Int{p[0], p[1], p[2], p[3]}).ToBig())
+		want := x.Mod(x, m.ToBig())
+		var have Int
+		if umod512(&have, p, m); have.ToBig().Cmp(want) != 0 {
+			t.Fatalf("umod512(%x, %x) = %x, want %x", p, m, &have, want)
+		}
+	}
+	words := []uint64{1, 1 << 63, ^uint64(0)}
+	for i := 0; i < 10000; i++ {
+		var p [8]uint64
+		_, x := randNums()
+		_, y := randNums()
+		umul(x, y, &p)
+		_, m := randNums()
+		for n := 1; n <= 3; n++ {
+			var mn Int
+			copy(mn[:n], m[:n])
+			mn[n-1] |= words[i%len(words)]
+			check(&p, &mn)
+		}
+	}
+}
+
 func TestRandomMulMod(t *testing.T) {
 	// Random tests (10,000 iterations) for both MulMod and IMulMod
 	for i := 0; i < 10000; i++ {

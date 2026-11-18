@@ -836,6 +836,17 @@ func BenchmarkMulMod(b *testing.B) {
 			}
 		}
 	}
+	// 256-bit factors, as in the EVM: the product exceeds 256 bits for every modulus size.
+	benchmarkMulModFull := func(b *testing.B, modSamples *[numSamples]Int) {
+		iter := (b.N + numSamples - 1) / numSamples
+
+		var z Int
+		for j := 0; j < numSamples; j++ {
+			for i := 0; i < iter; i++ {
+				z.MulMod(&int256Samples[j], &int256SamplesLt[j], &modSamples[j])
+			}
+		}
+	}
 	benchmarkMulModBig := func(b *testing.B, factorsSamples, modSamples *[numSamples]big.Int) {
 		iter := (b.N + numSamples - 1) / numSamples
 
@@ -855,6 +866,9 @@ func BenchmarkMulMod(b *testing.B) {
 	b.Run("mod192/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int192SamplesLt, &int192Samples) })
 	b.Run("mod256/uint256", func(b *testing.B) { benchmarkMulModUint256(b, &int256SamplesLt, &int256Samples) })
 	b.Run("mod256/uint256r", func(b *testing.B) { benchmarkMulModUint256R(b, &int256SamplesLt, &int256Samples) })
+	b.Run("full64/uint256", func(b *testing.B) { benchmarkMulModFull(b, &int64Samples) })
+	b.Run("full128/uint256", func(b *testing.B) { benchmarkMulModFull(b, &int128Samples) })
+	b.Run("full192/uint256", func(b *testing.B) { benchmarkMulModFull(b, &int192Samples) })
 	b.Run("small/big", func(b *testing.B) { benchmarkMulModBig(b, &big32SamplesLt, &big32Samples) })
 	b.Run("mod64/big", func(b *testing.B) { benchmarkMulModBig(b, &big64SamplesLt, &big64Samples) })
 	b.Run("mod128/big", func(b *testing.B) { benchmarkMulModBig(b, &big128SamplesLt, &big128Samples) })

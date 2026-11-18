@@ -12,6 +12,52 @@ func reciprocal2by1(d uint64) uint64 {
 	return reciprocal
 }
 
+// reciprocal3by2 computes (2^192 - 1) / <d1, d0> - 2^64 for a normalized d1.
+// The 2-by-1 division of <^d1, ^d0> by d1 is at most 2 too big.
+func reciprocal3by2(d1, d0 uint64) uint64 {
+	v, r := bits.Div64(^d1, ^d0, d1)
+	ph, pl := bits.Mul64(v, d0)
+	if r < ph {
+		v--
+		if s, c := bits.Add64(r, d1, 1); c == 0 && (s < ph || (s == ph && d0-1 < pl)) {
+			v--
+		}
+	}
+	return v
+}
+
+// udivrem3by2 divides <u2, u1, u0> / <d1, d0> for a normalized d1 and <u2, u1> < <d1, d0>.
+// It uses the provided reciprocal3by2 of d.
+// Implementation ported from https://github.com/chfast/intx and is based on
+// "Improved division by invariant integers", Algorithm 5.
+func udivrem3by2(u2, u1, u0, d1, d0, reciprocal uint64) (quot, r1, r0 uint64) {
+	qh, ql := bits.Mul64(reciprocal, u2)
+	ql, carry := bits.Add64(ql, u1, 0)
+	qh, _ = bits.Add64(qh, u2, carry)
+
+	r1 = u1 - qh*d1
+	th, tl := bits.Mul64(d0, qh)
+	r0, borrow := bits.Sub64(u0, tl, 0)
+	r1, _ = bits.Sub64(r1, th, borrow)
+	r0, borrow = bits.Sub64(r0, d0, 0)
+	r1, _ = bits.Sub64(r1, d1, borrow)
+	qh++
+
+	if r1 >= ql {
+		qh--
+		r0, carry = bits.Add64(r0, d0, 0)
+		r1, _ = bits.Add64(r1, d1, carry)
+	}
+
+	if r1 > d1 || (r1 == d1 && r0 >= d0) {
+		qh++
+		r0, borrow = bits.Sub64(r0, d0, 0)
+		r1, _ = bits.Sub64(r1, d1, borrow)
+	}
+
+	return qh, r1, r0
+}
+
 // udivrem2by1 divides <uh, ul> / d and produces both quotient and remainder.
 // It uses the provided d's reciprocal.
 // Implementation ported from https://github.com/chfast/intx and is based on
@@ -108,6 +154,44 @@ func udiv(z, x, y *Int) *Int {
 	return z
 }
 
+// umod512 sets z = p % m for m < 2^192, m != 0, in registers like umod.
+// The divisor reciprocal replaces a hardware division in each of the many Knuth steps.
+func umod512(z *Int, p *[8]uint64, m *Int) *Int {
+	switch {
+	case m[2] != 0:
+		s := uint(bits.LeadingZeros64(m[2]))
+		v2, v1, v0 := m[2]<<s|m[1]>>(64-s), m[1]<<s|m[0]>>(64-s), m[0]<<s
+		rec := reciprocal3by2(v2, v1)
+		r2, r1, r0 := rem4by3r(p[7]>>(64-s), p[7]<<s|p[6]>>(64-s), p[6]<<s|p[5]>>(64-s), p[5]<<s|p[4]>>(64-s), v2, v1, v0, rec)
+		for i := 4; i > 0; i-- {
+			r2, r1, r0 = rem4by3r(r2, r1, r0, p[i]<<s|p[i-1]>>(64-s), v2, v1, v0, rec)
+		}
+		r2, r1, r0 = rem4by3r(r2, r1, r0, p[0]<<s, v2, v1, v0, rec)
+		z[0], z[1], z[2], z[3] = r0>>s|r1<<(64-s), r1>>s|r2<<(64-s), r2>>s, 0
+	case m[1] != 0:
+		s := uint(bits.LeadingZeros64(m[1]))
+		v1, v0 := m[1]<<s|m[0]>>(64-s), m[0]<<s
+		rec := reciprocal3by2(v1, v0)
+		_, r1, r0 := udivrem3by2(p[7]>>(64-s), p[7]<<s|p[6]>>(64-s), p[6]<<s|p[5]>>(64-s), v1, v0, rec)
+		for i := 5; i > 0; i-- {
+			_, r1, r0 = udivrem3by2(r1, r0, p[i]<<s|p[i-1]>>(64-s), v1, v0, rec)
+		}
+		_, r1, r0 = udivrem3by2(r1, r0, p[0]<<s, v1, v0, rec)
+		z[0], z[1], z[2], z[3] = r0>>s|r1<<(64-s), r1>>s, 0, 0
+	default:
+		s := uint(bits.LeadingZeros64(m[0]))
+		d := m[0] << s
+		rec := reciprocal2by1(d)
+		r := p[7] >> (64 - s)
+		for i := 7; i > 0; i-- {
+			_, r = udivrem2by1(r, p[i]<<s|p[i-1]>>(64-s), d, rec)
+		}
+		_, r = udivrem2by1(r, p[0]<<s, d, rec)
+		z.SetUint64(r >> s)
+	}
+	return z
+}
+
 // The remNbyM functions are one Knuth step: they reduce an N-limb u by a normalized M-limb v,
 // where the top M limbs of u are below v. The estimate q satisfies q <= qhat <= q+2, so
 // u - qhat*v lies in [-2v, v): its top limb is non-zero while it is negative, and at most
@@ -161,6 +245,26 @@ func rem4by3(u3, u2, u1, u0, v2, v1, v0 uint64) (uint64, uint64, uint64) {
 		u3 += c
 	}
 	return u2, u1, u0
+}
+
+// rem4by3r is rem4by3 with the quotient digit from udivrem3by2, given rec = reciprocal3by2(v2, v1).
+// The digit is at most one too big, so a single add-back fixes it.
+func rem4by3r(u3, u2, u1, u0, v2, v1, v0, rec uint64) (uint64, uint64, uint64) {
+	if u3 == v2 && u2 == v1 { // the digit is 2^64 - 1, out of udivrem3by2 range
+		return rem4by3(u3, u2, u1, u0, v2, v1, v0)
+	}
+	q, r2, r1 := udivrem3by2(u3, u2, u1, v2, v1, rec)
+	h, l := bits.Mul64(q, v0)
+	r0, b := bits.Sub64(u0, l, 0)
+	r1, b = bits.Sub64(r1, h, b)
+	r2, b = bits.Sub64(r2, 0, b)
+	if b != 0 {
+		var c uint64
+		r0, c = bits.Add64(r0, v0, 0)
+		r1, c = bits.Add64(r1, v1, c)
+		r2, _ = bits.Add64(r2, v2, c)
+	}
+	return r2, r1, r0
 }
 
 // quoRem4by3 is rem4by3 that also returns the quotient digit. It is separate because carrying q through rem4by3 slows umod.
