@@ -756,6 +756,10 @@ func (z *Int) MarshalJSON() ([]byte, error) {
 // - Quoted string: either hexadecimal OR decimal
 // - Not quoted string: only decimal
 func (z *Int) UnmarshalJSON(input []byte) error {
+	// Ignore null, like in the main JSON package and big.Int reference code
+	if string(input) == "null" {
+		return nil
+	}
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
 		// if not quoted, it must be decimal
 		return z.SetFromDecimal(string(input))
@@ -831,7 +835,7 @@ func (dst *Int) scanScientificFromString(src string) error {
 		dst.Clear()
 		return nil
 	}
-	idx := strings.IndexByte(src, 'e')
+	idx := strings.IndexAny(src, "eE")
 	if idx == -1 {
 		return dst.SetFromDecimal(src)
 	}
@@ -844,6 +848,9 @@ func (dst *Int) scanScientificFromString(src string) error {
 	exp := new(Int)
 	if err := exp.SetFromDecimal(src[(idx + 1):]); err != nil {
 		return err
+	}
+	if dst.IsZero() { // zero times any power of ten is zero
+		return nil
 	}
 	if exp.GtUint64(77) { // 10**78 is larger than 2**256
 		return ErrBig256Range

@@ -138,13 +138,45 @@ func TestScanScientific(t *testing.T) {
 			in:  "14e30",
 			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
 		},
+		{
+			in:  "14E30",
+			exp: new(Int).Mul(NewInt(14), new(Int).Exp(NewInt(10), NewInt(30))),
+		},
 		{ // 0xdd15fe86affad800000000000000000000000000000000000000000000000000
 			in:  "1e77",
+			exp: new(Int).Mul(NewInt(1), new(Int).Exp(NewInt(10), NewInt(77))),
+		},
+		{ // 0xdd15fe86affad800000000000000000000000000000000000000000000000000
+			in:  "1E77",
 			exp: new(Int).Mul(NewInt(1), new(Int).Exp(NewInt(10), NewInt(77))),
 		},
 		{ // 0x8a2dbf142dfcc8000000000000000000000000000000000000000000000000000
 			in:  "1e78",
 			err: ErrBig256Range.Error(),
+		},
+		{
+			in:  "0e77",
+			exp: new(Int),
+		},
+		{
+			in:  "0e78",
+			exp: new(Int),
+		},
+		{
+			in:  "0E100",
+			exp: new(Int),
+		},
+		{
+			in:  "00e25352",
+			exp: new(Int),
+		},
+		{
+			in:  "0ex",
+			err: `strconv.ParseUint: parsing "x": invalid syntax`,
+		},
+		{
+			in:  "0e",
+			err: "EOF",
 		},
 		{
 			in:  "1455522523e31",
@@ -1327,6 +1359,14 @@ func TestDecode(t *testing.T) {
 		t.Fatalf("Expected no error, got %v", err)
 	} else if jsonDecoded.Foo.Uint64() != 1 {
 		t.Fatal("Expected 1")
+	}
+
+	// Ignore null without modifying the receiver, matching big.Int.
+	jsonValue := NewInt(1)
+	if err := json.Unmarshal([]byte(`null`), jsonValue); err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	} else if jsonValue.Uint64() != 1 {
+		t.Fatalf("Expected unchanged value 1, got %v", jsonValue)
 	}
 }
 

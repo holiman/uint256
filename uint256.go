@@ -706,9 +706,7 @@ func (z *Int) Div(x, y *Int) *Int {
 	// At this point, we know
 	// x/y ; x > y > 0
 
-	var quot Int
-	udivrem(quot[:], x[:], y, nil)
-	return z.Set(&quot)
+	return udiv(z, x, y)
 }
 
 // IDiv divides z by x, modifying z in place, and returns z.
@@ -735,10 +733,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 	if x.IsUint64() {
 		return z.SetUint64(x.Uint64() % y.Uint64())
 	}
-
-	var quot, rem Int
-	udivrem(quot[:], x[:], y, &rem)
-	return z.Set(&rem)
+	return umod(z, x, y)
 }
 
 // IMod sets z to the modulus z%x, modifying z in place, and returns z.
@@ -889,8 +884,11 @@ func (z *Int) IMulMod(x, m *Int) *Int {
 	return z.MulMod(z, x, m)
 }
 
-// MulDivOverflow calculates (x*y)/d with full precision, returns z and whether overflow occurred in multiply process (result does not fit to 256-bit).
-// computes 512-bit multiplication and 512 by 256 division.
+// MulDivOverflow computes the quotient q = floor(x*y / d) using the full
+// 512-bit product x*y, sets z to q mod 2^256 and returns whether q >= 2^256.
+// The intermediate product may exceed 256 bits without overflow being
+// reported; only a quotient that does not fit in 256 bits is an overflow.
+// If d == 0, z is set to 0 and overflow is false.
 func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	if x.IsZero() || y.IsZero() || d.IsZero() {
 		return z.Clear(), false
@@ -906,11 +904,13 @@ func (z *Int) MulDivOverflow(x, y, d *Int) (*Int, bool) {
 	return z, (quot[4] | quot[5] | quot[6] | quot[7]) != 0
 }
 
-// MulDivOverflowRem calculates (x*y)/d with full precision, returns:
-// - `z`,
-// - sets `m` as `mulmod(x, y, d)` (modulo-d multiplication of x and y)
-// - and whether overflow occurred in multiply process (result does not fit to 256-bit).
-// computes 512-bit multiplication and 512 by 256 division.
+// MulDivOverflowRem computes the quotient q = floor(x*y / d) and the
+// remainder r = (x*y) mod d using the full 512-bit product x*y. It sets z to
+// q mod 2^256, sets m to r, and returns whether q >= 2^256. The intermediate
+// product may exceed 256 bits without overflow being reported; only a
+// quotient that does not fit in 256 bits is an overflow. The remainder is
+// exact regardless of overflow.
+// If d == 0, both z and m are set to 0 and overflow is false.
 func (z *Int) MulDivOverflowRem(x, y, d, m *Int) (*Int, *Int, bool) {
 	if z == m {
 		// Both are returned, so un-alias them as DivMod does.
