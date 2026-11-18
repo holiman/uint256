@@ -336,9 +336,9 @@ func (z *Int) IAddUint64(x uint64) *Int {
 	return z.AddUint64(z, x)
 }
 
-// PaddedBytes encodes a Int as a 0-padded byte slice. The length
-// of the slice is at least n bytes.
-// Example, z =1, n = 20 => [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1]
+// PaddedBytes returns the big-endian encoding of z in exactly n bytes.
+// It pads with leading zeros if z fits in fewer bytes. If z needs more
+// than n bytes, it returns the least significant n bytes.
 func (z *Int) PaddedBytes(n int) []byte {
 	b := make([]byte, n)
 
