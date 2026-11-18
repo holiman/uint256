@@ -762,6 +762,11 @@ func TestPaddingRepresentation(t *testing.T) {
 		t.Fatal("aa != bb")
 	}
 
+	check(aa.PaddedBytes(0), "")
+	check(aa.PaddedBytes(1), "7d")
+	check(aa.PaddedBytes(7), "3d4073ca50b37d")
+	check(aa.PaddedBytes(8), "2e3d4073ca50b37d")
+	check(aa.PaddedBytes(9), "b72e3d4073ca50b37d")
 	check(aa.PaddedBytes(32), "0000000000000000000000000e320219838e859b2f9f18b72e3d4073ca50b37d")
 	check(aa.PaddedBytes(20), "0e320219838e859b2f9f18b72e3d4073ca50b37d")
 	check(aa.PaddedBytes(40), "00000000000000000000000000000000000000000e320219838e859b2f9f18b72e3d4073ca50b37d")
