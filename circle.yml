@@ -48,6 +48,7 @@ jobs:
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBinaryOperations -fuzztime 20s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzCompareOperations -fuzztime 20s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzTernaryOperations -fuzztime 20s
+            GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzAddModSmallModulus -fuzztime 20s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzBase10StringCompare -fuzztime 10s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzDecimal -fuzztime 10s
             GOCACHE=/home/circleci/project/corpus-v3 go test . -run - -fuzz FuzzFloat64 -fuzztime 10s
