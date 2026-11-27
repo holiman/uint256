@@ -135,6 +135,31 @@ func runMulModCase(
 	}
 }
 
+func TestUsquare(t *testing.T) {
+	check := func(x *Int) {
+		var want, have [8]uint64
+		umul(x, x, &want)
+		usquare(x, &have)
+		if have != want {
+			t.Fatalf("usquare(%x)\nwant: %x\nhave: %x", x, want, have)
+		}
+	}
+	words := []uint64{0, 1, 1 << 63, ^uint64(0)}
+	for _, a := range words {
+		for _, b := range words {
+			for _, c := range words {
+				for _, d := range words {
+					check(&Int{a, b, c, d})
+				}
+			}
+		}
+	}
+	for i := 0; i < 10000; i++ {
+		_, f := randNums()
+		check(f)
+	}
+}
+
 func TestRandomMulMod(t *testing.T) {
 	// Random tests (10,000 iterations) for both MulMod and IMulMod
 	for i := 0; i < 10000; i++ {
