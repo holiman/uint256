@@ -5,6 +5,7 @@
 package uint256
 
 import (
+	"bytes"
 	"database/sql"
 	"database/sql/driver"
 	"encoding"
@@ -763,6 +764,13 @@ func (z *Int) UnmarshalJSON(input []byte) error {
 	if len(input) < 2 || input[0] != '"' || input[len(input)-1] != '"' {
 		// if not quoted, it must be decimal
 		return z.SetFromDecimal(string(input))
+	}
+	if bytes.IndexByte(input, '\\') >= 0 {
+		var text string
+		if err := json.Unmarshal(input, &text); err != nil {
+			return err
+		}
+		return z.UnmarshalText([]byte(text))
 	}
 	return z.UnmarshalText(input[1 : len(input)-1])
 }

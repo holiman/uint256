@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 )
 
@@ -1776,4 +1777,48 @@ func BenchmarkFloat64(b *testing.B) {
 			}
 		}
 	})
+}
+
+func TestUnmarshalJSONEscapedStrings(t *testing.T) {
+	cases := []struct {
+		name, value, want string
+		wantErr           bool
+	}{
+		{"zero", "0", "0", false},
+		{"one", "1", "1", false},
+		{"decimal", "255", "255", false},
+		{"max_decimal", twoPow256Sub1, twoPow256Sub1, false},
+		{"hex_zero", "0x0", "0", false},
+		{"hex", "0xff", "255", false},
+		{"max_hex", "0x" + strings.Repeat("f", 64), twoPow256Sub1, false},
+		{"decimal_overflow", new(big.Int).Lsh(big.NewInt(1), 256).String(), "", true},
+		{"hex_overflow", "0x1" + strings.Repeat("0", 64), "", true},
+		{"negative", "-1", "", true},
+		{"invalid", "nope", "", true},
+		{"empty", "", "", true},
+	}
+	for _, tc := range cases {
+		for _, escaped := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/escaped=%t", tc.name, escaped), func(t *testing.T) {
+				input, _ := json.Marshal(tc.value)
+				if escaped {
+					var b strings.Builder
+					b.WriteByte('"')
+					for _, r := range tc.value {
+						fmt.Fprintf(&b, `\u%04x`, r)
+					}
+					b.WriteByte('"')
+					input = []byte(b.String())
+				}
+				var got Int
+				err := json.Unmarshal(input, &got)
+				if (err != nil) != tc.wantErr {
+					t.Fatalf("error = %v, want error = %t", err, tc.wantErr)
+				}
+				if err == nil && got.Dec() != tc.want {
+					t.Fatalf("got %s, want %s", got.Dec(), tc.want)
+				}
+			})
+		}
+	}
 }
